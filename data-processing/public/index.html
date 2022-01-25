@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Photopea</title>
+    <script>
+
+        var layerCount, loading = false, wnd, timer;
+
+        // function to get query string values 
+        function queryStringValues(name, url) {
+            if (!url) url = location.href;
+            name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+            var regexS = "[\\?&]" + name + "=([^&#]*)";
+            var regex = new RegExp(regexS);
+            var results = regex.exec(url);
+            return results == null ? null : results[1];
+        }
+
+        function iframeLoaded(pp) {
+            wnd = pp.contentWindow;
+            loadLayers()
+        }
+
+        function loadLayers() {
+            //Load main raster file
+            window.setTimeout(function () {
+                loadRasterFile();
+            }, 2000);
+            //Load overlay layer
+            window.setTimeout(function () {
+                loadLayerOverlap();
+            }, 6000);
+        }
+
+        function loadRasterFile() {
+            var loadOverlapLayersScript = `app.open("${queryStringValues("raster_file")} ", null, true);`
+            wnd.postMessage(loadOverlapLayersScript, "*");
+        }
+
+        function loadLayerOverlap() {
+            var loadOverlapLayersScript = `
+            var layerRef = app.activeDocument.artLayers.getByName("Background");
+            if (app.activeDocument.layers.length==1 && layerRef.name == "Background"){
+                alert("Loading overlay layer")
+                app.open("${queryStringValues("raster_overlap")} ", null, true);
+            }
+            `
+            wnd.postMessage(loadOverlapLayersScript, "*");
+        }
+
+        function createLayers() {
+            var createLayersScript = `function create_new_layer(layername){
+                if (layername == undefined) layername = "Layer";
+                    var originalLayer = app.activeDocument.activeLayer;
+                    var layerRef = app.activeDocument.artLayers.add();
+                    layerRef.name = layername;
+                    layerRef.blendMode = BlendMode.NORMAL;
+                    layerRef.moveAfter(originalLayer);
+                }
+                if (app.activeDocument.layers.length==2){
+                    alert("Creating class layers")
+                    create_new_layer("Recent")
+                    create_new_layer("Coincident")
+                    create_new_layer("Infrastructure")
+                    create_new_layer("Natural_Seep")
+                    // create_new_layer("Background")
+                    // create_new_layer("Hard_Negative")
+                    // create_new_layer("Ambiguous")
+                }
+                `
+            wnd.postMessage(createLayersScript, "*");
+        }
+    </script>
+</head>
+
+<body>
+    <input type="button" style="
+          display: block;
+          position: absolute;
+          top: 6px;
+          left: calc(100% - 150px);
+          z-index: 999;;
+        " onclick="loadLayerOverlap();" value="Load overlap images" />
+    <iframe id="photopea" style="
+          display: block;
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          box-sizing: border-box;
+          border: none;
+        " src="https://www.photopea.com" onload="iframeLoaded(this)"></iframe>
+    </divz>
+</body>
+
+</html>

@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 
-stringList=infrastructure.list,canonical_vessel.list,recent_vessel.list,old_vessel.list,natural_seep.list
-for list_file in ${stringList//,/ }
+for list_file in grd_list/*
 do
     echo "$list_file"
     while read sceneId; do
-        photopeaLink=$(node photopea_links.js "https://skytrue-test-remove.s3.amazonaws.com/rasters/$sceneId.tiff,https://skytrue-test-remove.s3.amazonaws.com/cog/$sceneId.tiff")
+        # TODO, get presign urls
+        raster_file="https://skytrue-test-remove.s3.amazonaws.com/rasters/$sceneId.tiff"
+        overlay_raster_file="https://skytrue-test-remove.s3.amazonaws.com/rasterized/$sceneId.tiff"
+        photopeaLink="https://skytruth.surge.sh/?raster_file=${overlay_raster_file}&raster_overlap=${overlay_raster_file}"
         echo $photopeaLink
-    done <data/$list_file
+    done <$list_file
 done

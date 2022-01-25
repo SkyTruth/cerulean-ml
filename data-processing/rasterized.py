@@ -6,6 +6,7 @@ import geopandas as gpd
 from rio_cogeo import cog_translate, cog_profiles
 from rasterio.io import MemoryFile
 
+
 def vector2raster(vector_file, raster_file, rasterize_file):
     geodf = gpd.read_file(vector_file)
     geodf = geodf.explode()
@@ -27,6 +28,7 @@ def vector2raster(vector_file, raster_file, rasterize_file):
         with rasterio.open(rasterize_file, "w", **kwargs) as dst:
             dst.write(dst_img, indexes=1)
 
+
 def raster2cog(rasterize_file, cog_file):
     cmap_values = {0: (0, 0, 0, 0), 1: (182, 227, 196, 1)}
     with rasterio.open(rasterize_file) as src_dst:
@@ -46,6 +48,7 @@ def raster2cog(rasterize_file, cog_file):
                     allow_intermediate_compression=True,
                     quiet=False,
                 )
+
 
 @click.command(short_help="Script to conveert vector to raster")
 @click.option(

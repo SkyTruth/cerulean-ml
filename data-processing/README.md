@@ -11,4 +11,18 @@ Script to convert vector data into raster - COG(cloud optimized geotiff)
     ./rasterized.sh
 ```
 
-## Generate Links  to open Photopea
+## Generate Links to open Photopea
+
+```sh
+
+./photopea_links.sh
+
+```
+
+## Site to load raster files
+
+```sh
+
+surge public/ skytruth.surge.sh
+
+```
