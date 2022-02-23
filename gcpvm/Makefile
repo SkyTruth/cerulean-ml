@@ -1,7 +1,7 @@
 SHELL = bash
 # Settings
 REMOTE_DIR=~/work
-LOCAL_DIR=../../
+LOCAL_DIR=../
 
 ##### You should not have to touch stuff below this line
 SHELL=bash

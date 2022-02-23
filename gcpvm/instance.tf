@@ -30,9 +30,8 @@ resource "google_compute_address" "jupyter-static-ip-address" {
 resource "google_compute_disk" "default" {
   name = "${local.name}-jupyter-disk"
   zone = data.google_compute_zones.available.names[0]
-  #image = "ubuntu-os-cloud/ubuntu-2004-focal-v20220110"
-  #image = "ubuntu-2004-cuda-conda-fastai"
-  image = "ubuntu-2004-cuda-conda-fastai-v1"
+  #image = "ubuntu-os-cloud/ubuntu-2004-focal-v20220110" this is the base image used to create the cerulean image
+  image = "ubuntu-2004-cuda113-fastai-cerulean"
   size  = 50
 }
 resource "google_compute_instance" "jupyter" {

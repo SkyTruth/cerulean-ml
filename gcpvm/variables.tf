@@ -1,7 +1,7 @@
 variable "location" {
   type        = string
   description = "Location of the resources"
-  default     = "us-central1"
+  default     = "europe-west1"
   # Check available zones for instance type in https://cloud.google.com/compute/docs/regions-zones
   # For N1 machines, with GPU:
   ## Europe
@@ -31,5 +31,5 @@ variable "instance-type" {
 variable "project" {
   type        = string
   description = "Project"
-  default     = "bp-padang"
+  default     = "cerulean-338116"
 }
