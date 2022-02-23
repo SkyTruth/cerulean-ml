@@ -1,14 +1,14 @@
-resource "google_compute_firewall" "allow-http" {  
-    name = "allow-http"
-    network = "default"
+resource "google_compute_firewall" "allow-http" {
+  name    = "allow-http"
+  network = "default"
 
-    allow {
-        protocol = "tcp"
-        ports = ["8888"]
-    }
+  allow {
+    protocol = "tcp"
+    ports    = ["8888"]
+  }
 
-    source_ranges = ["0.0.0.0/0"]
-    target_tags = ["http"]
+  source_ranges = ["0.0.0.0/0"]
+  target_tags   = ["http"]
 }
 
 data "google_compute_zones" "available" {
@@ -20,48 +20,50 @@ resource "tls_private_key" "key" {
 }
 resource "local_file" "pem" {
   filename        = ".ssh/private_instance_gcp.pem"
-  content         = "${tls_private_key.key.private_key_pem}"
+  content         = tls_private_key.key.private_key_pem
   file_permission = "400"
 }
-
 resource "google_compute_address" "jupyter-static-ip-address" {
   name = "${substr(local.name, 0, 18)}-jupyter-static-ip-address"
 }
 
 resource "google_compute_disk" "default" {
-  name  = "${local.name}-jupyter-disk"
-  zone  = "${data.google_compute_zones.available.names[0]}"
-  # image = "ubuntu-os-cloud/ubuntu-2004-focal-v20220110"
-  image = "ubuntu-2004-cuda-conda-fastai"
-  size = 50
+  name = "${local.name}-jupyter-disk"
+  zone = data.google_compute_zones.available.names[0]
+  #image = "ubuntu-os-cloud/ubuntu-2004-focal-v20220110"
+  #image = "ubuntu-2004-cuda-conda-fastai"
+  image = "ubuntu-2004-cuda-conda-fastai-v1"
+  size  = 50
 }
 resource "google_compute_instance" "jupyter" {
   count        = 1
-  name         = "${local.name}" 
-  machine_type = "${var.instance-type}" 
-  zone         = "${data.google_compute_zones.available.names[0]}" // Call it from variable "zone"
+  name         = local.name
+  machine_type = var.instance-type
+  zone         = data.google_compute_zones.available.names[0] // Call it from variable "zone"
 
   tags = ["http", "http-server"]
 
-  metadata = { ssh-keys = "root:${tls_private_key.key.public_key_openssh}"}
- 
- boot_disk {
+  metadata = { ssh-keys = "root:${tls_private_key.key.public_key_openssh}" }
+
+  service_account { scopes = ["storage-full", "cloud-platform"] }
+
+  boot_disk {
     source = google_compute_disk.default.name
   }
- 
+
   network_interface {
     network = "default"
     access_config {
-      nat_ip = "${google_compute_address.jupyter-static-ip-address.address}"
+      nat_ip = google_compute_address.jupyter-static-ip-address.address
     }
   }
 
-  guest_accelerator{
-    type = "nvidia-tesla-k80" // Type of GPU attahced
-    count = 1 // Num of GPU attached
+  guest_accelerator {
+    type  = "nvidia-tesla-k80" // Type of GPU attahced
+    count = 1                  // Num of GPU attached
   }
 
-  scheduling{
+  scheduling {
     on_host_maintenance = "TERMINATE" // Need to terminate GPU on maintenance
   }
 
@@ -79,16 +81,16 @@ resource "google_compute_instance" "jupyter" {
 }
 
 resource "local_file" "vm_id" {
-  filename        = ".vm-id"
-  content         = "${google_compute_instance.jupyter[0].instance_id}"
+  filename = ".vm-id"
+  content  = google_compute_instance.jupyter[0].instance_id
 }
 
 resource "local_file" "vm_name" {
-  filename        = ".vm-name"
-  content         = "${google_compute_instance.jupyter[0].name}"
+  filename = ".vm-name"
+  content  = google_compute_instance.jupyter[0].name
 }
 
 resource "local_file" "vm_ip" {
-  filename        = ".vm-ip"
-  content         = "root@${google_compute_instance.jupyter[0].network_interface.0.access_config.0.nat_ip}"
+  filename = ".vm-ip"
+  content  = "root@${google_compute_instance.jupyter[0].network_interface.0.access_config.0.nat_ip}"
 }

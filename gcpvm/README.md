@@ -6,6 +6,18 @@ Follow the steps described in [this](https://registry.terraform.io/providers/has
 
 Install the [terraform CLI](https://learn.hashicorp.com/tutorials/terraform/install-cli).
 
+## Import the base image
+
+In case your project doesn't have a the `ubuntu-2004-cuda-conda-fastai-v1` image import it, in the [console](https://console.cloud.google.com/compute/imagesAdd) or using the command line:
+
+```
+gcloud compute images import ubuntu-2004-cuda-conda-fastai-v1 --source-file=gs://ml-machine-images/ubuntu-2004-cuda-conda-fastai-v1.vmdk --no-guest-environment
+```
+
+## Adapt `variables.tf` file
+
+Navigate to the folder containing `main.tf`. Adapt the `variables.tf` file as needed, specifically the `project`, the `instance-type` and the `location`.
+
 ## Deploy
 
 Navigate to the folder containing the `main.tf` file. Run `terraform init`.
@@ -29,3 +41,8 @@ You can now use the set of tools included in the `Makefile`. Adapt this file if 
 When you finish all work associated with this instance make sure to run `terraform destroy`. This will delete the ssh key in `.ssh` and all `.vm-X` files.
 
 **Important: when you destroy your instance, all files and instance state are deleted with it so make sure to back them up to GCS or locally if needed!**
+
+
+## Notes on the Instance
+
+The instance will have access to all buckets in the project. These buckets will be mounted under the directory `/root/data`. They can only be accessed by specifying paths to the contents of their subdirs. See the [gcsfuse mounting instructions](https://github.com/GoogleCloudPlatform/gcsfuse/blob/master/docs/mounting.md) for more details.
