@@ -28,6 +28,12 @@ You can create your instance with `terraform apply`.
 
 This will create a GCP Compute instance, and save in your local machine a private ssh key (in `.ssh/`), and a series of `.vm-X` files containing identity information for your instance. **Do not delete or modify this files!**
 
+## The VM
+
+This VM contains a conda environment `fastai2` that can be activated with `mamba activate fastai2` and edited by editing `minimal-start-up-script.sh`, which runs commands when `terraform apply` is called. See the `start-up-script.sh` for reference (this wa sused to create the custom cerulean base image) and in particular use `-y` flags when installing packages with `mamba` so that there is no waiting for manual response.
+
+The VM also comes with docker and jupyter with port forwarding to your local machine (you can copy and paste a jupyter link on the VM to your local machine's browser).
+
 ## `make` tools
 
 You can now use the set of tools included in the `Makefile`. Adapt this file if needed in case you want to change the remote and local path to copy files into the instance.
