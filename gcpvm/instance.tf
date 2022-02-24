@@ -1,5 +1,5 @@
 resource "google_compute_firewall" "allow-http" {
-  name    = "allow-http"
+  name    = "allow-http-${local.name}"
   network = "default"
 
   allow {
