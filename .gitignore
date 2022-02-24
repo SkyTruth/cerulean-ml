@@ -127,3 +127,13 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+data/
+gcpvm/.terraform.lock.hcl
+gcpvm/.terraform/
+gcpvm/terraform.tfstate
+gcpvm/terraform.tfstate.backup
+gcpvm/.vm-id
+gcpvm/.vm-ip
+gcpvm/.vm-name
+gcpvm/.ssh
