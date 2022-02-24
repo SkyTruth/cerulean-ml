@@ -51,6 +51,7 @@ dpkg -i cuda-repo-ubuntu2004-11-3-local_11.3.0-465.19.01-1_amd64.deb
 apt-key add /var/cuda-repo-ubuntu2004-11-3-local/7fa2af80.pub
 apt-get update
 apt-get -y install cuda
+rm cuda-repo-ubuntu2004-11-3-local_11.3.0-465.19.01-1_amd64.deb
 
 # NVIDIA docker
 distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
