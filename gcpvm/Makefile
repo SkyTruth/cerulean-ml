@@ -21,10 +21,10 @@ CURRENT_DIR=$(notdir $(patsubst %/,%,$(dir $(mkfile_path))))
 
 # sync code
 syncup:
-	ssh -i ${PATH_SSH_KEY} -o IdentitiesOnly=yes ${VM_CONN} "mkdir -p ${REMOTE_DIR}/${CURRENT_DIR}"
-	rsync -e "ssh -i ${PATH_SSH_KEY} -o IdentitiesOnly=yes" -avz --exclude="${LOCAL_DIR}.git/" --exclude-from=${LOCAL_DIR}.gitignore ${LOCAL_DIR} $(shell echo ${VM_CONN}:${REMOTE_DIR}/${CURRENT_DIR} | tr -d '[:space:]')
+	ssh -i ${PATH_SSH_KEY} -o IdentitiesOnly=yes ${VM_CONN} "mkdir -p ${REMOTE_DIR}/"
+	rsync -e "ssh -i ${PATH_SSH_KEY} -o IdentitiesOnly=yes" -avz --exclude="${LOCAL_DIR}.git/" --exclude-from=${LOCAL_DIR}.gitignore ${LOCAL_DIR} $(shell echo ${VM_CONN}:${REMOTE_DIR}/ | tr -d '[:space:]')
 syncdown:
-	rsync -e "ssh -i ${PATH_SSH_KEY}" -o IdentitiesOnly=yes" -avz --exclude="${LOCAL_DIR}.git/" --exclude-from=${LOCAL_DIR}.gitignore $(shell echo ${VM_CONN}:${REMOTE_DIR}/${CURRENT_DIR}/ | tr -d '[:space:]') ${LOCAL_DIR}
+	rsync -e "ssh -i ${PATH_SSH_KEY}" -o IdentitiesOnly=yes" -avz --exclude="${LOCAL_DIR}.git/" --exclude-from=${LOCAL_DIR}.gitignore $(shell echo ${VM_CONN}:${REMOTE_DIR}/ | tr -d '[:space:]') ${LOCAL_DIR}
 
 # start/stop instance. the --filter step saves us from needing to provide the specific zone to the gcloud commands but requires
 # different names for instances in different zones.
