@@ -46,23 +46,34 @@
         }
 
         function loadRasterFile() {
-            console.log(queryStringValues("raster_url"))
-            var loadOverlapLayersScript = `app.open("${queryStringValues("raster_url")} ", null, true);`
-            console.log(loadOverlapLayersScript)
+            var raster_url = queryStringValues("raster_url")
+            console.log(`raster_url ${raster_url}`)
+
+            var loadOverlapLayersScript = `app.open("${raster_url} ", null, true);`
+            // console.log(loadOverlapLayersScript)
             wnd.postMessage(loadOverlapLayersScript, "*");
         }
 
         function loadLayerOverlap() {
+
+            var cog_detection_v1_url = queryStringValues("cog_detection_v1_url")
+            var cog_all_infra_url = queryStringValues("cog_all_infra_url")
+            var cog_leaky_infra_url = queryStringValues("cog_leaky_infra_url")
+
+            console.log(`cog_detection_v1_url ${cog_detection_v1_url}`)
+            console.log(`cog_all_infra_url ${cog_all_infra_url}`)
+            console.log(`cog_leaky_infra_url ${cog_leaky_infra_url}`)
+
             var loadOverlapLayersScript = `
             var layerRef = app.activeDocument.artLayers.getByName("Background");
             if (app.activeDocument.layers.length==1 && layerRef.name == "Background"){
                 alert("Loading overlay layer")
-                app.open("${queryStringValues("cog_detection_v1_url")} ", "v1", true);
-                app.open("${queryStringValues("cog_all_infra_url")} ", null, true);
-                app.open("${queryStringValues("cog_leaky_infra_url")} ", null, true);
+                app.open("${cog_detection_v1_url} ", null, true);
+                app.open("${cog_all_infra_url} ", null, true);
+                app.open("${cog_leaky_infra_url} ", null, true);
             }
             `
-            console.log(loadOverlapLayersScript)
+            // console.log(loadOverlapLayersScript)
             wnd.postMessage(loadOverlapLayersScript, "*");
         }
 
@@ -100,8 +111,6 @@
             //newLayer.visible = false
             app.activeDocument.activeLayer.name = "Background"
             `
-
-
             console.log(scriptColor)
             wnd.postMessage(scriptColor, "*");
         }
