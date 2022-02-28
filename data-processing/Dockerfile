@@ -5,4 +5,8 @@ RUN pip install click
 RUN pip install joblib
 RUN pip install tqdm
 RUN pip install geopandas
+RUN pip install rtree
+RUN pip install pygeos
+RUN pip install awscli
+
 WORKDIR /mnt

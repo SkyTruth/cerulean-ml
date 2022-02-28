@@ -6,6 +6,14 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Photopea</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <style>
+        .btn {
+            padding-top: 3px;
+            padding-bottom: 3px;
+            font-size: 0.75rem;
+        }
+    </style>
     <script>
 
         var layerCount, loading = false, wnd, timer;
@@ -14,7 +22,7 @@
         function queryStringValues(name, url) {
             if (!url) url = location.href;
             name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
-            var regexS = "[\\?&]" + name + "=([^&#]*)";
+            var regexS = "[\\?@]" + name + "=([^@#]*)";
             var regex = new RegExp(regexS);
             var results = regex.exec(url);
             return results == null ? null : results[1];
@@ -33,11 +41,13 @@
             //Load overlay layer
             window.setTimeout(function () {
                 loadLayerOverlap();
-            }, 6000);
+            }, 10000);
         }
 
         function loadRasterFile() {
-            var loadOverlapLayersScript = `app.open("${queryStringValues("raster_file")} ", null, true);`
+            console.log(queryStringValues("raster_url"))
+            var loadOverlapLayersScript = `app.open("${queryStringValues("raster_url")} ", null, true);`
+            console.log(loadOverlapLayersScript)
             wnd.postMessage(loadOverlapLayersScript, "*");
         }
 
@@ -46,9 +56,11 @@
             var layerRef = app.activeDocument.artLayers.getByName("Background");
             if (app.activeDocument.layers.length==1 && layerRef.name == "Background"){
                 alert("Loading overlay layer")
-                app.open("${queryStringValues("raster_overlap")} ", null, true);
+                app.open("${queryStringValues("cog_detection_v1_url")} ", null, true);
+                app.open("${queryStringValues("cog_infra_url")} ", null, true);
             }
             `
+            console.log(loadOverlapLayersScript)
             wnd.postMessage(loadOverlapLayersScript, "*");
         }
 
@@ -74,17 +86,71 @@
                 `
             wnd.postMessage(createLayersScript, "*");
         }
+
+        function setColorClass(r, g, b) {
+            var scriptColor = `
+            var newLayer = app.activeDocument.artLayers.add();
+            var fillColor = new SolidColor();
+            fillColor.rgb.red = ${r};
+            fillColor.rgb.green = ${g};
+            fillColor.rgb.blue = ${b};
+            app.activeDocument.selection.fill(fillColor);
+            //newLayer.visible = false
+            `
+            console.log(scriptColor)
+            wnd.postMessage(scriptColor, "*");
+        }
+
+
+      function smooth() {
+        var scriptColor = `app.activeDocument.selection.smooth(10)`;
+        console.log(scriptColor);
+        wnd.postMessage(scriptColor, '*');
+      }
+
     </script>
 </head>
 
 <body>
-    <input type="button" style="
-          display: block;
-          position: absolute;
-          top: 6px;
-          left: calc(100% - 150px);
-          z-index: 999;;
-        " onclick="loadLayerOverlap();" value="Load overlap images" />
+    <div class="form-horizontal" style="
+    display: block;
+    position: absolute;
+    top: 0px;
+    right: 10px;
+    width: auto;
+    z-index: 999;">
+        <div class="form-group" style="padding: 0px;">
+            <div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-warning" onclick="setColorClass(255,255,0);">
+                        Vessel-Recent
+                    </button>
+                    <button type="button" class="btn" style=" background:#ff00ff; color:white"
+                        onclick="setColorClass(255,	0,255);">
+                        Vessel-old
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="setColorClass(255,0,0);">
+                        Vessel-Coincident
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="setColorClass(0,0,255);">
+                        Infrastructure
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="setColorClass(0,255,0);">
+                        Natural
+                    </button>
+                    <button type="button" class="btn btn-light" onclick="setColorClass(255,255,255);">
+                        Ambiguous
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="loadLayerOverlap();">
+                        LOAD OVERLAP
+                    </button>
+                     <button type="button" class="btn btn-secondary" onclick="smooth();">
+                        SMOOTH
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
     <iframe id="photopea" style="
           display: block;
           position: absolute;
