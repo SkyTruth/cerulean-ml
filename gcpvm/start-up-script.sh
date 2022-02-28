@@ -26,7 +26,7 @@ conda init
 source .bashrc
 
 # Conda packages
-conda install scikit-learn pandas jupyter ipython -y
+conda install scikit-image scikit-learn pandas jupyter ipython -y
 conda install mamba -n base -c conda-forge -y
 
 conda create -n fastai2 -y
@@ -36,6 +36,11 @@ mamba install -c fastchan fastai -y
 mamba install -c conda-forge ipykernel ipywidgets black isort  jupyterlab_code_formatter -y
 conda deactivate
 conda install -n base -c conda-forge jupyterlab_widgets jupyterlab nb_conda_kernels -y
+
+# Pip installs
+pip install git+git://github.com/waspinator/pycococreator.git@0.2.0
+pip install icevision[all]
+pip install eodag
 
 # GitHub CLI
 curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
