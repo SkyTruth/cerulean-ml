@@ -8,5 +8,5 @@ RUN pip install geopandas
 RUN pip install rtree
 RUN pip install pygeos
 RUN pip install awscli
-
 WORKDIR /mnt
+COPY . .
