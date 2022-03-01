@@ -1,5 +1,5 @@
 import click
-from utils import vector2raster, raster2cog
+from utils import vector2raster, raster2cog, raster2png, dir_
 
 
 @click.command(short_help="Script to convert vector to raster")
@@ -23,10 +23,19 @@ from utils import vector2raster, raster2cog
     help="cog file",
     default="data/cog/S1A_IW_GRDH_1SDV_20200804T045214_20200804T045239_033752_03E97F_88D3.tiff",
 )
-def main(vector_file, raster_file, output_rasterize_file, output_cog_file):
+@click.option(
+    "--output_png_file",
+    help="PNG file",
+    default="data/png/S1A_IW_GRDH_1SDV_20200804T045214_20200804T045239_033752_03E97F_88D3.png",
+)
+def main(vector_file, raster_file, output_rasterize_file, output_cog_file, output_png_file):
+    dir_(output_rasterize_file)
+    dir_(output_cog_file)
+    dir_(output_png_file)
     vector2raster(vector_file, raster_file, output_rasterize_file)
-    infra_color = (255, 255, 0, 1)
-    raster2cog(output_rasterize_file, output_cog_file, infra_color)
+    infra_color = [255, 255, 0, 255]
+    # raster2cog(output_rasterize_file, output_cog_file, infra_color)
+    raster2png(output_rasterize_file, output_png_file, infra_color)
 
 
 if __name__ == "__main__":

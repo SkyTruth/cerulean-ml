@@ -2,7 +2,7 @@ import click
 import rasterio
 import geopandas as gpd
 from shapely import geometry
-from utils import vector2raster, raster2cog
+from utils import vector2raster, raster2cog, raster2png, dir_
 
 
 def raster_bounds_poly(raster_file):
@@ -17,7 +17,7 @@ def raster_bounds_poly(raster_file):
 def clipArea(geojson_points_file, raster_bbox_poly, output_clip_point_file):
     geodf = gpd.read_file(geojson_points_file)
     points = gpd.clip(geodf, raster_bbox_poly)
-    polygons = points.buffer(0.002)
+    polygons = points.buffer(0.005)
     polygons.to_file(output_clip_point_file, driver="GeoJSON")
     # return polygons
 
@@ -53,14 +53,30 @@ def clipArea(geojson_points_file, raster_bbox_poly, output_clip_point_file):
     help="color to rasterize",
     default="0,0,255,1",
 )
+@click.option(
+    "--output_png_file",
+    help="PNG file",
+    default="data/png/S1A_IW_GRDH_1SDV_20200804T045214_20200804T045239_033752_03E97F_88D3.png",
+)
 def main(
-    geojson_points_file, raster_file, output_rasterize_file, output_cog_file, output_clip_point_file, color
+    geojson_points_file,
+    raster_file,
+    output_rasterize_file,
+    output_cog_file,
+    output_clip_point_file,
+    color,
+    output_png_file,
 ):
+    dir_(output_rasterize_file)
+    dir_(output_cog_file)
+    dir_(output_clip_point_file)
+    dir_(output_png_file)
     raster_bbox_poly = raster_bounds_poly(raster_file)
     clipArea(geojson_points_file, raster_bbox_poly, output_clip_point_file)
     vector2raster(output_clip_point_file, raster_file, output_rasterize_file)
-    t_color = tuple(map(int, color.split(',')))
-    raster2cog(output_rasterize_file, output_cog_file, t_color)
+    t_color = [int(i) for i in color.split(",")]
+    # raster2cog(output_rasterize_file, output_cog_file, t_color)
+    raster2png(output_rasterize_file, output_png_file, t_color)
 
 
 if __name__ == "__main__":

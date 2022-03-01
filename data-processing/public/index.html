@@ -56,21 +56,21 @@
 
         function loadLayerOverlap() {
 
-            var cog_detection_v1_url = queryStringValues("cog_detection_v1_url")
-            var cog_all_infra_url = queryStringValues("cog_all_infra_url")
-            var cog_leaky_infra_url = queryStringValues("cog_leaky_infra_url")
+            var png_detection_v1_url = queryStringValues("png_detection_v1_url")
+            var png_all_infra_url = queryStringValues("png_all_infra_url")
+            var png_leaky_infra_url = queryStringValues("png_leaky_infra_url")
 
-            console.log(`cog_detection_v1_url ${cog_detection_v1_url}`)
-            console.log(`cog_all_infra_url ${cog_all_infra_url}`)
-            console.log(`cog_leaky_infra_url ${cog_leaky_infra_url}`)
+            console.log(`png_detection_v1_url ${png_detection_v1_url}`)
+            console.log(`png_all_infra_url ${png_all_infra_url}`)
+            console.log(`png_leaky_infra_url ${png_leaky_infra_url}`)
 
             var loadOverlapLayersScript = `
             var layerRef = app.activeDocument.artLayers.getByName("Background");
             if (app.activeDocument.layers.length==1 && layerRef.name == "Background"){
                 alert("Loading overlay layer")
-                app.open("${cog_detection_v1_url} ", null, true);
-                app.open("${cog_all_infra_url} ", null, true);
-                app.open("${cog_leaky_infra_url} ", null, true);
+                app.open("${png_detection_v1_url} ", null, true);
+                app.open("${png_all_infra_url} ", null, true);
+                app.open("${png_leaky_infra_url} ", null, true);
             }
             `
             // console.log(loadOverlapLayersScript)

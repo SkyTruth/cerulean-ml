@@ -6,6 +6,9 @@ import geopandas as gpd
 from rio_cogeo import cog_translate, cog_profiles
 from rasterio.io import MemoryFile
 from shapely import geometry
+import numpy as np
+import os
+
 
 def vector2raster(vector_file, raster_file, rasterize_file):
     geodf = gpd.read_file(vector_file)
@@ -50,38 +53,23 @@ def raster2cog(rasterize_file, cog_file, color):
                     allow_intermediate_compression=True,
                     quiet=False,
                 )
-    
-#     only_boundary(cog_file)
 
 
+def raster2png(rasterize_file, png_file, color):
+    with rasterio.open(rasterize_file) as src_dst:
+        arr = src_dst.read(1)
+        heigth, width = arr.shape
+        data = np.zeros((4, heigth, width)).astype(np.uint8)
+        profile = dict(driver="PNG", width=width, height=heigth, count=4, dtype=data.dtype)
+        # color = [255, 0, 255, 255]
+        for index, item in enumerate(color):
+            a = np.copy(arr)
+            data[index] = np.where((a == 1), item, a)
+        with rasterio.open(png_file, "w", **profile) as dst:
+            dst.write(data)
 
 
-# def only_boundary(image):
-#     # first, convert picture as RGBA
-#     with Image.open(image).convert("RGBA") as img:
-#         pixels = img.load()
-#         for i in range(img.size[0]):
-#             for j in range(img.size[1]):
-#                 # if a pixel is not white...
-#                 if pixels[i,j] != (255, 255, 255,255):
-#                     #it becomes transparent
-#                     pixels[i,j] = (0, 0, 0, 0)
-#     # then the loops are over, we save
-#     im = img.save(f"{image}.png")
-
-    # with rasterio.open(cog_file) as infile:
-    #     profile=infile.profile
-    #     #
-    #     # change the driver name from GTiff to PNG
-    #     #
-    #     profile['driver']='PNG'
-    #     #
-    #     # pathlib makes it easy to add a new suffix to a
-    #     # filename
-    #     #    
-    #     png_filename=f"{cog_file}.png"
-    #     raster=infile.read()
-    #     with rasterio.open(png_filename, 'w', **profile) as dst:
-    #         dst.write(raster)
-
-
+def dir_(ouput_image):
+    dir_ = os.path.dirname(ouput_image)
+    if not os.path.exists(dir_):
+        os.makedirs(dir_)
