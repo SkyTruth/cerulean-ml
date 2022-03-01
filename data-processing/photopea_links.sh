@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
-export AWS_DEFAULT_REGION=eu-central-1
-export BUCKET=skytruth-cerulean
+export AWS_DEFAULT_REGION=sa-east-1
+export BUCKET=export BUCKET=skytruth-cerulean-sa-east-1
+
 days_7=604800
 
 function exist_object() {
@@ -17,10 +18,10 @@ function exist_object() {
 function links_generator() {
     sceneIdid=$1
     # Get presign urls for 7 days
-    raster_url=$(aws s3 presign s3://skytruth-cerulean/outputs/rasters/$sceneIdid.tiff --expires-in $days_7)
-    png_detection_v1_url=$(exist_object s3://skytruth-cerulean/outputs/rasterized_detection_v1/png/$sceneIdid.png)
-    png_all_infrastructure_url=$(exist_object s3://skytruth-cerulean/outputs/all_infrastructure/png/$sceneIdid.png)
-    png_leaky_infrastructure_url=$(exist_object s3://skytruth-cerulean/outputs/leaky_infrastructure/png/$sceneIdid.png)
+    raster_url=$(aws s3 presign s3://${BUCKET}/outputs/rasters/$sceneIdid.tiff --expires-in $days_7)
+    png_detection_v1_url=$(exist_object s3://${BUCKET}/outputs/rasterized_detection_v1/png/$sceneIdid.png)
+    png_all_infrastructure_url=$(exist_object s3://${BUCKET}/outputs/all_infrastructure/png/$sceneIdid.png)
+    png_leaky_infrastructure_url=$(exist_object s3://${BUCKET}/outputs/leaky_infrastructure/png/$sceneIdid.png)
 
     query="raster_url=${raster_url}@png_detection_v1_url=${png_detection_v1_url}@png_all_infra_url=${png_all_infrastructure_url}@png_leaky_infra_url=${png_leaky_infrastructure_url}"
     photopeaLink="https://skytruth.surge.sh/?$query"
@@ -46,4 +47,4 @@ for list_file in grd_list/*; do
     done <$list_file
 done
 
-aws s3 cp data/photopea_link.csv s3://skytruth-cerulean/outputs/photopea_links/
+aws s3 cp data/photopea_link.csv s3://${BUCKET}/outputs/photopea_links/

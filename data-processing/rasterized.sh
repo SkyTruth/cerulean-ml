@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
-export AWS_DEFAULT_REGION=eu-central-1
-export BUCKET=skytruth-cerulean
+# export AWS_DEFAULT_REGION=eu-central-1
+export BUCKET=skytruth-cerulean-sa-east-1
 
 function rasterize() {
     sceneIdid=$1
     echo "Processing... $sceneIdid"
-    [ ! -f data/rasters/$sceneIdid.tiff ] && aws s3 cp s3://${BUCKET}/outputs/rasters/$sceneIdid.tiff data/rasters/
-    [ ! -f data/vectors/$sceneIdid.geojson ] && aws s3 cp s3://${BUCKET}/outputs/vectors/$sceneIdid.geojson data/vectors/
+    [ ! -f data/rasters/$sceneIdid.tiff ] && aws s3 cp s3://skytruth-cerulean/outputs/rasters/$sceneIdid.tiff data/rasters/
+    [ ! -f data/vectors/$sceneIdid.geojson ] && aws s3 cp s3://skytruth-cerulean/outputs/vectors/$sceneIdid.geojson data/vectors/
 
+    # Copy to another bucket
+    aws s3 cp data/rasters/$sceneIdid.tiff s3://${BUCKET}/outputs/rasters/$sceneIdid.tiff
     ##################### rasterized detection v1 ####################
 
     python rasterized_detection_v1.py \
@@ -31,7 +33,6 @@ function rasterize() {
         --color="177,246,249,255" \
         --output_png_file=data/all_infrastructure/png/$sceneIdid.png
 
-
     aws s3 cp data/all_infrastructure/png/$sceneIdid.png s3://${BUCKET}/outputs/all_infrastructure/png/
     aws s3 cp data/all_infrastructure/clip_point/$sceneIdid.geojson s3://${BUCKET}/outputs/all_infrastructure/clip_point/
 
@@ -51,12 +52,18 @@ function rasterize() {
     aws s3 cp data/leaky_infrastructure/clip_point/$sceneIdid.geojson s3://${BUCKET}/outputs/leaky_infrastructure/clip_point/
 }
 
-for list_file in grd_list/*; do
-    echo "$list_file "
-    while read sceneId; do
-        rasterize $sceneId
-    done <$list_file
-done
+# for list_file in grd_list/*; do
+#     echo "$list_file "
+#     while read sceneId; do
+#         rasterize $sceneId
+#     done <$list_file
+# done
+
+list_file=$1
+echo "$list_file "
+while read sceneId; do
+    rasterize $sceneId
+done <$list_file
 
 # # # test
 # rasterize S1A_IW_GRDH_1SDV_20200804T045214_20200804T045239_033752_03E97F_88D3

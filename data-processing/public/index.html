@@ -73,34 +73,34 @@
                 app.open("${png_leaky_infra_url} ", null, true);
             }
             `
-            // console.log(loadOverlapLayersScript)
+            console.log(loadOverlapLayersScript)
             wnd.postMessage(loadOverlapLayersScript, "*");
         }
 
-        function createLayers() {
-            var createLayersScript = `function create_new_layer(layername){
-                if (layername == undefined) layername = "Layer";
-                    var originalLayer = app.activeDocument.activeLayer;
-                    var layerRef = app.activeDocument.artLayers.add();
-                    layerRef.name = layername;
-                    layerRef.blendMode = BlendMode.NORMAL;
-                    layerRef.moveAfter(originalLayer);
-                }
-                if (app.activeDocument.layers.length==2){
-                    alert("Creating class layers")
-                    create_new_layer("Recent")
-                    create_new_layer("Coincident")
-                    create_new_layer("Infrastructure")
-                    create_new_layer("Natural_Seep")
-                    // create_new_layer("Background")
-                    // create_new_layer("Hard_Negative")
-                    // create_new_layer("Ambiguous")
-                }
-                `
-            wnd.postMessage(createLayersScript, "*");
-        }
+        // function createLayers() {
+        //     var createLayersScript = `function create_new_layer(layername){
+        //         if (layername == undefined) layername = "Layer";
+        //             var originalLayer = app.activeDocument.activeLayer;
+        //             var layerRef = app.activeDocument.artLayers.add();
+        //             layerRef.name = layername;
+        //             layerRef.blendMode = BlendMode.NORMAL;
+        //             layerRef.moveAfter(originalLayer);
+        //         }
+        //         if (app.activeDocument.layers.length==2){
+        //             alert("Creating class layers")
+        //             create_new_layer("Recent")
+        //             create_new_layer("Coincident")
+        //             create_new_layer("Infrastructure")
+        //             create_new_layer("Natural_Seep")
+        //             // create_new_layer("Background")
+        //             // create_new_layer("Hard_Negative")
+        //             // create_new_layer("Ambiguous")
+        //         }
+        //         `
+        //     wnd.postMessage(createLayersScript, "*");
+        // }
 
-        function setColorClass(r, g, b) {
+        function setColorClass(r, g, b, layerName) {
             var scriptColor = `
             var newLayer = app.activeDocument.artLayers.add();
             var fillColor = new SolidColor();
@@ -109,12 +109,30 @@
             fillColor.rgb.blue = ${b};
             app.activeDocument.selection.fill(fillColor);
             //newLayer.visible = false
-            app.activeDocument.activeLayer.name = "Background"
+            app.activeDocument.layers.length
+            num_layer = 1
+            for (var x = 0; x < app.activeDocument.layers.length; x++) {
+                    var layerName= app.activeDocument.layers[x].name;
+                    if (layerName.indexOf("${layerName}")>-1){
+                        num_layer++;
+                    }
+            }
+            app.activeDocument.activeLayer.name = "${layerName}" + "_" + num_layer
+
+            /////// Select background
+            var doc = app.activeDocument;
+            var layerName = 'Background';
+            var _layer = doc.layers.getByName(layerName);
+            var _selectedItems = app.selection
+            for (var i = _selectedItems.length - 1; i >= 0; i--) {
+                _selectedItems[i].move(_layer, ElementPlacement.PLACEATEND);
+                _selectedItems[i].selected = false;
+            }
+            app.redraw();
             `
             console.log(scriptColor)
             wnd.postMessage(scriptColor, "*");
         }
-
 
         function smooth() {
             var scriptColor = `app.activeDocument.selection.smooth(10)`;
@@ -136,23 +154,23 @@
         <div class="form-group" style="padding: 0px;">
             <div>
                 <div class="btn-group">
-                    <button type="button" class="btn btn-warning" onclick="setColorClass(255,255,0);">
+                    <button type="button" class="btn btn-warning" onclick="setColorClass(255,255,0, 'vessel_recent');">
                         Vessel-Recent
                     </button>
                     <button type="button" class="btn" style=" background:#ff00ff; color:white"
-                        onclick="setColorClass(255,	0,255);">
+                        onclick="setColorClass(255,	0,255,'vessel_old');">
                         Vessel-old
                     </button>
-                    <button type="button" class="btn btn-danger" onclick="setColorClass(255,0,0);">
+                    <button type="button" class="btn btn-danger" onclick="setColorClass(255,0,0,'vessel_coincident');">
                         Vessel-Coincident
                     </button>
-                    <button type="button" class="btn btn-primary" onclick="setColorClass(0,0,255);">
+                    <button type="button" class="btn btn-primary" onclick="setColorClass(0,0,255,'infrastructure');">
                         Infrastructure
                     </button>
-                    <button type="button" class="btn btn-success" onclick="setColorClass(0,255,0);">
+                    <button type="button" class="btn btn-success" onclick="setColorClass(0,255,0,'natural');">
                         Natural
                     </button>
-                    <button type="button" class="btn btn-light" onclick="setColorClass(255,255,255);">
+                    <button type="button" class="btn btn-light" onclick="setColorClass(255,255,255,'ambiguous');">
                         Ambiguous
                     </button>
                     <button type="button" class="btn btn-secondary" onclick="loadLayerOverlap();">
