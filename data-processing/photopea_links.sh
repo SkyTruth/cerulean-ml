@@ -30,7 +30,8 @@ function links_generator() {
 }
 
 mkdir -p data/
-echo "type|sceneId|url" >data/photopea_Link.csv
+links_file=data/photopea_link.csv
+echo "type|sceneId|url" >$links_file
 
 ##### test
 # links_generator S1A_IW_GRDH_1SDV_20200804T045214_20200804T045239_033752_03E97F_88D3
@@ -43,8 +44,8 @@ for list_file in grd_list/*; do
     while read sceneId; do
         # links_generator $sceneId
         url=$(links_generator $sceneId)
-        echo "$type_|$sceneId|=HYPERLINK(\"$url\",\"photopea\")" >>data/photopea_Link.csv
+        echo "$type_|$sceneId|=HYPERLINK(\"$url\",\"photopea\")" >>$links_file
     done <$list_file
 done
 
-aws s3 cp data/photopea_link.csv s3://${BUCKET}/outputs/photopea_links/
+aws s3 cp $links_file s3://${BUCKET}/outputs/photopea_links/
