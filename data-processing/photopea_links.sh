@@ -6,11 +6,11 @@ export BUCKET=export BUCKET=skytruth-cerulean-sa-east-1
 days_7=604800
 
 function exist_object() {
-    s3_obj=$1
+    key=$1
+    s3_obj="s3://${BUCKET}/${key}"
     existObj=$(aws s3 ls $s3_obj --summarize | grep "Total Objects: " | sed 's/[^0-9]*//g')
     if [ ! "$existObj" -eq "0" ]; then
-        obj_url=$(aws s3 presign $s3_obj --expires-in $days_7)
-        echo $obj_url
+        echo "https://${BUCKET}.s3.amazonaws.com/outputs/${key}"
     else
         echo "---"
     fi
@@ -18,10 +18,11 @@ function exist_object() {
 function links_generator() {
     sceneIdid=$1
     # Get presign urls for 7 days
-    raster_url=$(aws s3 presign s3://${BUCKET}/outputs/rasters/$sceneIdid.tiff --expires-in $days_7)
-    png_detection_v1_url=$(exist_object s3://${BUCKET}/outputs/rasterized_detection_v1/png/$sceneIdid.png)
-    png_all_infrastructure_url=$(exist_object s3://${BUCKET}/outputs/all_infrastructure/png/$sceneIdid.png)
-    png_leaky_infrastructure_url=$(exist_object s3://${BUCKET}/outputs/leaky_infrastructure/png/$sceneIdid.png)
+    # raster_url=$(aws s3 presign s3://${BUCKET}/outputs/rasters/$sceneIdid.tiff --expires-in $days_7)
+    raster_url="https://skytruth-cerulean-sa-east-1.s3.amazonaws.com/outputs/rasters/$sceneIdid.tiff"
+    png_detection_v1_url=$(exist_object outputs/rasterized_detection_v1/png/$sceneIdid.png)
+    png_all_infrastructure_url=$(exist_object outputs/all_infrastructure/png/$sceneIdid.png)
+    png_leaky_infrastructure_url=$(exist_object outputs/leaky_infrastructure/png/$sceneIdid.png)
 
     query="raster_url=${raster_url}@png_detection_v1_url=${png_detection_v1_url}@png_all_infra_url=${png_all_infrastructure_url}@png_leaky_infra_url=${png_leaky_infrastructure_url}"
     photopeaLink="https://skytruth.surge.sh/?$query"
@@ -42,7 +43,7 @@ for list_file in grd_list/*; do
     type_="${type_%.*}"
     echo $type_
     while read sceneId; do
-        # links_generator $sceneId
+        echo $sceneId
         url=$(links_generator $sceneId)
         echo "$type_|$sceneId|=HYPERLINK(\"$url\",\"photopea\")" >>$links_file
     done <$list_file
