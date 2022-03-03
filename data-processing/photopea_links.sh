@@ -10,7 +10,7 @@ function exist_object() {
     s3_obj="s3://${BUCKET}/${key}"
     existObj=$(aws s3 ls $s3_obj --summarize | grep "Total Objects: " | sed 's/[^0-9]*//g')
     if [ ! "$existObj" -eq "0" ]; then
-        echo "https://${BUCKET}.s3.amazonaws.com/outputs/${key}"
+        echo "https://${BUCKET}.s3.amazonaws.com/${key}"
     else
         echo "---"
     fi
