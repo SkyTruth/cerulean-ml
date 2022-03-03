@@ -24,6 +24,8 @@ Navigate to the folder containing the `main.tf` file. Run `terraform init`.
 
 Check your deployment with `terraform plan`.
 
+If you get a credentials error, you might need to run `gcloud auth application-default login`.
+
 You can create your instance with `terraform apply`.
 
 This will create a GCP Compute instance, and save in your local machine a private ssh key (in `.ssh/`), and a series of `.vm-X` files containing identity information for your instance. **Do not delete or modify this files!**
