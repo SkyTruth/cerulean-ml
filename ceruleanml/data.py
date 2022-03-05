@@ -32,4 +32,5 @@ def reshape_split(image: np.ndarray, kernel_size: tuple):
                                 img_width // tile_width,
                                 tile_width)
     tiled_array = tiled_array.swapaxes(1, 2)
+    tiled_array.reshape(tiled_array.shape[0]*tiled_array.shape[1], tile_width,tile_height)
     return tiled_array
