@@ -1,5 +1,9 @@
 import numpy as np
 import dask
+import os
+import skimage.io as skio
+from pycococreatortools import pycococreatortools
+import json
 
 # Hard Neg is overloaded with overlays but they shouldn't be exported during annotation
 # Hard Neg is just a class that we will use to measure performance gains metrics
@@ -95,3 +99,60 @@ def get_layer_cls(arr, class_mapping_photopea, class_mapping_coco):
         return 0 # no category matches, all background label
     else:
         raise ValueError("Check the array to make sure it is a label array with 4 channels for rgb alpha.")
+        
+def create_coco_from_photopea_layers(layer_pths, outdir, coco_output, coco_name='instances_slick_train_v2.json'):
+    """Saves a COCO JSON with annotations compressed in RLE format and also saves corresponding image tiles.
+    
+    The COCOJSON is amended to add two keys for the full scene, referring to the folder name containing the
+    photopea layers. This should correspond to the original Sentinel-1 VV geotiff filename so that the 
+    coordinates can be associated.
+    """
+    image_id = 0
+    instance_id = 0
+    
+    #saving vv image tiles (Background layer)
+    img_path = layer_pths[0]
+    arr = skio.imread(img_path)
+    tiled_arr = reshape_split(arr, (512, 512))
+    if "Background" in str(img_path): # its the vv image
+        save_tiles_from_3d(tiled_arr, img_path, outdir)
+    else:
+        raise ValueError(f"The layer {instance_path} is not a VV image.")
+        
+    #saving annotations
+    tiles_n,_,_   = tiled_arr.shape
+    for instance_path in layer_pths[1:]:
+        if "Layer" not in str(instance_path): # its not an instance label
+            raise ValueError(f"The layer {instance_path} is not an instance label.")
+        arr = skio.imread(instance_path)
+        tiled_arr = reshape_split(arr, (512, 512))
+        for tile_id in range(tiles_n):
+            instance_tile = tiled_arr[tile_id]
+            fname = os.path.basename(os.path.dirname(instance_path))+f"_vv-image_tile_{tile_id}.png"
+            image_info = pycococreatortools.create_image_info(
+                    tile_id, fname, (512,512))
+            image_info.update({"big_image_id":image_id})
+            image_info.update({"big_image_fname":os.path.dirname(img_path)})
+            # go through each label image to extract annotation
+            if image_info not in coco_output["images"]:
+                coco_output["images"].append(image_info)
+            class_id = get_layer_cls(instance_tile, class_mapping_photopea, class_mapping_coco)
+            if class_id != 0:
+                category_info = {"id":class_id,"is_crowd":True} # forces compressed RLE format
+            else:
+                category_info = {"id":class_id,"is_crowd":False}
+            r,g,b = class_mapping_photopea[class_mapping_coco_inv[class_id]]
+            binary_mask = rgbalpha_to_binary(instance_tile, r,g,b).astype(np.uint8)
+
+            annotation_info = pycococreatortools.create_annotation_info(
+                instance_id, tile_id, category_info, binary_mask,
+                binary_mask.shape, tolerance=0)
+            if annotation_info is not None:
+                annotation_info.update({"big_image_id":image_id})
+                annotation_info.update({"big_image_fname":os.path.basename(os.path.dirname(img_path))})
+                coco_output["annotations"].append(annotation_info)
+            instance_id += 1
+
+    #saving the coco dataset
+    with open(f'{outdir}/{coco_name}', 'w') as output_json_file:
+        json.dump(coco_output, output_json_file)
