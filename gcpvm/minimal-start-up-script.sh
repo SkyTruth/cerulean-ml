@@ -10,6 +10,7 @@ printf "alias jserve='jupyter lab --allow-root --no-browser'\n" >> /root/.bashrc
 # mamba activate fastai2
 # mamba install cython -y
 # pip install "git+https://github.com/philferriere/cocoapi.git#egg=pycocotools&subdirectory=PythonAPI"
-# pip install
 # pip install git+git://github.com/waspinator/pycococreator.git@0.2.0
+# cd work
+# pip install -e ceruleanml # install local ceruleanml package after deps installed with conda
 # mamba deactivate
