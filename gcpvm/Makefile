@@ -14,7 +14,7 @@ VM_ID=$(shell cat ${PATH_VM_ID}) # GCP resource ID
 VM_CONN=$(shell cat ${PATH_VM_IP}) # user@IP
 VM_NAME=$(shell cat ${PATH_VM_NAME}) # name
 VM_STR=$(addsuffix ${VM_NAME},name:)
-VM_NAME_ZONE=$$(gcloud compute instances list --filter=$${VM_STR} --uri)
+VM_NAME_ZONE=$$(gcloud compute instances list --filter=${VM_STR} --uri)
 
 mkfile_path=$(abspath $(lastword $(MAKEFILE_LIST)))
 CURRENT_DIR=$(notdir $(patsubst %/,%,$(dir $(mkfile_path))))
@@ -30,7 +30,7 @@ syncdown:
 # different names for instances in different zones.
 # not sure how else to do this since we only know the region ahead of time in variables.tf (no region arg for instances commands)
 stop:
-	gcloud compute instances stop $(VM_NAME_ZONE)
+	gcloud compute instances stop ${VM_NAME_ZONE}
 start:
 	gcloud compute instances start $(VM_NAME_ZONE)
 status:
