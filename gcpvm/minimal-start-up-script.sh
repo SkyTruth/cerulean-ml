@@ -5,3 +5,12 @@ mkdir -p data/
 gcsfuse --implicit-dirs cerulean data/
 printf "alias cdata='gcsfuse --implicit-dirs cerulean data/'\n" >> /root/.bashrc #persists mounting
 printf "alias jserve='jupyter lab --allow-root --no-browser'\n" >> /root/.bashrc #start jupyter
+
+# extra deps for coco creation, needs to be run after make start
+# mamba activate fastai2
+# mamba install cython -y
+# pip install "git+https://github.com/philferriere/cocoapi.git#egg=pycocotools&subdirectory=PythonAPI"
+# pip install git+git://github.com/waspinator/pycococreator.git@0.2.0
+# cd work
+# pip install -e ceruleanml # install local ceruleanml package after deps installed with conda
+# mamba deactivate

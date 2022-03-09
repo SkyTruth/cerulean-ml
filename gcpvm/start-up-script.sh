@@ -33,7 +33,12 @@ conda create -n fastai2 -y
 conda activate fastai2
 mamba install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch -y
 mamba install -c fastchan fastai -y
-mamba install -c conda-forge ipykernel ipywidgets black isort  jupyterlab_code_formatter -y
+mamba install -c conda-forge ipykernel ipywidgets black isort -y
+mamba install cython -y
+pip install "git+https://github.com/philferriere/cocoapi.git#egg=pycocotools&subdirectory=PythonAPI"
+pip install
+pip install git+git://github.com/waspinator/pycococreator.git@0.2.0
+jupyterlab_code_formatter -y
 conda deactivate
 conda install -n base -c conda-forge jupyterlab_widgets jupyterlab nb_conda_kernels -y
 
