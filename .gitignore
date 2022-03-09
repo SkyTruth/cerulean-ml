@@ -137,3 +137,4 @@ gcpvm/.vm-id
 gcpvm/.vm-ip
 gcpvm/.vm-name
 gcpvm/.ssh
+notebooks/runs/
