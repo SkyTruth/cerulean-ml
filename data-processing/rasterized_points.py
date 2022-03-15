@@ -2,10 +2,20 @@ import click
 import rasterio
 import geopandas as gpd
 from shapely import geometry
-from utils import vector2raster, raster2cog, raster2png, dir_
+from utils import vector2raster, raster2png, dir_
 
 
 def raster_bounds_poly(raster_file):
+    """Get bounds for for rater file.
+    Note:
+        This function works for files that has gcps
+
+    Args:
+        raster_file (str): Location of raster file
+
+    Returns:
+        geometry: bound as polygon
+    """
     # Raster bounds
     srcDataset = rasterio.open(raster_file)
     gcps, crs = srcDataset.get_gcps()
@@ -15,6 +25,13 @@ def raster_bounds_poly(raster_file):
 
 
 def clipArea(geojson_points_file, raster_bbox_poly, output_clip_point_file):
+    """Clip vector points files for a given bbox
+
+    Args:
+        geojson_points_file (str): Location of geojson points files
+        raster_bbox_poly (geometry): Bbox geometry of a reaster files
+        output_clip_point_file (str): Location of ouput clipped geojson file
+    """
     geodf = gpd.read_file(geojson_points_file)
     points = gpd.clip(geodf, raster_bbox_poly)
     polygons = points.buffer(0.005)
@@ -22,7 +39,7 @@ def clipArea(geojson_points_file, raster_bbox_poly, output_clip_point_file):
     # return polygons
 
 
-@click.command(short_help="Script to conveert vector to raster")
+@click.command(short_help="Script to convert vector(points) to raster")
 @click.option(
     "--geojson_points_file",
     help="all infra geojson fille",

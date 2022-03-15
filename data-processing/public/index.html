@@ -135,7 +135,7 @@
         }
 
         function smooth() {
-            var scriptColor = `app.activeDocument.selection.smooth(10)`;
+            var scriptColor = `app.activeDocument.selection.smooth(1)`;
             console.log(scriptColor);
             wnd.postMessage(scriptColor, '*');
         }
