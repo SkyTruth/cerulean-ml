@@ -1,0 +1,13 @@
+version: '3'
+services:
+  vec2ras:
+    image: cerulean/vec2ras:v1
+    environment:
+        - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+        - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+        - ./:/mnt
+    working_dir: /mnt

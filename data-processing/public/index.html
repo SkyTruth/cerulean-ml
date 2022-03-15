@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Photopea</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <style>
+        .btn {
+            padding-top: 3px;
+            padding-bottom: 3px;
+            font-size: 0.75rem;
+        }
+    </style>
+    <script>
+
+        var layerCount, loading = false, wnd, timer;
+
+        // function to get query string values 
+        function queryStringValues(name, url) {
+            if (!url) url = location.href;
+            name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+            var regexS = "[\\?@]" + name + "=([^@#]*)";
+            var regex = new RegExp(regexS);
+            var results = regex.exec(url);
+            return results == null ? null : results[1];
+        }
+
+        function iframeLoaded(pp) {
+            wnd = pp.contentWindow;
+            loadLayers()
+        }
+
+        function loadLayers() {
+            //Load main raster file
+            window.setTimeout(function () {
+                loadRasterFile();
+            }, 2000);
+            //Load overlay layer
+            window.setTimeout(function () {
+                loadLayerOverlap();
+            }, 10000);
+        }
+
+        function loadRasterFile() {
+            var raster_url = queryStringValues("raster_url")
+            console.log(`raster_url ${raster_url}`)
+
+            var loadOverlapLayersScript = `app.open("${raster_url} ", null, true);`
+            // console.log(loadOverlapLayersScript)
+            wnd.postMessage(loadOverlapLayersScript, "*");
+        }
+
+        function loadLayerOverlap() {
+
+            var png_detection_v1_url = queryStringValues("png_detection_v1_url")
+            var png_all_infra_url = queryStringValues("png_all_infra_url")
+            var png_leaky_infra_url = queryStringValues("png_leaky_infra_url")
+
+            console.log(`png_detection_v1_url ${png_detection_v1_url}`)
+            console.log(`png_all_infra_url ${png_all_infra_url}`)
+            console.log(`png_leaky_infra_url ${png_leaky_infra_url}`)
+
+            var loadOverlapLayersScript = `
+            var layerRef = app.activeDocument.artLayers.getByName("Background");
+            if (app.activeDocument.layers.length==1 && layerRef.name == "Background"){
+                alert("Loading overlay layer")
+                app.open("${png_detection_v1_url} ", null, true);
+                app.open("${png_all_infra_url} ", null, true);
+                app.open("${png_leaky_infra_url} ", null, true);
+            }
+            `
+            console.log(loadOverlapLayersScript)
+            wnd.postMessage(loadOverlapLayersScript, "*");
+        }
+
+        // function createLayers() {
+        //     var createLayersScript = `function create_new_layer(layername){
+        //         if (layername == undefined) layername = "Layer";
+        //             var originalLayer = app.activeDocument.activeLayer;
+        //             var layerRef = app.activeDocument.artLayers.add();
+        //             layerRef.name = layername;
+        //             layerRef.blendMode = BlendMode.NORMAL;
+        //             layerRef.moveAfter(originalLayer);
+        //         }
+        //         if (app.activeDocument.layers.length==2){
+        //             alert("Creating class layers")
+        //             create_new_layer("Recent")
+        //             create_new_layer("Coincident")
+        //             create_new_layer("Infrastructure")
+        //             create_new_layer("Natural_Seep")
+        //             // create_new_layer("Background")
+        //             // create_new_layer("Hard_Negative")
+        //             // create_new_layer("Ambiguous")
+        //         }
+        //         `
+        //     wnd.postMessage(createLayersScript, "*");
+        // }
+
+        function setColorClass(r, g, b, layerName) {
+            var scriptColor = `
+            var newLayer = app.activeDocument.artLayers.add();
+            var fillColor = new SolidColor();
+            fillColor.rgb.red = ${r};
+            fillColor.rgb.green = ${g};
+            fillColor.rgb.blue = ${b};
+            app.activeDocument.selection.fill(fillColor);
+            //newLayer.visible = false
+            app.activeDocument.layers.length
+            num_layer = 1
+            for (var x = 0; x < app.activeDocument.layers.length; x++) {
+                    var layerName= app.activeDocument.layers[x].name;
+                    if (layerName.indexOf("${layerName}")>-1){
+                        num_layer++;
+                    }
+            }
+            app.activeDocument.activeLayer.name = "${layerName}" + "_" + num_layer
+
+            /////// Select background
+            var doc = app.activeDocument;
+            var layerName = 'Background';
+            var _layer = doc.layers.getByName(layerName);
+            var _selectedItems = app.selection
+            for (var i = _selectedItems.length - 1; i >= 0; i--) {
+                _selectedItems[i].move(_layer, ElementPlacement.PLACEATEND);
+                _selectedItems[i].selected = false;
+            }
+            app.redraw();
+            `
+            console.log(scriptColor)
+            wnd.postMessage(scriptColor, "*");
+        }
+
+        function smooth() {
+            var scriptColor = `app.activeDocument.selection.smooth(1)`;
+            console.log(scriptColor);
+            wnd.postMessage(scriptColor, '*');
+        }
+
+    </script>
+</head>
+
+<body>
+    <div class="form-horizontal" style="
+    display: block;
+    position: absolute;
+    top: 0px;
+    right: 10px;
+    width: auto;
+    z-index: 999;">
+        <div class="form-group" style="padding: 0px;">
+            <div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-warning" onclick="setColorClass(255,255,0, 'vessel_recent');">
+                        Vessel-Recent
+                    </button>
+                    <button type="button" class="btn" style=" background:#ff00ff; color:white"
+                        onclick="setColorClass(255,	0,255,'vessel_old');">
+                        Vessel-old
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="setColorClass(255,0,0,'vessel_coincident');">
+                        Vessel-Coincident
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="setColorClass(0,0,255,'infrastructure');">
+                        Infrastructure
+                    </button>
+                    <button type="button" class="btn btn-success" onclick="setColorClass(0,255,0,'natural');">
+                        Natural
+                    </button>
+                    <button type="button" class="btn btn-light" onclick="setColorClass(255,255,255,'ambiguous');">
+                        Ambiguous
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="loadLayerOverlap();">
+                        LOAD OVERLAP
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="smooth();">
+                        SMOOTH
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <iframe id="photopea" style="
+          display: block;
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          box-sizing: border-box;
+          border: none;
+        " src="https://www.photopea.com" onload="iframeLoaded(this)"></iframe>
+    </divz>
+</body>
+
+</html>
