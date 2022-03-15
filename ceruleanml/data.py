@@ -266,7 +266,7 @@ class COCOtiler():
                 self.global_tile_id += 1
         self.big_image_id += 1
 
-    def save_coco_output(self, outpath: str = "./instances_slick_train_v2.json"):
+    def save_coco_output(self, outpath: str = "./instances_slicks_test_v2.json"):
         # saving the coco dataset
         with open(f"{outpath}", "w") as output_json_file:
             json.dump(self.coco_output, output_json_file)
