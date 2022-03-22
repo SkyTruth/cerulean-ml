@@ -138,3 +138,4 @@ gcpvm/.vm-ip
 gcpvm/.vm-name
 gcpvm/.ssh
 notebooks/runs/
+notebooks/tiled_images/
