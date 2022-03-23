@@ -1,0 +1,16 @@
+# this is an update file and it should be used from the cerulean
+# base image after a terraform deployment
+name: fastai2
+channels:
+    - pytorch
+    - conda-forge
+    - defaults
+dependencies:
+    - cython
+    - scikit-image
+    - dask
+    - tensorboard
+    - pip:
+          - eodag
+          - "git+https://github.com/philferriere/cocoapi.git#egg=pycocotools&subdirectory=PythonAPI"
+          - "git+https://github.com/waspinator/pycococreator.git@0.2.0"

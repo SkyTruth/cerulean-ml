@@ -10,10 +10,6 @@ mkdir -p ~/work # same dir as remote_dir in makefile
 
 # extra deps for coco creation, needs to be run after make start
 # source .bashrc
-# conda activate fastai2
-# mamba install cython dask scikit-image tensorboard -y
-# pip install "git+https://github.com/philferriere/cocoapi.git#egg=pycocotools&subdirectory=PythonAPI"
-# pip install git+https://github.com/waspinator/pycococreator.git@0.2.0
-# cd work
+# mamba env update --name fastai2 --file environment.yml --prune
+# conda acticate fastai2
 # pip install -e ceruleanml # install local ceruleanml package after deps installed with conda
-# conda deactivate
