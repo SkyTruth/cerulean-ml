@@ -68,6 +68,5 @@ lint: lint/flake8 lint/black ## check style
 
 install: clean ## install the package to the fastai2 env on the terraform gcp vm
 	mamba env update --name fastai2 --file environment.yml --prune
-	conda activate fastai2
-	pip install -e . # install local ceruleanml package after deps installed with conda
+	/root/miniconda3/envs/fastai2/bin/pip install -e . # install local ceruleanml package after deps installed with conda
 
