@@ -5,11 +5,3 @@ mkdir -p data/
 gcsfuse --implicit-dirs cerulean data/
 printf "alias cdata='gcsfuse --implicit-dirs cerulean data/'\n" >> /root/.bashrc #persists mounting
 printf "alias jserve='jupyter lab --allow-root --no-browser'\n" >> /root/.bashrc #start jupyter
-
-mkdir -p ~/work # same dir as remote_dir in makefile
-
-# extra deps for coco creation, needs to be run after make start
-# source .bashrc
-# mamba env update --name fastai2 --file environment.yml --prune
-# conda acticate fastai2
-# pip install -e ceruleanml # install local ceruleanml package after deps installed with conda
