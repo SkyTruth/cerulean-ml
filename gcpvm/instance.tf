@@ -66,12 +66,6 @@ resource "google_compute_instance" "jupyter" {
     on_host_maintenance = "TERMINATE" // Need to terminate GPU on maintenance
   }
 
-  provisioner "local-exec" {
-    working_dir = "./"
-    command     = "rsync -e 'ssh -i .ssh/private_instance_gcp.pem -o IdentitiesOnly=yes' -avz --exclude='../.git / ' --exclude-from=../.gitignore ../ $(shell echo ${google_compute_instance.jupyter[0].network_interface.0.access_config.0.nat_ip}:/root/work/  | tr -d '[:space:]')"
-
-  }
-
   # We connect to our instance via Terraform and remotely executes our script using SSH
   provisioner "remote-exec" {
     script = "minimal-start-up-script.sh"
