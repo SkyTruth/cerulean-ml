@@ -12,6 +12,7 @@ from setuptools import setup, find_packages
 
 requirements = [
     "Click>=7.0",
+    "distancerasters",
 ]
 
 test_requirements = [
