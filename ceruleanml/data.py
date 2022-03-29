@@ -11,6 +11,9 @@ import httpx
 import rasterio
 
 import fiona
+from fiona import collection
+from shapely.geometry import mapping, shape
+
 import distancerasters as dr
 from typing import Tuple, List
 
@@ -404,7 +407,7 @@ class COCOtiler:
 
     def dist_array_from_tile(
         layer_paths,
-        vector_ds="/Users/rodrigoalmeida/cerulean-ml/location_of_the_worlds_petroleum_fields__xtl.json",
+        vector_ds="/Users/rodrigoalmeida/cerulean-ml/inverted.json",
     ):
         img_path = layer_paths[0]
         scene_id = os.path.basename(os.path.dirname(img_path))
@@ -413,10 +416,11 @@ class COCOtiler:
         img_shape = arr.shape
 
         shp = fiona.open(vector_ds)
+
         bounds = get_sentinel1_bounds(scene_id)
-        affine = rasterio.transform.from_bounds(*bounds, img_shape[0], img_shape[1])
+        img_affine = rasterio.transform.from_bounds(*bounds, img_shape[0], img_shape[1])
         rv_array, affine = dr.rasterize(
-            shp, affine=affine, shape=img_shape[0:2], output="examples/test.tif"
+            shp, affine=img_affine, shape=img_shape[0:2], output="examples/test.tif"
         )
 
         def raster_conditional(rarray):
