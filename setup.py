@@ -12,7 +12,13 @@ from setuptools import setup, find_packages
 
 requirements = [
     "Click>=7.0",
+    "Cython",
     "distancerasters",
+    "scikit-image",
+    "dask",
+    "httpx",
+    "pycocotools @ git+https://github.com/philferriere/cocoapi.git#egg=pycocotools&subdirectory=PythonAPI",
+    "pycococreatortools @ git+https://github.com/waspinator/pycococreator.git#egg=pycocreatortools",
 ]
 
 test_requirements = [
