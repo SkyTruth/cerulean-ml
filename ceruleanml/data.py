@@ -2,9 +2,17 @@ import numpy as np
 import dask
 import os
 import skimage.io as skio
+
 from pycococreatortools import pycococreatortools
 import json
 from shutil import copy
+from collections import ChainMap
+import httpx
+import rasterio
+
+import fiona
+import distancerasters as dr
+from typing import Tuple, List
 
 # Hard Neg is overloaded with overlays but they shouldn't be exported during annotation
 # Hard Neg is just a class that we will use to measure performance gains metrics
@@ -393,3 +401,46 @@ class COCOtiler:
         # saving the coco dataset
         with open(f"{outpath}", "w") as output_json_file:
             json.dump(self.coco_output, output_json_file)
+
+    def dist_array_from_tile(
+        layer_paths,
+        vector_ds="/Users/rodrigoalmeida/cerulean-ml/location_of_the_worlds_petroleum_fields__xtl.json",
+    ):
+        img_path = layer_paths[0]
+        scene_id = os.path.basename(os.path.dirname(img_path))
+
+        arr = skio.imread(img_path)
+        img_shape = arr.shape
+
+        shp = fiona.open(vector_ds)
+        bounds = get_sentinel1_bounds(scene_id)
+        affine = rasterio.transform.from_bounds(*bounds, img_shape[0], img_shape[1])
+        rv_array, affine = dr.rasterize(
+            shp, affine=affine, shape=img_shape[0:2], output="examples/test.tif"
+        )
+
+        def raster_conditional(rarray):
+            return rarray == 1
+
+        my_dr = dr.DistanceRaster(
+            rv_array,
+            affine=affine,
+            output_path="examples/test_distance_raster.tif",
+            conditional=raster_conditional,
+        )
+
+        my_dr.dist_array  # array with distance
+
+
+def get_sentinel1_bounds(
+    scene_id: str, url="https://nfwqxd6ia0.execute-api.eu-central-1.amazonaws.com"
+) -> Tuple[float]:
+    r = httpx.get(f"{url}/scenes/sentinel1/{scene_id}/info", timeout=None)
+    try:
+        r.raise_for_status()
+        scene_info = r.json()
+    except httpx.HTTPError:
+        print(f"{scene_id} does not exist in TMS!")
+        return None
+
+    return tuple(scene_info["bounds"])
