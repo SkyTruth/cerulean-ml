@@ -19,6 +19,7 @@ requirements = [
     "httpx",
     "pycocotools @ git+https://github.com/philferriere/cocoapi.git#egg=pycocotools&subdirectory=PythonAPI",
     "pycococreatortools @ git+https://github.com/waspinator/pycococreator.git#egg=pycocreatortools",
+    "geopandas"
 ]
 
 test_requirements = [
