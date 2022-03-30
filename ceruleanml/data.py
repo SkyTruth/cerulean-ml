@@ -102,18 +102,11 @@ def reshape_split(image: np.ndarray, kernel_size: tuple):
         img_height // tile_height, tile_height, img_width // tile_width, tile_width, channels
     )
     tiled_array = tiled_array.swapaxes(1, 2)
-    if tiled_array.shape[-1] == 4:
-        return tiled_array.reshape(
-            tiled_array.shape[0] * tiled_array.shape[1], tile_width, tile_height, 4
-        )
-    elif tiled_array.shape[-1] == 1:
-        return tiled_array.reshape(
-            tiled_array.shape[0] * tiled_array.shape[1], tile_width, tile_height
-        )
-    else:
-        return ValueError(
-            f"The shape of the tiled array before simplification is {tiled_array.shape}, this needs correcting because the last dim should represent channels with either 1 channel for the image array or 4 for the label array."
-        )
+
+    return tiled_array.reshape(
+        tiled_array.shape[0] * tiled_array.shape[1], tile_width, tile_height, tiled_array.shape[-1]
+    )
+
 
 
 def save_tiles_from_3d(tiled_arr: np.ndarray, img_fname: str, outdir: str):
@@ -135,7 +128,7 @@ def save_tiles_from_3d(tiled_arr: np.ndarray, img_fname: str, outdir: str):
             unique integer id at the end, starting from zero.
         outdir (str): The directory to save img tiles.
     """
-    tiles_n, _, _ = tiled_arr.shape
+    tiles_n, _, _, _ = tiled_arr.shape
     lazy_results = []
     for i in range(tiles_n):
         fname = os.path.join(
@@ -242,11 +235,33 @@ class COCOtiler:
         self.big_image_id = 0
         self.coco_output = coco_output
         self.img_dir = img_dir
+        
+    def save_background_img_tiles(self, layer_paths, aux_datasets: List[str] = []):
+        """
+                aux_datasets (List[str], optional): List of paths pointing to auxiliary vector files to include in tiles. 55km is the range.
 
-    def save_background_img_tiles(self, layer_paths):
+        """
         # saving vv image tiles (Background layer)
         img_path = layer_paths[0]
         arr = skio.imread(img_path)
+        # Make sure there are channels
+        if len(arr.shape) < 3:
+            arr = np.expand_dims(arr, 2)
+
+        # Handle aux dataset per scene
+        if aux_datasets:
+            aux_dataset_channels = None
+            for aux_ds in aux_datasets:
+                ar = self.dist_array_from_tile(layer_paths, aux_ds)
+                ar = np.expand_dims(ar, 2)
+                if not aux_dataset_channels:
+                    aux_dataset_channels = ar
+                else:
+                    aux_dataset_channels = np.concatenate([aux_dataset_channels, ar], axis=2)
+            
+            # append as channels to arr
+            arr = np.concatenate([arr, aux_dataset_channels], axis=2)
+            
         tiled_arr = reshape_split(arr, (512, 512))
         if "Background" in str(img_path):  # its the vv image
             save_tiles_from_3d(tiled_arr, img_path, self.img_dir)
