@@ -2,6 +2,7 @@ import numpy as np
 import dask
 import os
 import skimage.io as skio
+import skimage
 
 from pycococreatortools import pycococreatortools
 import json
@@ -405,9 +406,11 @@ class COCOtiler:
         with open(f"{outpath}", "w") as output_json_file:
             json.dump(self.coco_output, output_json_file)
 
+    @staticmethod
     def dist_array_from_tile(
         layer_paths,
         vector_ds="/Users/rodrigoalmeida/cerulean-ml/inverted.json",
+        resample_ratio=8
     ):
         img_path = layer_paths[0]
         scene_id = os.path.basename(os.path.dirname(img_path))
@@ -418,23 +421,28 @@ class COCOtiler:
         shp = fiona.open(vector_ds)
 
         bounds = get_sentinel1_bounds(scene_id)
-        img_affine = rasterio.transform.from_bounds(*bounds, img_shape[0], img_shape[1])
+        resampled_shape = img_shape[0]//resample_ratio, img_shape[1]//resample_ratio
+        img_affine = rasterio.transform.from_bounds(*bounds, resampled_shape[0], resampled_shape[1])
         rv_array, affine = dr.rasterize(
-            shp, affine=img_affine, shape=img_shape[0:2], output="examples/test.tif"
+            shp, affine=img_affine, shape=resampled_shape,
         )
-
-        def raster_conditional(rarray):
-            return rarray == 1
 
         my_dr = dr.DistanceRaster(
             rv_array,
             affine=affine,
-            output_path="examples/test_distance_raster.tif",
-            conditional=raster_conditional,
         )
+        dist_array = my_dr.dist_array 
 
-        my_dr.dist_array  # array with distance
+        # inverse array values to match 0 - 1000 where 0 is furthest away from feature
+        dist_array = dist_array / (55000/1000) # 55 km 
+        dist_array[dist_array >= 1000] = 1000 
 
+        # flip vertical array for photopea
+        flip_dist_array = np.flipud(dist_array)
+
+        # resample to original res
+        upsampled_dist_array = skimage.transform.resize(flip_dist_array, img_shape[0:2])
+        return upsampled_dist_array
 
 def get_sentinel1_bounds(
     scene_id: str, url="https://nfwqxd6ia0.execute-api.eu-central-1.amazonaws.com"
