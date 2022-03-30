@@ -38,12 +38,20 @@ def test_command_line_interface():
     assert '--help  Show this message and exit.' in help_result.output
 
 
-def test_dist_array_from_tile():
+def mock_scene_info():
+    return {"mocked": True, 'bounds': [55.698181, 24.565813, 58.540211, 26.494711], 'band_metadata': [['vv', {}], ['vh', {}]], 'band_descriptions': [['vv', ''], ['vh', '']], 'dtype': 'uint16', 'nodata_type': 'Nodata', 'colorinterp': ['gray', 'gray']}
+
+
+def test_dist_array_from_tile(httpx_mock):
+    httpx_mock.add_response(json=mock_scene_info())
     layer_path = ["tests/fixtures/S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5/cv2_transfer_outputs_skytruth_annotation_first_phase_old_vessel_S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5_ambiguous_1.png"]
-    arr = data.COCOtiler.dist_array_from_tile(layer_path, vector_ds="tests/fixtures/oil_areas_inverted_clip.geojson")
+    arr = data.COCOtiler.dist_array_from_tile(
+        layer_path, vector_ds="tests/fixtures/oil_areas_inverted_clip.geojson")
     assert arr.shape == (4181, 6458)
 
-def test_create_coco_from_photopea_layers():
+
+def test_create_coco_from_photopea_layers(httpx_mock):
+    httpx_mock.add_response(json=mock_scene_info())
     info = {
         "description": "Cerulean Dataset V2",
         "url": "none",
@@ -78,4 +86,5 @@ def test_create_coco_from_photopea_layers():
     layer_path = ["tests/fixtures/S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5/cv2_transfer_outputs_skytruth_annotation_first_phase_old_vessel_S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5_Background.png",
                   "tests/fixtures/S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5/cv2_transfer_outputs_skytruth_annotation_first_phase_old_vessel_S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5_ambiguous_1.png"]
 
-    coco_tiler.save_background_img_tiles(layer_path, aux_datasets=["tests/fixtures/oil_areas_inverted_clip.geojson"])
+    coco_tiler.save_background_img_tiles(
+        layer_path, aux_datasets=["tests/fixtures/oil_areas_inverted_clip.geojson"])
