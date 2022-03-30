@@ -266,7 +266,7 @@ class COCOtiler:
         coordinates can be associated.
 
         Args:
-            layer_pths (list[str]): List of path in a scene folder corresponding to Background.png, Layer 1.png, etc. Order matters.
+            layer_pths (List[str]): List of path in a scene folder corresponding to Background.png, Layer 1.png, etc. Order matters.
             coco_output (dict): the dict defining the metadata and data container for the dataset that will be created
             coco_name (str, optional): the filename of the coco json. Defaults to "instances_slick_train_v2.json".
 
