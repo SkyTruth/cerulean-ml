@@ -66,7 +66,9 @@ def test_dist_array_from_tile(httpx_mock):
         resample_ratio=10,
     )
     assert arr.shape == (4181, 6458)
-    assert arr.dtype == np.uint8
+    assert arr.dtype == np.dtype(np.uint8)
+    assert np.max(arr) == 255
+    assert np.min(arr) == 0
 
 
 def test_create_coco_from_photopea_layers(httpx_mock):

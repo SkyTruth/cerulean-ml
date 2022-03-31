@@ -425,6 +425,7 @@ class COCOtiler:
     def dist_array_from_tile(
         layer_paths: List[str],
         vector_ds: str,
+        max_distance: int = 60000,
         resample_ratio: int =8
     ):
         img_path = layer_paths[0]
@@ -449,14 +450,15 @@ class COCOtiler:
         dist_array = my_dr.dist_array 
 
         # inverse array values to match 0 - 1000 where 0 is furthest away from feature
-        dist_array = dist_array / (55000/1000) # 55 km 
-        dist_array[dist_array >= 1000] = 1000 
+        dist_array = dist_array / (max_distance/255) # 55 km 
+        dist_array[dist_array >= 255] = 255 
 
         # flip vertical array for photopea
         flip_dist_array = np.flipud(dist_array)
 
         # resample to original res
         upsampled_dist_array = skimage.transform.resize(flip_dist_array, img_shape[0:2])
+        upsampled_dist_array = upsampled_dist_array.astype(np.uint8)
         return upsampled_dist_array
 
 def get_sentinel1_bounds(
