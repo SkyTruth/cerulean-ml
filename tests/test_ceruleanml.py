@@ -5,10 +5,15 @@
 import pytest
 
 from click.testing import CliRunner
+import os
 
 from ceruleanml import ceruleanml
 from ceruleanml import data
 from ceruleanml import cli
+
+import skimage.io as skio
+import numpy as np
+import tempfile
 
 
 @pytest.fixture
@@ -46,8 +51,9 @@ def test_dist_array_from_tile(httpx_mock):
     httpx_mock.add_response(json=mock_scene_info())
     layer_path = ["tests/fixtures/S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5/cv2_transfer_outputs_skytruth_annotation_first_phase_old_vessel_S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5_ambiguous_1.png"]
     arr = data.COCOtiler.dist_array_from_tile(
-        layer_path, vector_ds="tests/fixtures/oil_areas_inverted_clip.geojson")
+        layer_path, vector_ds="tests/fixtures/oil_areas_inverted_clip.geojson", resample_ratio=10)
     assert arr.shape == (4181, 6458)
+    assert arr.dtype == np.uint8
 
 
 def test_create_coco_from_photopea_layers(httpx_mock):
@@ -82,9 +88,19 @@ def test_create_coco_from_photopea_layers(httpx_mock):
         "annotations": [],
         "categories": categories
     }
-    coco_tiler = data.COCOtiler("tiled_images/", coco_output)
-    layer_path = ["tests/fixtures/S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5/cv2_transfer_outputs_skytruth_annotation_first_phase_old_vessel_S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5_Background.png",
-                  "tests/fixtures/S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5/cv2_transfer_outputs_skytruth_annotation_first_phase_old_vessel_S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5_ambiguous_1.png"]
 
-    coco_tiler.save_background_img_tiles(
-        layer_path, aux_datasets=["tests/fixtures/oil_areas_inverted_clip.geojson"])
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        coco_tiler = data.COCOtiler(tmp_dir, coco_output)
+
+        class_file = "tests/fixtures/S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5/cv2_transfer_outputs_skytruth_annotation_first_phase_old_vessel_S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5_ambiguous_1.png"
+        template = skio.imread(class_file)
+        background_file = class_file.replace("ambiguous_1", "Background")
+        skio.imsave(background_file, template[:,:,0])
+        layer_path = [background_file, class_file]
+
+        # Pass same vector dataset twice to make RGB image
+        coco_tiler.save_background_img_tiles(
+            layer_path, aux_datasets=["tests/fixtures/oil_areas_inverted_clip.geojson", "tests/fixtures/oil_areas_inverted_clip.geojson"], resample_ratio=10)
+        
+        os.remove(background_file)
+        assert len(os.listdir(tmp_dir)) == 117

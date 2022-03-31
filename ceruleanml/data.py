@@ -236,7 +236,7 @@ class COCOtiler:
         self.coco_output = coco_output
         self.img_dir = img_dir
         
-    def save_background_img_tiles(self, layer_paths, aux_datasets: List[str] = []):
+    def save_background_img_tiles(self, layer_paths, aux_datasets: List[str] = [], **kwargs):
         """
                 aux_datasets (List[str], optional): List of paths pointing to auxiliary vector files to include in tiles. 55km is the range.
 
@@ -252,16 +252,16 @@ class COCOtiler:
         if aux_datasets:
             aux_dataset_channels = None
             for aux_ds in aux_datasets:
-                ar = self.dist_array_from_tile(layer_paths, aux_ds)
+                ar = self.dist_array_from_tile(layer_paths, aux_ds, **kwargs)
                 ar = np.expand_dims(ar, 2)
-                if not aux_dataset_channels:
+                if aux_dataset_channels is None:
                     aux_dataset_channels = ar
                 else:
                     aux_dataset_channels = np.concatenate([aux_dataset_channels, ar], axis=2)
             
             # append as channels to arr
             arr = np.concatenate([arr, aux_dataset_channels], axis=2)
-            
+
         tiled_arr = reshape_split(arr, (512, 512))
         if "Background" in str(img_path):  # its the vv image
             save_tiles_from_3d(tiled_arr, img_path, self.img_dir)
@@ -423,9 +423,9 @@ class COCOtiler:
 
     @staticmethod
     def dist_array_from_tile(
-        layer_paths,
-        vector_ds="/Users/rodrigoalmeida/cerulean-ml/inverted.json",
-        resample_ratio=8
+        layer_paths: List[str],
+        vector_ds: str,
+        resample_ratio: int =8
     ):
         img_path = layer_paths[0]
         scene_id = os.path.basename(os.path.dirname(img_path))
