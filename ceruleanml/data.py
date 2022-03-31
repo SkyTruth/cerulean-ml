@@ -250,6 +250,7 @@ class COCOtiler:
 
         # Handle aux dataset per scene
         if aux_datasets:
+            assert len(aux_datasets) == 2 or len(aux_datasets) == 3 # so save as png file need RGB or RGBA
             aux_dataset_channels = None
             for aux_ds in aux_datasets:
                 ar = self.dist_array_from_tile(layer_paths, aux_ds, **kwargs)
