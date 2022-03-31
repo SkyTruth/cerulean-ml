@@ -2,6 +2,7 @@
 # base image after a terraform deployment
 name: fastai2
 channels:
+    - fastai
     - pytorch
     - conda-forge
     - defaults
@@ -13,6 +14,8 @@ dependencies:
     - tensorboard
     - pip:
           - eodag
-          - "git+https://github.com/philferriere/cocoapi.git#egg=pycocotools&subdirectory=PythonAPI"
+          - pycocotools==2.0.4
           - "git+https://github.com/waspinator/pycococreator.git@0.2.0"
-          - icedata # a lot of other dependencies come here. TODO pin
+          - icevision==0.12.0
+          - fastai==2.5.5
+          - fastcore>=1.3
