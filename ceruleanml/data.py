@@ -253,7 +253,7 @@ class COCOtiler:
             assert len(aux_datasets) == 2 or len(aux_datasets) == 3 # so save as png file need RGB or RGBA
             aux_dataset_channels = None
             for aux_ds in aux_datasets:
-                ar = self.dist_array_from_tile(layer_paths, aux_ds, **kwargs)
+                ar = self.dist_array_from_layers(layer_paths, aux_ds, **kwargs)
                 ar = np.expand_dims(ar, 2)
                 if aux_dataset_channels is None:
                     aux_dataset_channels = ar
@@ -423,7 +423,7 @@ class COCOtiler:
             json.dump(self.coco_output, output_json_file)
 
     @staticmethod
-    def dist_array_from_tile(
+    def dist_array_from_layers(
         layer_paths: List[str],
         vector_ds: str,
         max_distance: int = 60000,
