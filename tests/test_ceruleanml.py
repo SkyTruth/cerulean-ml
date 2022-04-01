@@ -55,7 +55,7 @@ def mock_scene_info():
     }
 
 
-def test_dist_array_from_tile(httpx_mock):
+def test_dist_array_from_layers(httpx_mock):
     httpx_mock.add_response(json=mock_scene_info())
     layer_path = [
         "tests/fixtures/S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5/cv2_transfer_outputs_skytruth_annotation_first_phase_old_vessel_S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5_ambiguous_1.png"
@@ -70,6 +70,20 @@ def test_dist_array_from_tile(httpx_mock):
     assert np.max(arr) == 255
     assert np.min(arr) == 0
 
+def test_dist_array_from_layers_points(httpx_mock):
+    httpx_mock.add_response(json=mock_scene_info())
+    layer_path = [
+        "tests/fixtures/S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5/cv2_transfer_outputs_skytruth_annotation_first_phase_old_vessel_S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5_ambiguous_1.png"
+    ]
+    arr = data.COCOtiler.dist_array_from_layers(
+        layer_path,
+        vector_ds="tests/fixtures/infra_locations_clip.geojson",
+        resample_ratio=10,
+    )
+    assert arr.shape == (4181, 6458)
+    assert arr.dtype == np.dtype(np.uint8)
+    assert np.max(arr) == 255
+    assert np.min(arr) == 0
 
 def test_create_coco_from_photopea_layers(httpx_mock):
     httpx_mock.add_response(json=mock_scene_info())
