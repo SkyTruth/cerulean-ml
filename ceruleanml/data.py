@@ -5,6 +5,8 @@ import skimage.io as skio
 from pycococreatortools import pycococreatortools
 import json
 from collections import ChainMap
+from shutil import copy
+
 # Hard Neg is overloaded with overlays but they shouldn't be exported during annotation
 # Hard Neg is just a class that we will use to measure performance gains metrics
 class_mapping_photopea = {
@@ -132,6 +134,32 @@ def save_tiles_from_3d(tiled_arr: np.ndarray, img_fname: str, outdir: str):
         lazy_results.append(lazy_result)
     results = dask.compute(*lazy_results)
     print(f"finished saving {tiles_n} images")
+    
+def copy_whole_images(img_list: list, outdir: str):
+    """Copy whole images from a directory (mounted gcp bucket) to another directory.
+
+    Dask gives a linear speedup for saving out png files. This timing
+    indicates it would take X hours to copy the X background images with
+    4 cores running.
+
+    With the coco format we can keep annotations in memory and not save out annotation
+    images.
+
+    Args:
+        img_list (list): List of image file paths in mounted gcp dir (or regular dir)
+        img_fname (str): the template string. original image fname is use dto id the whole images.
+        outdir (str): The directory to save img tiles.
+    """
+    lazy_results = []
+    for i in range(len(img_list)):
+        out_fname = os.path.join(
+            outdir, os.path.basename(os.path.dirname(img_list[i])) + f"_Background.png"
+        )
+        in_fname = img_list[i]
+        lazy_result = dask.delayed(copy)(in_fname, out_fname)
+        lazy_results.append(lazy_result)
+    results = dask.compute(*lazy_results)
+    print(f"finished saving {len(img_list)} images")
 
 
 def rgbalpha_to_binary(arr: np.ndarray, r: int, g: int, b: int):
@@ -193,15 +221,15 @@ def get_layer_cls(
             "Check the array to make sure it is a label array with 4 channels for rgb alpha."
         )
 
-class COCOtiler():
-    
-    def __init__(self, img_dir:str, coco_output:dict):
+
+class COCOtiler:
+    def __init__(self, img_dir: str, coco_output: dict):
         self.instance_id = 0
         self.global_tile_id = 0
         self.big_image_id = 0
         self.coco_output = coco_output
         self.img_dir = img_dir
-        
+
     def save_background_img_tiles(self, layer_paths):
         # saving vv image tiles (Background layer)
         img_path = layer_paths[0]
@@ -211,11 +239,14 @@ class COCOtiler():
             save_tiles_from_3d(tiled_arr, img_path, self.img_dir)
         else:
             raise ValueError(f"The layer {instance_path} is not a VV image.")
-        
-    def create_coco_from_photopea_layers(self,
-        layer_pths: list[str],
-        coco_output: dict
-    ):
+    
+    def copy_background_images(self, class_folders: list[str]):
+        fnames_vv = []
+        for f in class_folders:
+            fnames_vv.extend(list(f.glob("**/Background.png")))
+        copy_whole_images(fnames_vv, self.img_dir)
+
+    def create_coco_from_photopea_layers(self, layer_pths: list[str], coco_output: dict):
         """Saves a COCO JSON with annotations compressed in RLE format and also saves corresponding image tiles.
 
         The COCO JSON is amended to add two keys for the full scene, referring to the folder name containing the
@@ -232,8 +263,8 @@ class COCOtiler():
             ValueError: Errors if a path to a label file in layer_pths doesn't contain "Layer"
         """
         for instance_path in layer_pths[1:]:
-        # each label is of form class_instanceid.png
-            if "_" not in str(instance_path):  
+            # each label is of form class_instanceid.png
+            if "_" not in str(instance_path):
                 raise ValueError(f"The layer {instance_path} is not an instance label.")
             arr = skio.imread(instance_path)
             tiled_arr = reshape_split(arr, (512, 512))
@@ -241,29 +272,113 @@ class COCOtiler():
             tiles_n, _, _, _ = tiled_arr.shape
             for local_tile_id in range(tiles_n):
                 instance_tile = tiled_arr[local_tile_id]
-                big_image_fname = os.path.basename(os.path.dirname(instance_path))+".tif"
-                tile_fname = os.path.basename(os.path.dirname(instance_path)) + f"_vv-image_tile_{local_tile_id}.png"
-                image_info = pycococreatortools.create_image_info(self.global_tile_id, tile_fname, (512, 512))
-                image_info.update({"big_image_id": self.big_image_id, "big_image_fname": big_image_fname})
+                big_image_fname = os.path.basename(os.path.dirname(instance_path)) + ".tif"
+                tile_fname = (
+                    os.path.basename(os.path.dirname(instance_path))
+                    + f"_vv-image_tile_{local_tile_id}.png"
+                )
+                image_info = pycococreatortools.create_image_info(
+                    self.global_tile_id, tile_fname, (512, 512)
+                )
+                image_info.update(
+                    {"big_image_id": self.big_image_id, "big_image_original_fname": big_image_fname}
+                )
                 # go through each label image to extract annotation
                 if image_info not in self.coco_output["images"]:
                     self.coco_output["images"].append(image_info)
                 class_id = get_layer_cls(instance_tile, class_mapping_photopea, class_mapping_coco)
                 if class_id != 0:
-                    category_info = {"id": class_id, "is_crowd": True}  # forces compressed RLE format
+                    category_info = {
+                        "id": class_id,
+                        "is_crowd": True,
+                    }  # forces compressed RLE format
                 else:
                     category_info = {"id": class_id, "is_crowd": False}
                 r, g, b = class_mapping_photopea[class_mapping_coco_inv[class_id]]
                 binary_mask = rgbalpha_to_binary(instance_tile, r, g, b).astype(np.uint8)
 
                 annotation_info = pycococreatortools.create_annotation_info(
-                    self.instance_id, self.global_tile_id, category_info, binary_mask, binary_mask.shape, tolerance=0
+                    self.instance_id,
+                    self.global_tile_id,
+                    category_info,
+                    binary_mask,
+                    binary_mask.shape,
+                    tolerance=0,
                 )
                 if annotation_info is not None:
-                    annotation_info.update({"big_image_id": self.big_image_id, "big_image_fname": big_image_fname})
+                    annotation_info.update(
+                        {
+                            "big_image_id": self.big_image_id,
+                            "big_image_original_fname": big_image_fname,
+                        }
+                    )
                     self.coco_output["annotations"].append(annotation_info)
                 self.instance_id += 1
                 self.global_tile_id += 1
+        self.big_image_id += 1
+
+    def create_coco_from_photopea_layers_no_tile(self, layer_pths: list[str], coco_output: dict):
+        """Saves a COCO JSON with annotations compressed in RLE format, without tiling and referring to the
+            original Background.png images.
+
+        The COCO JSON is amended to add two keys for the full scene, referring to the folder name containing the
+        photopea layers. This should correspond to the original Sentinel-1 VV geotiff filename so that the
+        coordinates can be associated.
+
+        Args:
+            layer_pths (list[str]): List of path in a scene folder corresponding to Background.png, Layer 1.png, etc. Order matters.
+            coco_output (dict): the dict defining the metadata and data container for the dataset that will be created
+            coco_name (str, optional): the filename of the coco json. Defaults to "instances_slick_train_v2.json".
+
+        Raises:
+            ValueError: Errors if the path to the first file in layer_pths doesn't contain "Background"
+            ValueError: Errors if a path to a label file in layer_pths doesn't contain "Layer"
+        """
+        for instance_path in layer_pths[1:]:
+            # each label is of form class_instanceid.png
+            if "_" not in str(instance_path):
+                raise ValueError(f"The layer {instance_path} is not an instance label.")
+            arr = skio.imread(instance_path)
+            big_image_original_fname = os.path.basename(os.path.dirname(instance_path)) + ".tif"
+            big_image_fname = os.path.basename(os.path.dirname(instance_path)) + f"_Background.png"
+            image_info = pycococreatortools.create_image_info(
+                self.global_tile_id, big_image_fname, arr.shape
+            )
+            image_info.update(
+                {
+                    "big_image_id": self.big_image_id,
+                    "big_image_original_fname": big_image_original_fname,
+                }
+            )
+            # go through each label image to extract annotation
+            if image_info not in self.coco_output["images"]:
+                self.coco_output["images"].append(image_info)
+            class_id = get_layer_cls(arr, class_mapping_photopea, class_mapping_coco)
+            if class_id != 0:
+                category_info = {
+                    "id": class_id,
+                    "is_crowd": True,
+                }  # forces compressed RLE format
+            else:
+                category_info = {"id": class_id, "is_crowd": False}
+            r, g, b = class_mapping_photopea[class_mapping_coco_inv[class_id]]
+            binary_mask = rgbalpha_to_binary(arr, r, g, b).astype(np.uint8)
+
+            annotation_info = pycococreatortools.create_annotation_info(
+                self.instance_id,
+                self.big_image_id,
+                category_info,
+                binary_mask,
+                binary_mask.shape,
+                tolerance=0,
+            )
+            if annotation_info is not None:
+                annotation_info.update(
+                    {"big_image_id": self.big_image_id, "big_image_fname": big_image_fname}
+                )
+                self.coco_output["annotations"].append(annotation_info)
+                print("Processed one instance.")
+            self.instance_id += 1
         self.big_image_id += 1
 
     def save_coco_output(self, outpath: str = "./instances_slicks_test_v2.json"):
