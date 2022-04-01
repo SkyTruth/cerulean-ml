@@ -4,7 +4,6 @@ import os
 import skimage.io as skio
 from pycococreatortools import pycococreatortools
 import json
-from collections import ChainMap
 from shutil import copy
 
 # Hard Neg is overloaded with overlays but they shouldn't be exported during annotation
@@ -134,7 +133,8 @@ def save_tiles_from_3d(tiled_arr: np.ndarray, img_fname: str, outdir: str):
         lazy_results.append(lazy_result)
     results = dask.compute(*lazy_results)
     print(f"finished saving {tiles_n} images")
-    
+
+
 def copy_whole_images(img_list: list, outdir: str):
     """Copy whole images from a directory (mounted gcp bucket) to another directory.
 
@@ -239,7 +239,7 @@ class COCOtiler:
             save_tiles_from_3d(tiled_arr, img_path, self.img_dir)
         else:
             raise ValueError(f"The layer {instance_path} is not a VV image.")
-    
+
     def copy_background_images(self, class_folders: list[str]):
         fnames_vv = []
         for f in class_folders:
