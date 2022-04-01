@@ -5,6 +5,7 @@ import skimage.io as skio
 from pycococreatortools import pycococreatortools
 import json
 from collections import ChainMap
+from shutil import copy
 
 # Hard Neg is overloaded with overlays but they shouldn't be exported during annotation
 # Hard Neg is just a class that we will use to measure performance gains metrics
@@ -133,6 +134,32 @@ def save_tiles_from_3d(tiled_arr: np.ndarray, img_fname: str, outdir: str):
         lazy_results.append(lazy_result)
     results = dask.compute(*lazy_results)
     print(f"finished saving {tiles_n} images")
+    
+def copy_whole_images(img_list: list, outdir: str):
+    """Copy whole images from a directory (mounted gcp bucket) to another directory.
+
+    Dask gives a linear speedup for saving out png files. This timing
+    indicates it would take X hours to copy the X background images with
+    4 cores running.
+
+    With the coco format we can keep annotations in memory and not save out annotation
+    images.
+
+    Args:
+        img_list (list): List of image file paths in mounted gcp dir (or regular dir)
+        img_fname (str): the template string. original image fname is use dto id the whole images.
+        outdir (str): The directory to save img tiles.
+    """
+    lazy_results = []
+    for i in range(len(img_list)):
+        out_fname = os.path.join(
+            outdir, os.path.basename(os.path.dirname(img_list[i])) + f"_Background.png"
+        )
+        in_fname = img_list[i]
+        lazy_result = dask.delayed(copy)(in_fname, out_fname)
+        lazy_results.append(lazy_result)
+    results = dask.compute(*lazy_results)
+    print(f"finished saving {len(img_list)} images")
 
 
 def rgbalpha_to_binary(arr: np.ndarray, r: int, g: int, b: int):
@@ -212,6 +239,12 @@ class COCOtiler:
             save_tiles_from_3d(tiled_arr, img_path, self.img_dir)
         else:
             raise ValueError(f"The layer {instance_path} is not a VV image.")
+    
+    def copy_background_images(self, class_folders: list[str]):
+        fnames_vv = []
+        for f in class_folders:
+            fnames_vv.extend(list(f.glob("**/Background.png")))
+        copy_whole_images(fnames_vv, self.img_dir)
 
     def create_coco_from_photopea_layers(self, layer_pths: list[str], coco_output: dict):
         """Saves a COCO JSON with annotations compressed in RLE format and also saves corresponding image tiles.
@@ -307,7 +340,7 @@ class COCOtiler:
                 raise ValueError(f"The layer {instance_path} is not an instance label.")
             arr = skio.imread(instance_path)
             big_image_original_fname = os.path.basename(os.path.dirname(instance_path)) + ".tif"
-            big_image_fname = os.path.basename(os.path.dirname(instance_path)) + f"Background.png"
+            big_image_fname = os.path.basename(os.path.dirname(instance_path)) + f"_Background.png"
             image_info = pycococreatortools.create_image_info(
                 self.global_tile_id, big_image_fname, arr.shape
             )
@@ -328,8 +361,8 @@ class COCOtiler:
                 }  # forces compressed RLE format
             else:
                 category_info = {"id": class_id, "is_crowd": False}
-                r, g, b = class_mapping_photopea[class_mapping_coco_inv[class_id]]
-                binary_mask = rgbalpha_to_binary(arr, r, g, b).astype(np.uint8)
+            r, g, b = class_mapping_photopea[class_mapping_coco_inv[class_id]]
+            binary_mask = rgbalpha_to_binary(arr, r, g, b).astype(np.uint8)
 
             annotation_info = pycococreatortools.create_annotation_info(
                 self.instance_id,
@@ -344,6 +377,7 @@ class COCOtiler:
                     {"big_image_id": self.big_image_id, "big_image_fname": big_image_fname}
                 )
                 self.coco_output["annotations"].append(annotation_info)
+                print("Processed one instance.")
             self.instance_id += 1
         self.big_image_id += 1
 
