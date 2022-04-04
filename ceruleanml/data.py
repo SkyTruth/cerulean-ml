@@ -3,6 +3,7 @@ import dask
 import os
 import skimage.io as skio
 import skimage
+from datetime import datetime
 
 from pycococreatortools import pycococreatortools
 import json
@@ -10,6 +11,7 @@ from shutil import copy
 from collections import ChainMap
 import httpx
 import rasterio
+from io import BytesIO
 
 import fiona
 from fiona import collection
@@ -250,15 +252,7 @@ class COCOtiler:
 
         # Handle aux dataset per scene
         if aux_datasets:
-            assert len(aux_datasets) == 2 or len(aux_datasets) == 3 # so save as png file need RGB or RGBA
-            aux_dataset_channels = None
-            for aux_ds in aux_datasets:
-                ar = self.dist_array_from_layers(layer_paths, aux_ds, **kwargs)
-                ar = np.expand_dims(ar, 2)
-                if aux_dataset_channels is None:
-                    aux_dataset_channels = ar
-                else:
-                    aux_dataset_channels = np.concatenate([aux_dataset_channels, ar], axis=2)
+            aux_dataset_channels = self.handle_aux_datasets(aux_datasets, layer_paths, **kwargs)
             
             # append as channels to arr
             arr = np.concatenate([arr, aux_dataset_channels], axis=2)
@@ -422,22 +416,42 @@ class COCOtiler:
         with open(f"{outpath}", "w") as output_json_file:
             json.dump(self.coco_output, output_json_file)
 
-    @staticmethod
-    def dist_array_from_layers(
-        layer_paths: List[str],
-        vector_ds: str,
-        max_distance: int = 60000,
-        resample_ratio: int =8
-    ):
+    def handle_aux_datasets(self, aux_datasets, layer_paths, **kwargs):
+        assert len(aux_datasets) == 2 or len(aux_datasets) == 3# so save as png file need RGB or RGBA
+
         img_path = layer_paths[0]
         scene_id = os.path.basename(os.path.dirname(img_path))
+        bounds = get_sentinel1_bounds(scene_id)
+        scene_date_month = get_scene_date_month(scene_id)
 
         arr = skio.imread(img_path)
         img_shape = arr.shape
 
-        shp = fiona.open(vector_ds)
+        aux_dataset_channels = None
+        for aux_ds in aux_datasets:
+            if aux_ds == "ship_density":
+                ar =  get_ship_density(bounds, img_shape, scene_date_month)
+            else:
+                ar = self.dist_array_from_layers(bounds, img_shape, aux_ds, **kwargs)
+    
+            ar = np.expand_dims(ar, 2)
+            if aux_dataset_channels is None:
+                aux_dataset_channels = ar
+            else:
+                aux_dataset_channels = np.concatenate([aux_dataset_channels, ar], axis=2)
+        
+        return aux_dataset_channels
 
-        bounds = get_sentinel1_bounds(scene_id)
+
+    @staticmethod
+    def dist_array_from_layers(
+        bounds: Tuple[float], 
+        img_shape:Tuple[int],
+        vector_ds: str,
+        max_distance: int = 60000,
+        resample_ratio: int =8
+    ):
+        shp = fiona.open(vector_ds)
         resampled_shape = img_shape[0]//resample_ratio, img_shape[1]//resample_ratio
         img_affine = rasterio.transform.from_bounds(*bounds, resampled_shape[0], resampled_shape[1])
         rv_array, affine = dr.rasterize(
@@ -474,3 +488,34 @@ def get_sentinel1_bounds(
         return None
 
     return tuple(scene_info["bounds"])
+
+def get_scene_date_month(scene_id: str) -> str:
+    # i.e. S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5
+    date_time_str = scene_id[17:32]
+    date_time_obj = datetime.strptime(date_time_str, '%Y%m%dT%H%M%S')
+    date_time_obj = date_time_obj.replace(day=1, hour=0, minute=0, second=0)
+    return date_time_obj.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+def get_ship_density(
+   bounds: Tuple[float], img_shape:Tuple[int], scene_date_month:str="2020-08-01T00:00:00Z", url="https://gmtds.maplarge.com/ogc/ais:density/wms?"
+) -> np.ndarray:
+    w, h = img_shape
+    bbox_wms = bounds[1], bounds[0], bounds[-1], bounds[2]
+    qs = ("REQUEST=GetMap&LAYERS=ais:density&STYLES=&FORMAT=image/png&TRANSPARENT=true"
+    f"SERVICE=WMS&VERSION=1.3.0&WIDTH={w}&HEIGHT={h}&CRS=EPSG:4326&"
+    f"BBOX={','.join([str(b) for b in bbox_wms])}&"
+    f"TIME={scene_date_month}")
+
+    r = httpx.get(f"{url}{qs}", timeout=None)
+    try:
+        r.raise_for_status()
+        tempbuf = BytesIO(r.content)
+        ar = skio.imread(tempbuf)
+    except httpx.HTTPError:
+        print(f"Failed to fetch ship density!")
+        return None
+    
+    img = np.mean(ar, axis=2) 
+    # just average all the bands for now
+    # Proxy for ship density given the color scale
+    return img
