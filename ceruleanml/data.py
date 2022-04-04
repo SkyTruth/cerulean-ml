@@ -499,7 +499,7 @@ def get_scene_date_month(scene_id: str) -> str:
 def get_ship_density(
    bounds: Tuple[float], img_shape:Tuple[int], scene_date_month:str="2020-08-01T00:00:00Z", url="https://gmtds.maplarge.com/ogc/ais:density/wms?"
 ) -> np.ndarray:
-    w, h = img_shape
+    h, w  = img_shape
     bbox_wms = bounds[1], bounds[0], bounds[-1], bounds[2]
     qs = ("REQUEST=GetMap&LAYERS=ais:density&STYLES=&FORMAT=image/png&TRANSPARENT=true"
     f"SERVICE=WMS&VERSION=1.3.0&WIDTH={w}&HEIGHT={h}&CRS=EPSG:4326&"
@@ -518,4 +518,4 @@ def get_ship_density(
     img = np.mean(ar, axis=2) 
     # just average all the bands for now
     # Proxy for ship density given the color scale
-    return img
+    return img.astype(np.uint8)
