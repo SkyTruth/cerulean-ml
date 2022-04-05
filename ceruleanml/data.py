@@ -276,7 +276,8 @@ class COCOtiler:
     def copy_background_images(self, class_folders: List[str]):
         fnames_vv = []
         for f in class_folders:
-            fnames_vv.extend(list(f.glob("**/Background.png")))
+            # TODO: fix types
+            fnames_vv.extend(list(f.glob("**/Background.png")))  # type: ignore
         copy_whole_images(fnames_vv, self.img_dir)
 
     def create_coco_from_photopea_layers(
@@ -478,8 +479,8 @@ class COCOtiler:
 
     @staticmethod
     def dist_array_from_layers(
-        bounds: Tuple[float],
-        img_shape: Tuple[int],
+        bounds: Tuple[float, float, float, float],
+        img_shape: Tuple[int, int, int],
         vector_ds: str,
         max_distance: int = 60000,
         resample_ratio: int = 8,
@@ -516,7 +517,7 @@ class COCOtiler:
 
 def get_sentinel1_bounds(
     scene_id: str, url="https://nfwqxd6ia0.execute-api.eu-central-1.amazonaws.com"
-) -> Tuple[float]:
+) -> Tuple[float, float, float, float]:
     r = httpx.get(f"{url}/scenes/sentinel1/{scene_id}/info", timeout=None)
     try:
         r.raise_for_status()
@@ -525,7 +526,7 @@ def get_sentinel1_bounds(
         print(f"{scene_id} does not exist in TMS!")
         return None
 
-    return tuple(scene_info["bounds"])
+    return tuple(scene_info["bounds"])  # type: ignore
 
 
 def get_scene_date_month(scene_id: str) -> str:
@@ -537,8 +538,8 @@ def get_scene_date_month(scene_id: str) -> str:
 
 
 def get_ship_density(
-    bounds: Tuple[float],
-    img_shape: Tuple[int],
+    bounds: Tuple[float, float, float, float],
+    img_shape: Tuple[int, int],
     scene_date_month: str = "2020-08-01T00:00:00Z",
     max_dens=100,
     url="http://gmtds.maplarge.com/Api/ProcessDirect?",
