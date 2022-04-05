@@ -10,7 +10,7 @@ import pytest
 import skimage.io as skio
 from click.testing import CliRunner
 
-from ceruleanml import ceruleanml, cli, data
+from ceruleanml import cli, data
 
 
 @pytest.fixture
