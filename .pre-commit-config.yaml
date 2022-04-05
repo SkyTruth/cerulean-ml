@@ -23,18 +23,6 @@ repos:
                   # W503 black conflicts with "line break before operator" rule
                   # E203 black conflicts with "whitespace before ':'" rule
                   '--ignore=E501,W503,E203']
-    -
-        repo: 'https://github.com/chewse/pre-commit-mirrors-pydocstyle'
-        # 2.1.1
-        rev: v2.1.1
-        hooks:
-            - id: pydocstyle
-              language_version: python3.8
-              args: [
-                 # Check for docstring presence only
-                 '--select=D1',
-                 # Don't require docstrings for tests
-                 '--match=(?!test).*\.py']
 
     -   
         repo: https://github.com/pre-commit/mirrors-mypy
@@ -43,3 +31,16 @@ repos:
             - id: mypy
               args: ['--no-strict-optional', '--ignore-missing-imports']
               additional_dependencies: [types-requests, types-click]
+
+# Comment out docstring tool for now
+#    - 
+#            repo: 'https://github.com/chewse/pre-commit-mirrors-pydocstyle'
+#            # 2.1.1
+#            rev: v2.1.1
+#            hooks:
+#                - id: pydocstyle
+#                language_version: python3.8
+#                args: [
+#                    # Check for docstring presence only
+#                    '--select=D1',
+#                    # Don't require docstrings for tests
