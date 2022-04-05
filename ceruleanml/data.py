@@ -1,7 +1,6 @@
 import json
 import os
 import zipfile
-from collections import ChainMap
 from datetime import datetime
 from io import BytesIO
 from shutil import copy
@@ -15,9 +14,7 @@ import numpy as np
 import rasterio
 import skimage
 import skimage.io as skio
-from fiona import collection
 from pycococreatortools import pycococreatortools
-from shapely.geometry import mapping, shape
 
 # Hard Neg is overloaded with overlays but they shouldn't be exported during annotation
 # Hard Neg is just a class that we will use to measure performance gains metrics
@@ -145,7 +142,7 @@ def save_tiles_from_3d(tiled_arr: np.ndarray, img_fname: str, outdir: str):
         )
         lazy_result = dask.delayed(skio.imsave)(fname, tiled_arr[i])
         lazy_results.append(lazy_result)
-    results = dask.compute(*lazy_results)
+    dask.compute(*lazy_results)
     print(f"finished saving {tiles_n} images")
 
 
@@ -167,12 +164,12 @@ def copy_whole_images(img_list: List, outdir: str):
     lazy_results = []
     for i in range(len(img_list)):
         out_fname = os.path.join(
-            outdir, os.path.basename(os.path.dirname(img_list[i])) + f"_Background.png"
+            outdir, os.path.basename(os.path.dirname(img_list[i])) + "_Background.png"
         )
         in_fname = img_list[i]
         lazy_result = dask.delayed(copy)(in_fname, out_fname)
         lazy_results.append(lazy_result)
-    results = dask.compute(*lazy_results)
+    dask.compute(*lazy_results)
     print(f"finished saving {len(img_list)} images")
 
 
@@ -274,7 +271,7 @@ class COCOtiler:
         if "Background" in str(img_path):  # its the vv image
             save_tiles_from_3d(tiled_arr, img_path, self.img_dir)
         else:
-            raise ValueError(f"The layer {instance_path} is not a VV image.")
+            raise ValueError(f"The layer {img_path} is not a VV image.")
 
     def copy_background_images(self, class_folders: List[str]):
         fnames_vv = []
@@ -399,7 +396,7 @@ class COCOtiler:
                 os.path.basename(os.path.dirname(instance_path)) + ".tif"
             )
             big_image_fname = (
-                os.path.basename(os.path.dirname(instance_path)) + f"_Background.png"
+                os.path.basename(os.path.dirname(instance_path)) + "_Background.png"
             )
             image_info = pycococreatortools.create_image_info(
                 self.big_image_id, big_image_fname, arr.shape
@@ -589,7 +586,7 @@ def get_ship_density(
         with rasterio.open(BytesIO(zipfile_ob.read(cont[0]))) as dataset:
             ar = dataset.read()
     except httpx.HTTPError:
-        print(f"Failed to fetch ship density!")
+        print("Failed to fetch ship density!")
         return None
 
     dens_array = ar / (max_dens / 255)
