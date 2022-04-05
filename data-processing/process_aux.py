@@ -12,7 +12,7 @@ def invert_geom(
     distance = 0.5  # approx 55km
     source = gpd.read_file()
 
-    buffered_geom = source.dissolve().buffer(0.5)
+    buffered_geom = source.dissolve().buffer(distance)
     buffered_gpd = gpd.GeoDataFrame(geometry=buffered_geom)
     inverted = buffered_gpd.overlay(whole_world, how="symmetric_difference")
 
@@ -24,10 +24,13 @@ def process_csv_infra(
     out="infra_locations.json",
 ):
     df_nongeo = gpd.read_file(ds)
-    df_geo = gpd.GeoDataFrame(df_nongeo, geometry=gpd.points_from_xy(df.Lon, df.Lat))
+    df_geo = gpd.GeoDataFrame(
+        df_nongeo, geometry=gpd.points_from_xy(df_nongeo.Lon, df_nongeo.Lat)
+    )
     df_geo.to_file(out)
 
 
 def process_tif_ship_density(f="ShipDensity_Commercial1.tif", out="ship_density.json"):
     with rasterio.open(f) as src:
         density = src.read(0)
+        print(density.shape)
