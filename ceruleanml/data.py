@@ -4,7 +4,6 @@ import os
 import skimage.io as skio
 from pycococreatortools import pycococreatortools
 import json
-from collections import ChainMap
 from shutil import copy
 
 # Hard Neg is overloaded with overlays but they shouldn't be exported during annotation
@@ -128,13 +127,14 @@ def save_tiles_from_3d(tiled_arr: np.ndarray, img_fname: str, outdir: str):
     lazy_results = []
     for i in range(tiles_n):
         fname = os.path.join(
-            outdir, os.path.basename(os.path.dirname(img_fname)) + f"_vv-image_tile_{i}.png"
+            outdir, os.path.basename(os.path.dirname(img_fname)) + f"_vv-image_local_tile_{i}.png"
         )
         lazy_result = dask.delayed(skio.imsave)(fname, tiled_arr[i])
         lazy_results.append(lazy_result)
     results = dask.compute(*lazy_results)
     print(f"finished saving {tiles_n} images")
-    
+
+
 def copy_whole_images(img_list: list, outdir: str):
     """Copy whole images from a directory (mounted gcp bucket) to another directory.
 
@@ -226,6 +226,7 @@ class COCOtiler:
     def __init__(self, img_dir: str, coco_output: dict):
         self.instance_id = 0
         self.global_tile_id = 0
+        self.global_increment = 0
         self.big_image_id = 0
         self.coco_output = coco_output
         self.img_dir = img_dir
@@ -239,7 +240,7 @@ class COCOtiler:
             save_tiles_from_3d(tiled_arr, img_path, self.img_dir)
         else:
             raise ValueError(f"The layer {instance_path} is not a VV image.")
-    
+
     def copy_background_images(self, class_folders: list[str]):
         fnames_vv = []
         for f in class_folders:
@@ -262,6 +263,7 @@ class COCOtiler:
             ValueError: Errors if the path to the first file in layer_pths doesn't contain "Background"
             ValueError: Errors if a path to a label file in layer_pths doesn't contain "Layer"
         """
+        start_tile_n = self.global_tile_id
         for instance_path in layer_pths[1:]:
             # each label is of form class_instanceid.png
             if "_" not in str(instance_path):
@@ -275,7 +277,7 @@ class COCOtiler:
                 big_image_fname = os.path.basename(os.path.dirname(instance_path)) + ".tif"
                 tile_fname = (
                     os.path.basename(os.path.dirname(instance_path))
-                    + f"_vv-image_tile_{local_tile_id}.png"
+                    + f"_vv-image_local_tile_{local_tile_id}.png"
                 )
                 image_info = pycococreatortools.create_image_info(
                     self.global_tile_id, tile_fname, (512, 512)
@@ -313,9 +315,15 @@ class COCOtiler:
                         }
                     )
                     self.coco_output["annotations"].append(annotation_info)
+                print("finished processing an instance tile")
+                print(f"global tile id: {self.global_tile_id}")
                 self.instance_id += 1
                 self.global_tile_id += 1
+            self.global_tile_id = start_tile_n
+            print("finished processing an instance scene")
         self.big_image_id += 1
+        print(f"finished a full scene: {self.big_image_id}")
+        self.global_tile_id = start_tile_n + tiles_n
 
     def create_coco_from_photopea_layers_no_tile(self, layer_pths: list[str], coco_output: dict):
         """Saves a COCO JSON with annotations compressed in RLE format, without tiling and referring to the
@@ -342,7 +350,7 @@ class COCOtiler:
             big_image_original_fname = os.path.basename(os.path.dirname(instance_path)) + ".tif"
             big_image_fname = os.path.basename(os.path.dirname(instance_path)) + f"_Background.png"
             image_info = pycococreatortools.create_image_info(
-                self.global_tile_id, big_image_fname, arr.shape
+                self.big_image_id, big_image_fname, arr.shape
             )
             image_info.update(
                 {
