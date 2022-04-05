@@ -1,3 +1,6 @@
+# Support file for running notebooks, therefor don't run code checks
+# flake8: noqa
+# type: ignore
 import fastai
 import tensorboard
 from fastai.basics import *
