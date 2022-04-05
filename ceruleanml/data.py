@@ -1,25 +1,23 @@
-import numpy as np
-import dask
-import os
-import skimage.io as skio
-import skimage
-from datetime import datetime
-
-from pycococreatortools import pycococreatortools
 import json
-from shutil import copy
-from collections import ChainMap
-import httpx
-import rasterio
-from io import BytesIO
+import os
 import zipfile
+from collections import ChainMap
+from datetime import datetime
+from io import BytesIO
+from shutil import copy
+from typing import List, Tuple
 
-import fiona
-from fiona import collection
-from shapely.geometry import mapping, shape
-
+import dask
 import distancerasters as dr
-from typing import Tuple, List
+import fiona
+import httpx
+import numpy as np
+import rasterio
+import skimage
+import skimage.io as skio
+from fiona import collection
+from pycococreatortools import pycococreatortools
+from shapely.geometry import mapping, shape
 
 # Hard Neg is overloaded with overlays but they shouldn't be exported during annotation
 # Hard Neg is just a class that we will use to measure performance gains metrics
@@ -102,14 +100,20 @@ def reshape_split(image: np.ndarray, kernel_size: tuple):
     )
     img_height, img_width, channels = image_padded.shape
     tiled_array = image_padded.reshape(
-        img_height // tile_height, tile_height, img_width // tile_width, tile_width, channels
+        img_height // tile_height,
+        tile_height,
+        img_width // tile_width,
+        tile_width,
+        channels,
     )
     tiled_array = tiled_array.swapaxes(1, 2)
 
     return tiled_array.reshape(
-        tiled_array.shape[0] * tiled_array.shape[1], tile_width, tile_height, tiled_array.shape[-1]
+        tiled_array.shape[0] * tiled_array.shape[1],
+        tile_width,
+        tile_height,
+        tiled_array.shape[-1],
     )
-
 
 
 def save_tiles_from_3d(tiled_arr: np.ndarray, img_fname: str, outdir: str):
@@ -135,7 +139,9 @@ def save_tiles_from_3d(tiled_arr: np.ndarray, img_fname: str, outdir: str):
     lazy_results = []
     for i in range(tiles_n):
         fname = os.path.join(
-            outdir, os.path.basename(os.path.dirname(img_fname)) + f"_vv-image_local_tile_{i}.png"
+            outdir,
+            os.path.basename(os.path.dirname(img_fname))
+            + f"_vv-image_local_tile_{i}.png",
         )
         lazy_result = dask.delayed(skio.imsave)(fname, tiled_arr[i])
         lazy_results.append(lazy_result)
@@ -182,7 +188,9 @@ def rgbalpha_to_binary(arr: np.ndarray, r: int, g: int, b: int):
     Returns:
         np.ndarray: the binary array
     """
-    return np.logical_and.reduce([arr[:, :, 0] == r, arr[:, :, 1] == g, arr[:, :, 2] == b])
+    return np.logical_and.reduce(
+        [arr[:, :, 0] == r, arr[:, :, 1] == g, arr[:, :, 2] == b]
+    )
 
 
 def is_layer_of_class(arr, r, g, b):
@@ -238,10 +246,12 @@ class COCOtiler:
         self.big_image_id = 0
         self.coco_output = coco_output
         self.img_dir = img_dir
-        
-    def save_background_img_tiles(self, layer_paths, aux_datasets: List[str] = [], **kwargs):
+
+    def save_background_img_tiles(
+        self, layer_paths, aux_datasets: List[str] = [], **kwargs
+    ):
         """
-                aux_datasets (List[str], optional): List of paths pointing to auxiliary vector files to include in tiles. 55km is the range.
+        aux_datasets (List[str], optional): List of paths pointing to auxiliary vector files to include in tiles. 55km is the range.
 
         """
         # saving vv image tiles (Background layer)
@@ -253,8 +263,10 @@ class COCOtiler:
 
         # Handle aux dataset per scene
         if aux_datasets:
-            aux_dataset_channels = self.handle_aux_datasets(aux_datasets, layer_paths, **kwargs)
-            
+            aux_dataset_channels = self.handle_aux_datasets(
+                aux_datasets, layer_paths, **kwargs
+            )
+
             # append as channels to arr
             arr = np.concatenate([arr, aux_dataset_channels], axis=2)
 
@@ -270,7 +282,9 @@ class COCOtiler:
             fnames_vv.extend(list(f.glob("**/Background.png")))
         copy_whole_images(fnames_vv, self.img_dir)
 
-    def create_coco_from_photopea_layers(self, layer_pths: List[str], coco_output: dict):
+    def create_coco_from_photopea_layers(
+        self, layer_pths: List[str], coco_output: dict
+    ):
         """Saves a COCO JSON with annotations compressed in RLE format and also saves corresponding image tiles.
 
         The COCO JSON is amended to add two keys for the full scene, referring to the folder name containing the
@@ -297,7 +311,9 @@ class COCOtiler:
             tiles_n, _, _, _ = tiled_arr.shape
             for local_tile_id in range(tiles_n):
                 instance_tile = tiled_arr[local_tile_id]
-                big_image_fname = os.path.basename(os.path.dirname(instance_path)) + ".tif"
+                big_image_fname = (
+                    os.path.basename(os.path.dirname(instance_path)) + ".tif"
+                )
                 tile_fname = (
                     os.path.basename(os.path.dirname(instance_path))
                     + f"_vv-image_local_tile_{local_tile_id}.png"
@@ -306,12 +322,17 @@ class COCOtiler:
                     self.global_tile_id, tile_fname, (512, 512)
                 )
                 image_info.update(
-                    {"big_image_id": self.big_image_id, "big_image_original_fname": big_image_fname}
+                    {
+                        "big_image_id": self.big_image_id,
+                        "big_image_original_fname": big_image_fname,
+                    }
                 )
                 # go through each label image to extract annotation
                 if image_info not in self.coco_output["images"]:
                     self.coco_output["images"].append(image_info)
-                class_id = get_layer_cls(instance_tile, class_mapping_photopea, class_mapping_coco)
+                class_id = get_layer_cls(
+                    instance_tile, class_mapping_photopea, class_mapping_coco
+                )
                 if class_id != 0:
                     category_info = {
                         "id": class_id,
@@ -320,7 +341,9 @@ class COCOtiler:
                 else:
                     category_info = {"id": class_id, "is_crowd": False}
                 r, g, b = class_mapping_photopea[class_mapping_coco_inv[class_id]]
-                binary_mask = rgbalpha_to_binary(instance_tile, r, g, b).astype(np.uint8)
+                binary_mask = rgbalpha_to_binary(instance_tile, r, g, b).astype(
+                    np.uint8
+                )
 
                 annotation_info = pycococreatortools.create_annotation_info(
                     self.instance_id,
@@ -348,7 +371,9 @@ class COCOtiler:
         print(f"finished a full scene: {self.big_image_id}")
         self.global_tile_id = start_tile_n + tiles_n
 
-    def create_coco_from_photopea_layers_no_tile(self, layer_pths: List[str], coco_output: dict):
+    def create_coco_from_photopea_layers_no_tile(
+        self, layer_pths: List[str], coco_output: dict
+    ):
         """Saves a COCO JSON with annotations compressed in RLE format, without tiling and referring to the
             original Background.png images.
 
@@ -370,8 +395,12 @@ class COCOtiler:
             if "_" not in str(instance_path):
                 raise ValueError(f"The layer {instance_path} is not an instance label.")
             arr = skio.imread(instance_path)
-            big_image_original_fname = os.path.basename(os.path.dirname(instance_path)) + ".tif"
-            big_image_fname = os.path.basename(os.path.dirname(instance_path)) + f"_Background.png"
+            big_image_original_fname = (
+                os.path.basename(os.path.dirname(instance_path)) + ".tif"
+            )
+            big_image_fname = (
+                os.path.basename(os.path.dirname(instance_path)) + f"_Background.png"
+            )
             image_info = pycococreatortools.create_image_info(
                 self.big_image_id, big_image_fname, arr.shape
             )
@@ -405,7 +434,10 @@ class COCOtiler:
             )
             if annotation_info is not None:
                 annotation_info.update(
-                    {"big_image_id": self.big_image_id, "big_image_fname": big_image_fname}
+                    {
+                        "big_image_id": self.big_image_id,
+                        "big_image_fname": big_image_fname,
+                    }
                 )
                 self.coco_output["annotations"].append(annotation_info)
                 print("Processed one instance.")
@@ -418,7 +450,9 @@ class COCOtiler:
             json.dump(self.coco_output, output_json_file)
 
     def handle_aux_datasets(self, aux_datasets, layer_paths, **kwargs):
-        assert len(aux_datasets) == 2 or len(aux_datasets) == 3# so save as png file need RGB or RGBA
+        assert (
+            len(aux_datasets) == 2 or len(aux_datasets) == 3
+        )  # so save as png file need RGB or RGBA
 
         img_path = layer_paths[0]
         scene_id = os.path.basename(os.path.dirname(img_path))
@@ -431,43 +465,48 @@ class COCOtiler:
         aux_dataset_channels = None
         for aux_ds in aux_datasets:
             if aux_ds == "ship_density":
-                ar =  get_ship_density(bounds, img_shape, scene_date_month)
+                ar = get_ship_density(bounds, img_shape, scene_date_month)
             else:
                 ar = self.dist_array_from_layers(bounds, img_shape, aux_ds, **kwargs)
-    
+
             ar = np.expand_dims(ar, 2)
             if aux_dataset_channels is None:
                 aux_dataset_channels = ar
             else:
-                aux_dataset_channels = np.concatenate([aux_dataset_channels, ar], axis=2)
-        
-        return aux_dataset_channels
+                aux_dataset_channels = np.concatenate(
+                    [aux_dataset_channels, ar], axis=2
+                )
 
+        return aux_dataset_channels
 
     @staticmethod
     def dist_array_from_layers(
-        bounds: Tuple[float], 
-        img_shape:Tuple[int],
+        bounds: Tuple[float],
+        img_shape: Tuple[int],
         vector_ds: str,
         max_distance: int = 60000,
-        resample_ratio: int =8
+        resample_ratio: int = 8,
     ):
         shp = fiona.open(vector_ds)
-        resampled_shape = img_shape[0]//resample_ratio, img_shape[1]//resample_ratio
-        img_affine = rasterio.transform.from_bounds(*bounds, resampled_shape[0], resampled_shape[1])
+        resampled_shape = img_shape[0] // resample_ratio, img_shape[1] // resample_ratio
+        img_affine = rasterio.transform.from_bounds(
+            *bounds, resampled_shape[0], resampled_shape[1]
+        )
         rv_array, affine = dr.rasterize(
-            shp, affine=img_affine, shape=resampled_shape,
+            shp,
+            affine=img_affine,
+            shape=resampled_shape,
         )
 
         my_dr = dr.DistanceRaster(
             rv_array,
             affine=affine,
         )
-        dist_array = my_dr.dist_array 
+        dist_array = my_dr.dist_array
 
         # inverse array values to match 0 - 1000 where 0 is furthest away from feature
-        dist_array = dist_array / (max_distance/255) # 55 km 
-        dist_array[dist_array >= 255] = 255 
+        dist_array = dist_array / (max_distance / 255)  # 55 km
+        dist_array[dist_array >= 255] = 255
 
         # flip vertical array for photopea
         flip_dist_array = np.flipud(dist_array)
@@ -476,6 +515,7 @@ class COCOtiler:
         upsampled_dist_array = skimage.transform.resize(flip_dist_array, img_shape[0:2])
         upsampled_dist_array = upsampled_dist_array.astype(np.uint8)
         return upsampled_dist_array
+
 
 def get_sentinel1_bounds(
     scene_id: str, url="https://nfwqxd6ia0.execute-api.eu-central-1.amazonaws.com"
@@ -490,10 +530,11 @@ def get_sentinel1_bounds(
 
     return tuple(scene_info["bounds"])
 
+
 def get_scene_date_month(scene_id: str) -> str:
     # i.e. S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5
     date_time_str = scene_id[17:32]
-    date_time_obj = datetime.strptime(date_time_str, '%Y%m%dT%H%M%S')
+    date_time_obj = datetime.strptime(date_time_str, "%Y%m%dT%H%M%S")
     date_time_obj = date_time_obj.replace(day=1, hour=0, minute=0, second=0)
     return date_time_obj.strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -535,8 +576,8 @@ def get_ship_density(
     }
 
     qs = (
-    f"request={json.dumps(query)}"
-    "&uParams=action:table/query;formatType:tiff;withgeo:false;withGeoJson:false;includePolicies:true"
+        f"request={json.dumps(query)}"
+        "&uParams=action:table/query;formatType:tiff;withgeo:false;withGeoJson:false;includePolicies:true"
     )
 
     r = httpx.get(f"{url}{qs}", timeout=None, follow_redirects=True)
@@ -554,6 +595,8 @@ def get_ship_density(
     dens_array = ar / (max_dens / 255)
     dens_array[dens_array >= 255] = 255
 
-    upsampled_dens_array = skimage.transform.resize(np.squeeze(dens_array), img_shape[0:2])
+    upsampled_dens_array = skimage.transform.resize(
+        np.squeeze(dens_array), img_shape[0:2]
+    )
     upsampled_dens_array = upsampled_dens_array.astype(np.uint8)
     return upsampled_dens_array

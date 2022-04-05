@@ -1,8 +1,8 @@
 import click
-import rasterio
 import geopandas as gpd
+import rasterio
 from shapely import geometry
-from utils import vector2raster, raster2png, dir_
+from utils import dir_, raster2png, vector2raster
 
 
 def raster_bounds_poly(raster_file):

@@ -2,7 +2,7 @@
 
 """The setup script."""
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 # with open("README.rst") as readme_file:
 #     readme = readme_file.read()
@@ -19,13 +19,10 @@ requirements = [
     "httpx",
     "pycocotools @ git+https://github.com/philferriere/cocoapi.git#egg=pycocotools&subdirectory=PythonAPI",
     "pycococreatortools @ git+https://github.com/waspinator/pycococreator.git#egg=pycocreatortools",
-    "geopandas"
+    "geopandas",
 ]
 
-test_requirements = [
-    "pytest>=3",
-    "pytest-httpx"
-]
+test_requirements = ["pytest>=3", "pytest-httpx"]
 
 setup(
     author="Ryan Avery",
