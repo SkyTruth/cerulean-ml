@@ -1,7 +1,13 @@
 # cerulean-ml
 Repo for Training ML assets for Cerulean
 
+# Setup `pre-commit`
+This runs `black` (code formatter), `flake8` (linting), `isort` (import sorting) and `mypy` (type checks) every time you commit.
 
+```
+pip install pre-commit
+pre-commit install
+```
 # Setup
 
 Deploy the VM, sync the git directory, and ssh with port forwarding
