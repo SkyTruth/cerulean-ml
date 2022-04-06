@@ -143,7 +143,7 @@ def save_tiles_from_3d(tiled_arr: np.ndarray, img_fname: str, outdir: str):
     print(f"finished saving {tiles_n} images")
 
 
-def copy_whole_images(img_list: list, outdir: str):
+def copy_whole_images(img_list: List, outdir: str):
     """Copy whole images from a directory (mounted gcp bucket) to another directory.
 
     Dask gives a linear speedup for saving out png files. This timing
@@ -264,13 +264,13 @@ class COCOtiler:
         else:
             raise ValueError(f"The layer {instance_path} is not a VV image.")
 
-    def copy_background_images(self, class_folders: list[str]):
+    def copy_background_images(self, class_folders: List[str]):
         fnames_vv = []
         for f in class_folders:
             fnames_vv.extend(list(f.glob("**/Background.png")))
         copy_whole_images(fnames_vv, self.img_dir)
 
-    def create_coco_from_photopea_layers(self, layer_pths: list[str], coco_output: dict):
+    def create_coco_from_photopea_layers(self, layer_pths: List[str], coco_output: dict):
         """Saves a COCO JSON with annotations compressed in RLE format and also saves corresponding image tiles.
 
         The COCO JSON is amended to add two keys for the full scene, referring to the folder name containing the
@@ -348,7 +348,7 @@ class COCOtiler:
         print(f"finished a full scene: {self.big_image_id}")
         self.global_tile_id = start_tile_n + tiles_n
 
-    def create_coco_from_photopea_layers_no_tile(self, layer_pths: list[str], coco_output: dict):
+    def create_coco_from_photopea_layers_no_tile(self, layer_pths: List[str], coco_output: dict):
         """Saves a COCO JSON with annotations compressed in RLE format, without tiling and referring to the
             original Background.png images.
 
