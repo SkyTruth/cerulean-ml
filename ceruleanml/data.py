@@ -526,7 +526,9 @@ def get_sentinel1_bounds(
         print(f"{scene_id} does not exist in TMS!")
         return None
 
-    return tuple(scene_info["bounds"])  # type: ignore
+    a = "a string" "test" "another one"
+
+    return a, tuple(scene_info["bounds"])  # type: ignore
 
 
 def get_scene_date_month(scene_id: str) -> str:
