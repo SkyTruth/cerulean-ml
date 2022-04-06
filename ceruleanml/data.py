@@ -12,6 +12,7 @@ from collections import ChainMap
 import httpx
 import rasterio
 from io import BytesIO
+import zipfile
 
 import fiona
 from fiona import collection
@@ -496,26 +497,63 @@ def get_scene_date_month(scene_id: str) -> str:
     date_time_obj = date_time_obj.replace(day=1, hour=0, minute=0, second=0)
     return date_time_obj.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-def get_ship_density(
-   bounds: Tuple[float], img_shape:Tuple[int], scene_date_month:str="2020-08-01T00:00:00Z", url="https://gmtds.maplarge.com/ogc/ais:density/wms?"
-) -> np.ndarray:
-    h, w  = img_shape
-    bbox_wms = bounds[1], bounds[0], bounds[-1], bounds[2]
-    qs = ("REQUEST=GetMap&LAYERS=ais:density&STYLES=&FORMAT=image/png&TRANSPARENT=true"
-    f"SERVICE=WMS&VERSION=1.3.0&WIDTH={w}&HEIGHT={h}&CRS=EPSG:4326&"
-    f"BBOX={','.join([str(b) for b in bbox_wms])}&"
-    f"TIME={scene_date_month}")
 
-    r = httpx.get(f"{url}{qs}", timeout=None)
+def get_ship_density(
+    bounds: Tuple[float],
+    img_shape: Tuple[int],
+    scene_date_month: str = "2020-08-01T00:00:00Z",
+    max_dens=100,
+    url="http://gmtds.maplarge.com/Api/ProcessDirect?",
+) -> np.ndarray:
+    h, w = img_shape
+    bbox_wms = bounds[0], bounds[2], bounds[1], bounds[-1]
+    query = {
+        "action": "table/query",
+        "query": {
+            "engineVersion": 2,
+            "sqlselect": [
+                "category_column",
+                "category",
+                f"GridCrop(grid_float_4326, {', '.join([str(b) for b in bbox_wms])}) as grid_float",
+            ],
+            "table": {
+                "query": {
+                    "table": {"name": "ais/density"},
+                    "where": [
+                        [
+                            {"col": "category_column", "test": "Equal", "value": "All"},
+                            {"col": "category", "test": "Equal", "value": "All"},
+                        ]
+                    ],
+                    "withgeo": True,
+                }
+            },
+            "where": [
+                [{"col": "time", "test": "Equal", "value": f"{scene_date_month}"}]
+            ],
+        },
+    }
+
+    qs = (
+    f"request={json.dumps(query)}"
+    "&uParams=action:table/query;formatType:tiff;withgeo:false;withGeoJson:false;includePolicies:true"
+    )
+
+    r = httpx.get(f"{url}{qs}", timeout=None, follow_redirects=True)
     try:
         r.raise_for_status()
         tempbuf = BytesIO(r.content)
-        ar = skio.imread(tempbuf)
+        zipfile_ob = zipfile.ZipFile(tempbuf)
+        cont = list(zipfile_ob.namelist())
+        with rasterio.open(BytesIO(zipfile_ob.read(cont[0]))) as dataset:
+            ar = dataset.read()
     except httpx.HTTPError:
         print(f"Failed to fetch ship density!")
         return None
-    
-    img = np.mean(ar, axis=2) 
-    # just average all the bands for now
-    # Proxy for ship density given the color scale
-    return img.astype(np.uint8)
+
+    dens_array = ar / (max_dens / 255)
+    dens_array[dens_array >= 255] = 255
+
+    upsampled_dens_array = skimage.transform.resize(np.squeeze(dens_array), img_shape[0:2])
+    upsampled_dens_array = upsampled_dens_array.astype(np.uint8)
+    return upsampled_dens_array

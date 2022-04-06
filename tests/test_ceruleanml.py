@@ -91,7 +91,7 @@ def test_dist_array_from_layers_points():
     assert np.min(arr) == 0
 
 def test_get_ship_density(httpx_mock):
-    with open("tests/fixtures/ship_density.png", "rb") as src:
+    with open("tests/fixtures/MLXF_ais__sq_07a7fea65ceb3429c1ac249f4187f414_9c69e5b4361b6bc412a41f85cdec01ee.zip", "rb") as src:
         httpx_mock.add_response(content=src.read())
     arr = data.get_ship_density(
         bounds=(55.698181, 24.565813, 58.540211, 26.494711),
@@ -100,7 +100,7 @@ def test_get_ship_density(httpx_mock):
     assert arr.shape == (4181, 6458)
     assert arr.dtype == np.dtype(np.uint8)
     assert np.max(arr) == 255
-    assert np.min(arr) == 83
+    assert np.min(arr) == 0
 
 
 def test_create_coco_from_photopea_layers(httpx_mock):
