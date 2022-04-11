@@ -69,9 +69,9 @@ def test_handle_aux_datasets(httpx_mock):
     assert ar.shape == (4181, 6458, 2)
 
 
-def test_dist_array_from_layers():
+def test_get_dist_array_from_vector():
 
-    arr = data.COCOtiler.dist_array_from_layers(
+    arr = data.get_dist_array_from_vector(
         bounds=(55.698181, 24.565813, 58.540211, 26.494711),
         img_shape=(4181, 6458),
         vector_ds="tests/fixtures/oil_areas_inverted_clip.geojson",
@@ -85,7 +85,7 @@ def test_dist_array_from_layers():
 
 def test_dist_array_from_layers_points():
 
-    arr = data.COCOtiler.dist_array_from_layers(
+    arr = data.get_dist_array_from_vector(
         bounds=(55.698181, 24.565813, 58.540211, 26.494711),
         img_shape=(4181, 6458),
         vector_ds="tests/fixtures/infra_locations_clip.geojson",

@@ -465,7 +465,7 @@ class COCOtiler:
             if aux_ds == "ship_density":
                 ar = get_ship_density(bounds, img_shape, scene_date_month)
             else:
-                ar = self.dist_array_from_layers(bounds, img_shape, aux_ds, **kwargs)
+                ar = get_dist_array_from_vector(bounds, img_shape, aux_ds, **kwargs)
 
             ar = np.expand_dims(ar, 2)
             if aux_dataset_channels is None:
@@ -476,40 +476,6 @@ class COCOtiler:
                 )
 
         return aux_dataset_channels
-
-    @staticmethod
-    def dist_array_from_layers(
-        bounds: Tuple[float, float, float, float],
-        img_shape: Tuple[int, int, int],
-        vector_ds: str,
-        max_distance: int = 60000,
-        resample_ratio: int = 8,
-    ):
-        shp = fiona.open(vector_ds)
-        resampled_shape = img_shape[0] // resample_ratio, img_shape[1] // resample_ratio
-        img_affine = rasterio.transform.from_bounds(
-            *bounds, resampled_shape[0], resampled_shape[1]
-        )
-        rv_array, affine = dr.rasterize(
-            shp,
-            affine=img_affine,
-            shape=resampled_shape,
-        )
-
-        my_dr = dr.DistanceRaster(
-            rv_array,
-            affine=affine,
-        )
-        dist_array = my_dr.dist_array
-
-        # inverse array values to match 0 - 1000 where 0 is furthest away from feature
-        dist_array = dist_array / (max_distance / 255)  # 55 km
-        dist_array[dist_array >= 255] = 255
-
-        # resample to original res
-        upsampled_dist_array = skimage.transform.resize(dist_array, img_shape[0:2])
-        upsampled_dist_array = upsampled_dist_array.astype(np.uint8)
-        return upsampled_dist_array
 
 
 def get_sentinel1_bounds(
@@ -532,6 +498,40 @@ def get_scene_date_month(scene_id: str) -> str:
     date_time_obj = datetime.strptime(date_time_str, "%Y%m%dT%H%M%S")
     date_time_obj = date_time_obj.replace(day=1, hour=0, minute=0, second=0)
     return date_time_obj.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def get_dist_array_from_vector(
+    bounds: Tuple[float, float, float, float],
+    img_shape: Tuple[int, int, int],
+    vector_ds: str,
+    max_distance: int = 60000,
+    resample_ratio: int = 8,
+):
+    shp = fiona.open(vector_ds)
+    resampled_shape = img_shape[0] // resample_ratio, img_shape[1] // resample_ratio
+    img_affine = rasterio.transform.from_bounds(
+        *bounds, resampled_shape[0], resampled_shape[1]
+    )
+    rv_array, affine = dr.rasterize(
+        shp,
+        affine=img_affine,
+        shape=resampled_shape,
+    )
+
+    my_dr = dr.DistanceRaster(
+        rv_array,
+        affine=affine,
+    )
+    dist_array = my_dr.dist_array
+
+    # inverse array values to match 0 - 1000 where 0 is furthest away from feature
+    dist_array = dist_array / (max_distance / 255)  # 55 km
+    dist_array[dist_array >= 255] = 255
+
+    # resample to original res
+    upsampled_dist_array = skimage.transform.resize(dist_array, img_shape[0:2])
+    upsampled_dist_array = upsampled_dist_array.astype(np.uint8)
+    return upsampled_dist_array
 
 
 def get_ship_density(
