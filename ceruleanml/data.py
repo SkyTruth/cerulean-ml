@@ -4,7 +4,7 @@ import zipfile
 from datetime import datetime
 from io import BytesIO
 from shutil import copy
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Tuple
 
 import dask
 import distancerasters as dr
@@ -16,6 +16,8 @@ import skimage
 import skimage.io as skio
 from pycococreatortools import pycococreatortools
 from rasterio import transform
+from rasterio.io import MemoryFile
+from rasterio.plot import reshape_as_image
 from rasterio.vrt import WarpedVRT
 from rio_tiler_pds.sentinel import s1_sceneid_parser
 
@@ -247,24 +249,66 @@ class COCOtiler:
         self.coco_output = coco_output
         self.img_dir = img_dir
 
+        self.s1_scene_id: Optional[str] = None
+        self.s1_bounds: Optional[List[float]] = None
+        self.s1_image_shape: Optional[Tuple[int, int]] = None
+        self.s1_gcps: Optional[List[Any]] = None
+        self.s1_crs: Optional[Any] = None
+
     def save_background_img_tiles(
-        self, layer_paths, aux_datasets: List[str] = [], **kwargs
+        self,
+        scene_id: str,
+        layer_paths: List[str],
+        aux_datasets: List[str] = [],
+        **kwargs,
     ):
         """
         aux_datasets (List[str], optional): List of paths pointing to auxiliary vector files to include in tiles. 55km is the range.
 
         """
+        self.s1_scene_id = scene_id
+        (
+            self.s1_bounds,
+            self.s1_image_shape,
+            self.s1_gcps,
+            self.s1_crs,
+        ) = fetch_sentinel1_reprojection_parameters(scene_id)
+
         # saving vv image tiles (Background layer)
         img_path = layer_paths[0]
-        arr = skio.imread(img_path)
+
+        with rasterio.open(img_path) as src:
+            profile = src.profile.copy()
+            profile["driver"] = "GTiff"
+            profile["crs"] = self.s1_crs
+            profile["gcps"] = self.s1_gcps
+
+            with MemoryFile() as mem:
+                with mem.open(**profile) as m:
+                    m.write(src.read())
+                    with WarpedVRT(
+                        m,
+                        src_crs=self.s1_crs,
+                        src_transform=transform.from_gcps(self.s1_gcps),
+                        add_alpha=False,
+                    ) as vrt_dst:
+                        # arr is (c, h, w)
+                        arr = vrt_dst.read(
+                            out_shape=(vrt_dst.count, *self.s1_image_shape)
+                        )
+                        assert arr.shape[1:] == self.s1_image_shape
+
         # Make sure there are channels
-        if len(arr.shape) < 3:
-            arr = np.expand_dims(arr, 2)
+        arr = reshape_as_image(arr)
 
         # Handle aux dataset per scene
         if aux_datasets:
             aux_dataset_channels = self.handle_aux_datasets(
-                aux_datasets, layer_paths, **kwargs
+                aux_datasets,
+                self.s1_scene_id,
+                self.s1_bounds,
+                self.s1_image_shape,
+                **kwargs,
             )
 
             # append as channels to arr
@@ -284,7 +328,7 @@ class COCOtiler:
         copy_whole_images(fnames_vv, self.img_dir)
 
     def create_coco_from_photopea_layers(
-        self, layer_pths: List[str], coco_output: dict
+        self, scene_id: str, layer_pths: List[str], coco_output: dict
     ):
         """Saves a COCO JSON with annotations compressed in RLE format and also saves corresponding image tiles.
 
@@ -301,13 +345,41 @@ class COCOtiler:
             ValueError: Errors if the path to the first file in layer_pths doesn't contain "Background"
             ValueError: Errors if a path to a label file in layer_pths doesn't contain "Layer"
         """
+
+        # Make sure scene id is the same and we have reproj params
+        assert scene_id == self.s1_scene_id, "First run  save_background_img_tiles!"
+        assert self.s1_crs is not None, "First run  save_background_img_tiles!"
+        assert self.s1_gcps is not None, "First run  save_background_img_tiles!"
+        assert self.s1_image_shape is not None, "First run  save_background_img_tiles!"
+
         start_tile_n = self.global_tile_id
         for instance_path in layer_pths[1:]:
             # each label is of form class_instanceid.png
             if "_" not in str(instance_path):
                 raise ValueError(f"The layer {instance_path} is not an instance label.")
-            arr = skio.imread(instance_path)
-            tiled_arr = reshape_split(arr, (512, 512))
+
+            with rasterio.open(instance_path) as src:
+                profile = src.profile.copy()
+                profile["driver"] = "GTiff"
+                profile["crs"] = self.s1_crs
+                profile["gcps"] = self.s1_gcps
+
+                with MemoryFile() as mem:
+                    with mem.open(**profile) as m:
+                        m.write(src.read())
+                        with WarpedVRT(
+                            m,
+                            src_crs=self.s1_crs,
+                            src_transform=transform.from_gcps(self.s1_gcps),
+                            add_alpha=False,
+                        ) as vrt_dst:
+                            # arr is (c, h, w)
+                            arr = vrt_dst.read(
+                                out_shape=(vrt_dst.count, *self.s1_image_shape)
+                            )
+                            assert arr.shape[1:] == self.s1_image_shape
+
+            tiled_arr = reshape_split(reshape_as_image(arr), (512, 512))
             # saving annotations
             tiles_n, _, _, _ = tiled_arr.shape
             for local_tile_id in range(tiles_n):
@@ -373,7 +445,7 @@ class COCOtiler:
         self.global_tile_id = start_tile_n + tiles_n
 
     def create_coco_from_photopea_layers_no_tile(
-        self, layer_pths: List[str], coco_output: dict
+        self, scene_id: str, layer_pths: List[str], coco_output: dict
     ):
         """Saves a COCO JSON with annotations compressed in RLE format, without tiling and referring to the
             original Background.png images.
@@ -391,11 +463,38 @@ class COCOtiler:
             ValueError: Errors if the path to the first file in layer_pths doesn't contain "Background"
             ValueError: Errors if a path to a label file in layer_pths doesn't contain "Layer"
         """
+        # Make sure scene id is the same and we have reproj params
+        assert scene_id == self.s1_scene_id, "First run  save_background_img_tiles!"
+        assert self.s1_crs is not None, "First run  save_background_img_tiles!"
+        assert self.s1_gcps is not None, "First run  save_background_img_tiles!"
+        assert self.s1_image_shape is not None, "First run  save_background_img_tiles!"
+
         for instance_path in layer_pths[1:]:
             # each label is of form class_instanceid.png
             if "_" not in str(instance_path):
                 raise ValueError(f"The layer {instance_path} is not an instance label.")
-            arr = skio.imread(instance_path)
+
+            with rasterio.open(instance_path) as src:
+                profile = src.profile.copy()
+                profile["driver"] = "GTiff"
+                profile["crs"] = self.s1_crs
+                profile["gcps"] = self.s1_gcps
+
+                with MemoryFile() as mem:
+                    with mem.open(**profile) as m:
+                        m.write(src.read())
+                        with WarpedVRT(
+                            m,
+                            src_crs=self.s1_crs,
+                            src_transform=transform.from_gcps(self.s1_gcps),
+                            add_alpha=False,
+                        ) as vrt_dst:
+                            # arr is (c, h, w)
+                            arr = vrt_dst.read(
+                                out_shape=(vrt_dst.count, *self.s1_image_shape)
+                            )
+                            assert arr.shape[1:] == self.s1_image_shape
+
             big_image_original_fname = (
                 os.path.basename(os.path.dirname(instance_path)) + ".tif"
             )
@@ -450,25 +549,20 @@ class COCOtiler:
         with open(f"{outpath}", "w") as output_json_file:
             json.dump(self.coco_output, output_json_file)
 
-    def handle_aux_datasets(self, aux_datasets, layer_paths, **kwargs):
+    def handle_aux_datasets(
+        self, aux_datasets, scene_id, bounds, image_shape, **kwargs
+    ):
         assert (
             len(aux_datasets) == 2 or len(aux_datasets) == 3
         )  # so save as png file need RGB or RGBA
 
-        img_path = layer_paths[0]
-        scene_id = os.path.basename(os.path.dirname(img_path))
-        bounds = get_sentinel1_bounds(scene_id)
-        scene_date_month = get_scene_date_month(scene_id)
-
-        arr = skio.imread(img_path)
-        img_shape = arr.shape
-
         aux_dataset_channels = None
         for aux_ds in aux_datasets:
             if aux_ds == "ship_density":
-                ar = get_ship_density(bounds, img_shape, scene_date_month)
+                scene_date_month = get_scene_date_month(scene_id)
+                ar = get_ship_density(bounds, image_shape, scene_date_month)
             else:
-                ar = get_dist_array_from_vector(bounds, img_shape, aux_ds, **kwargs)
+                ar = get_dist_array_from_vector(bounds, image_shape, aux_ds, **kwargs)
 
             ar = np.expand_dims(ar, 2)
             if aux_dataset_channels is None:
@@ -483,7 +577,7 @@ class COCOtiler:
 
 def fetch_sentinel1_reprojection_parameters(
     scene_id: str,
-) -> Tuple[List[float], Tuple[list, list], Any, Any]:
+) -> Tuple[List[float], Tuple[int, int], List[Any], Any]:
     _scheme: str = "s3"
     _hostname: str = "sentinel-s1-l1c"
     _prefix: str = (
@@ -511,7 +605,7 @@ def fetch_sentinel1_reprojection_parameters(
                 vrt_width = vrt_dst.width
                 vrt_height = vrt_dst.height
 
-    return wgs84_bounds, (vrt_height, vrt_width), gcps_transform, crs
+    return list(wgs84_bounds), (vrt_height, vrt_width), gcps, crs
 
 
 def get_sentinel1_bounds(
