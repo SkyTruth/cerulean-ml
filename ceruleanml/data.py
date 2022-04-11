@@ -506,11 +506,8 @@ class COCOtiler:
         dist_array = dist_array / (max_distance / 255)  # 55 km
         dist_array[dist_array >= 255] = 255
 
-        # flip vertical array for photopea
-        flip_dist_array = np.flipud(dist_array)
-
         # resample to original res
-        upsampled_dist_array = skimage.transform.resize(flip_dist_array, img_shape[0:2])
+        upsampled_dist_array = skimage.transform.resize(dist_array, img_shape[0:2])
         upsampled_dist_array = upsampled_dist_array.astype(np.uint8)
         return upsampled_dist_array
 
@@ -585,17 +582,11 @@ def get_ship_density(
         zipfile_ob = zipfile.ZipFile(tempbuf)
         cont = list(zipfile_ob.namelist())
         with rasterio.open(BytesIO(zipfile_ob.read(cont[0]))) as dataset:
-            ar = dataset.read()
+            ar = dataset.read(out_shape=img_shape[0:2], out_dtype="uint8")
     except httpx.HTTPError:
         print("Failed to fetch ship density!")
         return None
 
     dens_array = ar / (max_dens / 255)
     dens_array[dens_array >= 255] = 255
-
-    # flip vertical array for photopea
-    flip_dens_array = np.flipud(np.squeeze(dens_array))
-
-    upsampled_dens_array = skimage.transform.resize(flip_dens_array, img_shape[0:2])
-    upsampled_dens_array = upsampled_dens_array.astype(np.uint8)
-    return upsampled_dens_array
+    return np.squeeze(dens_array.astype("uint8"))
