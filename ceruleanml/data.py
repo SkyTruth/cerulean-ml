@@ -18,7 +18,7 @@ from pycococreatortools import pycococreatortools
 from rasterio import transform
 from rasterio.enums import Resampling
 from rasterio.io import MemoryFile
-from rasterio.plot import reshape_as_image
+from rasterio.plot import reshape_as_image, reshape_as_raster
 from rasterio.vrt import WarpedVRT
 from rio_tiler_pds.sentinel import s1_sceneid_parser
 
@@ -359,15 +359,17 @@ class COCOtiler:
             if "_" not in str(instance_path):
                 raise ValueError(f"The layer {instance_path} is not an instance label.")
 
+            org_array = skio.imread(instance_path)
             with rasterio.open(instance_path) as src:
                 profile = src.profile.copy()
                 profile["driver"] = "GTiff"
+                profile["count"] = 4
                 profile["crs"] = self.s1_crs
                 profile["gcps"] = self.s1_gcps
 
                 with MemoryFile() as mem:
                     with mem.open(**profile) as m:
-                        m.write(src.read())
+                        m.write(reshape_as_raster(org_array))
                         with WarpedVRT(
                             m,
                             src_crs=self.s1_crs,
@@ -476,15 +478,17 @@ class COCOtiler:
             if "_" not in str(instance_path):
                 raise ValueError(f"The layer {instance_path} is not an instance label.")
 
+            org_array = skio.imread(instance_path)
             with rasterio.open(instance_path) as src:
                 profile = src.profile.copy()
                 profile["driver"] = "GTiff"
+                profile["count"] = 4
                 profile["crs"] = self.s1_crs
                 profile["gcps"] = self.s1_gcps
 
                 with MemoryFile() as mem:
                     with mem.open(**profile) as m:
-                        m.write(src.read())
+                        m.write(reshape_as_raster(org_array))
                         with WarpedVRT(
                             m,
                             src_crs=self.s1_crs,
