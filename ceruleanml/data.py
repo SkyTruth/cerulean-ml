@@ -16,6 +16,7 @@ import skimage
 import skimage.io as skio
 from pycococreatortools import pycococreatortools
 from rasterio import transform
+from rasterio.enums import Resampling
 from rasterio.io import MemoryFile
 from rasterio.plot import reshape_as_image
 from rasterio.vrt import WarpedVRT
@@ -377,6 +378,7 @@ class COCOtiler:
                             arr = vrt_dst.read(
                                 out_shape=(vrt_dst.count, *self.s1_image_shape)
                             )
+
                             assert arr.shape[1:] == self.s1_image_shape
 
             tiled_arr = reshape_split(reshape_as_image(arr), (512, 512))
@@ -712,7 +714,11 @@ def get_ship_density(
         zipfile_ob = zipfile.ZipFile(tempbuf)
         cont = list(zipfile_ob.namelist())
         with rasterio.open(BytesIO(zipfile_ob.read(cont[0]))) as dataset:
-            ar = dataset.read(out_shape=img_shape[0:2], out_dtype="uint8")
+            ar = dataset.read(
+                out_shape=img_shape[0:2],
+                out_dtype="uint8",
+                resampling=Resampling.nearest,
+            )
     except httpx.HTTPError:
         print("Failed to fetch ship density!")
         return None
