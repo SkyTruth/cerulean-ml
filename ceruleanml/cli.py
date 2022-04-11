@@ -1,5 +1,6 @@
 """Console script for ceruleanml."""
 import sys
+
 import click
 
 

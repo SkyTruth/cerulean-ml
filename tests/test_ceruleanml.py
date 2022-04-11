@@ -2,18 +2,15 @@
 
 """Tests for `ceruleanml` package."""
 
-import pytest
-
-from click.testing import CliRunner
 import os
-
-from ceruleanml import ceruleanml
-from ceruleanml import data
-from ceruleanml import cli
-
-import skimage.io as skio
-import numpy as np
 import tempfile
+
+import numpy as np
+import pytest
+import skimage.io as skio
+from click.testing import CliRunner
+
+from ceruleanml import cli, data
 
 
 @pytest.fixture
@@ -54,6 +51,7 @@ def mock_scene_info():
         "colorinterp": ["gray", "gray"],
     }
 
+
 def test_handle_aux_datasets(httpx_mock):
     httpx_mock.add_response(json=mock_scene_info())
     layer_paths = [
@@ -61,8 +59,15 @@ def test_handle_aux_datasets(httpx_mock):
     ]
     coco_tiler = data.COCOtiler("", {})
 
-    ar = coco_tiler.handle_aux_datasets(["tests/fixtures/oil_areas_inverted_clip.geojson","tests/fixtures/infra_locations_clip.geojson"], layer_paths)
+    ar = coco_tiler.handle_aux_datasets(
+        [
+            "tests/fixtures/oil_areas_inverted_clip.geojson",
+            "tests/fixtures/infra_locations_clip.geojson",
+        ],
+        layer_paths,
+    )
     assert ar.shape == (4181, 6458, 2)
+
 
 def test_dist_array_from_layers():
 
@@ -77,6 +82,7 @@ def test_dist_array_from_layers():
     assert np.max(arr) == 255
     assert np.min(arr) == 0
 
+
 def test_dist_array_from_layers_points():
 
     arr = data.COCOtiler.dist_array_from_layers(
@@ -90,12 +96,15 @@ def test_dist_array_from_layers_points():
     assert np.max(arr) == 255
     assert np.min(arr) == 0
 
+
 def test_get_ship_density(httpx_mock):
-    with open("tests/fixtures/MLXF_ais__sq_07a7fea65ceb3429c1ac249f4187f414_9c69e5b4361b6bc412a41f85cdec01ee.zip", "rb") as src:
+    with open(
+        "tests/fixtures/MLXF_ais__sq_07a7fea65ceb3429c1ac249f4187f414_9c69e5b4361b6bc412a41f85cdec01ee.zip",
+        "rb",
+    ) as src:
         httpx_mock.add_response(content=src.read())
     arr = data.get_ship_density(
-        bounds=(55.698181, 24.565813, 58.540211, 26.494711),
-        img_shape=(4181, 6458)
+        bounds=(55.698181, 24.565813, 58.540211, 26.494711), img_shape=(4181, 6458)
     )
     assert arr.shape == (4181, 6458)
     assert arr.dtype == np.dtype(np.uint8)
