@@ -593,8 +593,9 @@ def get_ship_density(
     dens_array = ar / (max_dens / 255)
     dens_array[dens_array >= 255] = 255
 
-    upsampled_dens_array = skimage.transform.resize(
-        np.squeeze(dens_array), img_shape[0:2]
-    )
+    # flip vertical array for photopea
+    flip_dens_array = np.flipud(np.squeeze(dens_array))
+
+    upsampled_dens_array = skimage.transform.resize(flip_dens_array, img_shape[0:2])
     upsampled_dens_array = upsampled_dens_array.astype(np.uint8)
     return upsampled_dens_array
