@@ -4,7 +4,7 @@ import zipfile
 from datetime import datetime
 from io import BytesIO
 from shutil import copy
-from typing import List, Tuple
+from typing import Any, List, Tuple
 
 import dask
 import distancerasters as dr
@@ -15,6 +15,9 @@ import rasterio
 import skimage
 import skimage.io as skio
 from pycococreatortools import pycococreatortools
+from rasterio import transform
+from rasterio.vrt import WarpedVRT
+from rio_tiler_pds.sentinel import s1_sceneid_parser
 
 # Hard Neg is overloaded with overlays but they shouldn't be exported during annotation
 # Hard Neg is just a class that we will use to measure performance gains metrics
@@ -476,6 +479,39 @@ class COCOtiler:
                 )
 
         return aux_dataset_channels
+
+
+def fetch_sentinel1_reprojection_parameters(
+    scene_id: str,
+) -> Tuple[List[float], Tuple[list, list], Any, Any]:
+    _scheme: str = "s3"
+    _hostname: str = "sentinel-s1-l1c"
+    _prefix: str = (
+        "{product}/{acquisitionYear}/{_month}/{_day}/{beam}/{polarisation}/{scene}"
+    )
+
+    params = s1_sceneid_parser(scene_id)
+    prefix = _prefix.format(**params)
+    src_path = (
+        f"{_scheme}://{_hostname}/{prefix}/measurement/{params['beam'].lower()}-vv.tiff"
+    )
+
+    with rasterio.Env(AWS_REQUEST_PAYER="requester"):
+        with rasterio.open(src_path) as src:
+            gcps, crs = src.gcps
+            gcps_transform = transform.from_gcps(gcps)
+
+            with WarpedVRT(
+                src,
+                src_crs=crs,
+                src_transform=gcps_transform,
+                add_alpha=False,
+            ) as vrt_dst:
+                wgs84_bounds = vrt_dst.bounds
+                vrt_width = vrt_dst.width
+                vrt_height = vrt_dst.height
+
+    return wgs84_bounds, (vrt_height, vrt_width), gcps_transform, crs
 
 
 def get_sentinel1_bounds(

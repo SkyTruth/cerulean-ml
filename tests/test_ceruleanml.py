@@ -112,6 +112,24 @@ def test_get_ship_density(httpx_mock):
     assert np.min(arr) == 0
 
 
+@pytest.mark.skip(reason="This requires connecting to S3 and requester pays bucket")
+def test_fetch_sentinel1_reprojection_parameters():
+    scene_id = "S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5"
+    (
+        wgs84_bounds,
+        img_shape,
+        gcps_transform,
+        crs,
+    ) = data.fetch_sentinel1_reprojection_parameters(scene_id)
+
+    print(wgs84_bounds, img_shape, crs)
+    # Results are almost equal to 2 decimals, better to use wgs84 bounds
+    np.testing.assert_almost_equal(
+        list(wgs84_bounds), data.get_sentinel1_bounds(scene_id), 2
+    )
+    assert img_shape == (20191, 29666)
+
+
 def test_create_coco_from_photopea_layers(httpx_mock):
     httpx_mock.add_response(json=mock_scene_info())
     info = {
