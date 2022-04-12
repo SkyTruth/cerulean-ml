@@ -12,8 +12,8 @@ import fiona
 import httpx
 import numpy as np
 import rasterio
-import skimage
 import skimage.io as skio
+import skimage.transform
 from pycococreatortools import pycococreatortools
 from rasterio import transform
 from rasterio.enums import Resampling
@@ -612,9 +612,6 @@ def fetch_sentinel1_reprojection_parameters(
                 add_alpha=False,
             ) as vrt_dst:
                 wgs84_bounds = vrt_dst.bounds
-                import pdb
-
-                pdb.set_trace()
                 vrt_width = int(vrt_dst.width / rescale)
                 vrt_height = int(vrt_dst.height / rescale)
 

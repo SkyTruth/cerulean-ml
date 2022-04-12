@@ -140,7 +140,7 @@ gcpvm/.ssh
 notebooks/runs/
 notebooks/tiled_images/
 notebooks/*images
-
+notebooks/*images*
 examples/
 scratch/
 *.DS_Store
