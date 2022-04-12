@@ -81,7 +81,7 @@ def test_get_dist_array_from_vector():
         bounds=(55.698181, 24.565813, 58.540211, 26.494711),
         img_shape=(4181, 6458),
         vector_ds="tests/fixtures/oil_areas_inverted_clip.geojson",
-        resample_ratio=10,
+        aux_resample_ratio=10,
     )
     assert arr.shape == (4181, 6458)
     assert arr.dtype == np.dtype(np.uint8)
@@ -95,7 +95,7 @@ def test_dist_array_from_layers_points():
         bounds=(55.698181, 24.565813, 58.540211, 26.494711),
         img_shape=(4181, 6458),
         vector_ds="tests/fixtures/infra_locations_clip.geojson",
-        resample_ratio=10,
+        aux_resample_ratio=10,
     )
     assert arr.shape == (4181, 6458)
     assert arr.dtype == np.dtype(np.uint8)
@@ -126,6 +126,7 @@ def test_fetch_sentinel1_reprojection_parameters():
         img_shape,
         gcps_transform,
         crs,
+        rescale,
     ) = data.fetch_sentinel1_reprojection_parameters(scene_id)
 
     print(wgs84_bounds, img_shape, gcps_transform.to_gdal(), crs)
@@ -143,7 +144,7 @@ def test_save_background_img_tiles(mock_fetch_sentinel_1_reprojection_parameters
 
     mock_fetch_sentinel_1_reprojection_parameters.return_value = (
         [55.69982872351191, 24.566447533809654, 58.53597315567021, 26.496758065384803],
-        (20191, 29666),
+        (int(20191 / 8), int(29666 / 8)),
         gcps,
         rasterio.crs.CRS.from_epsg(4326),
     )
@@ -192,11 +193,11 @@ def test_save_background_img_tiles(mock_fetch_sentinel_1_reprojection_parameters
                 "tests/fixtures/oil_areas_inverted_clip.geojson",
                 "tests/fixtures/oil_areas_inverted_clip.geojson",
             ],
-            resample_ratio=100,
+            aux_resample_ratio=100,
         )
 
         os.remove(background_file)
-        assert len(os.listdir(tmp_dir)) == 2320
+        assert len(os.listdir(tmp_dir)) == 40
 
 
 def test_create_coco_from_photopea_layers():
@@ -240,7 +241,7 @@ def test_create_coco_from_photopea_layers():
             58.53597315567021,
             26.496758065384803,
         ]
-        coco_tiler.s1_image_shape = (20191, 29666)
+        coco_tiler.s1_image_shape = (int(20191 / 8), int(29666 / 8))
         coco_tiler.s1_gcps = gcps
         coco_tiler.s1_crs = rasterio.crs.CRS.from_epsg(4326)
 
@@ -253,4 +254,4 @@ def test_create_coco_from_photopea_layers():
         coco_tiler.create_coco_from_photopea_layers(scene_id, layer_path, coco_output)
 
         os.remove(background_file)
-        assert len(coco_tiler.coco_output["annotations"]) == 16
+        assert len(coco_tiler.coco_output["annotations"]) == 4

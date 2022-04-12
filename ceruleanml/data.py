@@ -261,6 +261,7 @@ class COCOtiler:
         scene_id: str,
         layer_paths: List[str],
         aux_datasets: List[str] = [],
+        rescale=8,
         **kwargs,
     ):
         """
@@ -273,7 +274,7 @@ class COCOtiler:
             self.s1_image_shape,
             self.s1_gcps,
             self.s1_crs,
-        ) = fetch_sentinel1_reprojection_parameters(scene_id)
+        ) = fetch_sentinel1_reprojection_parameters(scene_id, rescale=rescale)
 
         # saving vv image tiles (Background layer)
         img_path = layer_paths[0]
@@ -287,10 +288,11 @@ class COCOtiler:
             with MemoryFile() as mem:
                 with mem.open(**profile) as m:
                     m.write(src.read())
+                    gcps_transform = transform.from_gcps(self.s1_gcps)
                     with WarpedVRT(
                         m,
                         src_crs=self.s1_crs,
-                        src_transform=transform.from_gcps(self.s1_gcps),
+                        src_transform=gcps_transform,
                         add_alpha=False,
                     ) as vrt_dst:
                         # arr is (c, h, w)
@@ -370,10 +372,11 @@ class COCOtiler:
                 with MemoryFile() as mem:
                     with mem.open(**profile) as m:
                         m.write(reshape_as_raster(org_array))
+                        gcps_transform = transform.from_gcps(self.s1_gcps)
                         with WarpedVRT(
                             m,
                             src_crs=self.s1_crs,
-                            src_transform=transform.from_gcps(self.s1_gcps),
+                            src_transform=gcps_transform,
                             add_alpha=False,
                         ) as vrt_dst:
                             # arr is (c, h, w)
@@ -489,10 +492,11 @@ class COCOtiler:
                 with MemoryFile() as mem:
                     with mem.open(**profile) as m:
                         m.write(reshape_as_raster(org_array))
+                        gcps_transform = transform.from_gcps(self.s1_gcps)
                         with WarpedVRT(
                             m,
                             src_crs=self.s1_crs,
-                            src_transform=transform.from_gcps(self.s1_gcps),
+                            src_transform=gcps_transform,
                             add_alpha=False,
                         ) as vrt_dst:
                             # arr is (c, h, w)
@@ -582,7 +586,7 @@ class COCOtiler:
 
 
 def fetch_sentinel1_reprojection_parameters(
-    scene_id: str,
+    scene_id: str, rescale: int = 8
 ) -> Tuple[List[float], Tuple[int, int], List[Any], Any]:
     _scheme: str = "s3"
     _hostname: str = "sentinel-s1-l1c"
@@ -608,8 +612,11 @@ def fetch_sentinel1_reprojection_parameters(
                 add_alpha=False,
             ) as vrt_dst:
                 wgs84_bounds = vrt_dst.bounds
-                vrt_width = vrt_dst.width
-                vrt_height = vrt_dst.height
+                import pdb
+
+                pdb.set_trace()
+                vrt_width = int(vrt_dst.width / rescale)
+                vrt_height = int(vrt_dst.height / rescale)
 
     return list(wgs84_bounds), (vrt_height, vrt_width), gcps, crs
 
@@ -641,10 +648,13 @@ def get_dist_array_from_vector(
     img_shape: Tuple[int, int, int],
     vector_ds: str,
     max_distance: int = 60000,
-    resample_ratio: int = 8,
+    aux_resample_ratio: int = 8,
 ):
     shp = fiona.open(vector_ds)
-    resampled_shape = img_shape[0] // resample_ratio, img_shape[1] // resample_ratio
+    resampled_shape = (
+        img_shape[0] // aux_resample_ratio,
+        img_shape[1] // aux_resample_ratio,
+    )
     img_affine = rasterio.transform.from_bounds(
         *bounds, resampled_shape[0], resampled_shape[1]
     )
