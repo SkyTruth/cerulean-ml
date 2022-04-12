@@ -250,8 +250,7 @@ def test_create_coco_from_photopea_layers():
         skio.imsave(background_file, template[:, :, 0])
         layer_path = [background_file, class_file]
 
-        # Pass same vector dataset twice to make RGB image
         coco_tiler.create_coco_from_photopea_layers(scene_id, layer_path, coco_output)
 
         os.remove(background_file)
-        assert len(os.listdir(tmp_dir)) == 2320
+        assert len(coco_tiler.coco_output["annotations"]) == 16
