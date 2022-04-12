@@ -10,6 +10,7 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 import rasterio
+import skimage.io as skio
 from click.testing import CliRunner
 
 from ceruleanml import cli, data
@@ -178,9 +179,9 @@ def test_save_background_img_tiles(mock_fetch_sentinel_1_reprojection_parameters
         coco_tiler = data.COCOtiler(tmp_dir, coco_output)
 
         class_file = f"tests/fixtures/{scene_id}/cv2_transfer_outputs_skytruth_annotation_first_phase_old_vessel_{scene_id}_ambiguous_1.png"
-        # template = skio.imread(class_file)
+        template = skio.imread(class_file)
         background_file = class_file.replace("ambiguous_1", "Background")
-        # skio.imsave(background_file, template[:, :, 0])
+        skio.imsave(background_file, template[:, :, 0])
         layer_path = [background_file, class_file]
 
         # Pass same vector dataset twice to make RGB image
@@ -244,9 +245,9 @@ def test_create_coco_from_photopea_layers():
         coco_tiler.s1_crs = rasterio.crs.CRS.from_epsg(4326)
 
         class_file = f"tests/fixtures/{scene_id}/cv2_transfer_outputs_skytruth_annotation_first_phase_old_vessel_{scene_id}_ambiguous_1.png"
-        # template = skio.imread(class_file)
+        template = skio.imread(class_file)
         background_file = class_file.replace("ambiguous_1", "Background")
-        # skio.imsave(background_file, template[:, :, 0])
+        skio.imsave(background_file, template[:, :, 0])
         layer_path = [background_file, class_file]
 
         # Pass same vector dataset twice to make RGB image
