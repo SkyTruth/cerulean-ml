@@ -8,6 +8,14 @@ This runs `black` (code formatter), `flake8` (linting), `isort` (import sorting)
 pip install pre-commit
 pre-commit install
 ```
+
+# Install dependencies
+
+```
+pip install -e .
+# For testing
+pip install -r requirements_dev.txt
+```
 # Setup
 
 Deploy the VM, sync the git directory, and ssh with port forwarding

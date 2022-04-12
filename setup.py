@@ -23,8 +23,6 @@ requirements = [
     "rio-tiler-pds",
 ]
 
-test_requirements = ["pytest>=3", "pytest-httpx"]
-
 setup(
     author="Ryan Avery",
     author_email="ryan@developmentseed.org",
@@ -53,7 +51,6 @@ setup(
     name="ceruleanml",
     packages=find_packages(include=["ceruleanml", "ceruleanml.*"]),
     test_suite="tests",
-    tests_require=test_requirements,
     url="https://github.com/rbavery/ceruleanml",
     version="0.1.0",
     zip_safe=False,
