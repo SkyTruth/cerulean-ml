@@ -180,15 +180,15 @@ def test_save_background_img_tiles(mock_fetch_sentinel_1_reprojection_parameters
         coco_tiler = data.COCOtiler(tmp_dir, coco_output)
 
         class_file = f"tests/fixtures/{scene_id}/cv2_transfer_outputs_skytruth_annotation_first_phase_old_vessel_{scene_id}_ambiguous_1.png"
-        template = skio.imread(class_file)
+        # template = skio.imread(class_file)
         background_file = class_file.replace("ambiguous_1", "Background")
-        skio.imsave(background_file, template[:, :, 0])
-        layer_path = [background_file, class_file]
+        # skio.imsave(background_file, template[:, :, 0])
+        layer_paths = [background_file, class_file]
 
         # Pass same vector dataset twice to make RGB image
         coco_tiler.save_background_img_tiles(
             scene_id,
-            layer_path,
+            layer_paths,
             aux_datasets=[
                 "tests/fixtures/oil_areas_inverted_clip.geojson",
                 "tests/fixtures/oil_areas_inverted_clip.geojson",
@@ -196,7 +196,7 @@ def test_save_background_img_tiles(mock_fetch_sentinel_1_reprojection_parameters
             aux_resample_ratio=100,
         )
 
-        os.remove(background_file)
+        # os.remove(background_file)
         assert len(os.listdir(tmp_dir)) == 40
 
 
