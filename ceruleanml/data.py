@@ -265,6 +265,8 @@ class COCOtiler:
         **kwargs,
     ):
         """Save background image tiles with additional optional datasets (vector or ship_density)
+        The output background tiles are either 3 or 4 channel images.
+        This means there needs to be a minimum of 2 and a maximum of 3 auxiliary datasets.
 
         Args:
             scene_id (str): The originating scene_id for the background and annotations.
