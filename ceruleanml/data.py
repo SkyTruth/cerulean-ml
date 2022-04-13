@@ -264,10 +264,18 @@ class COCOtiler:
         rescale=8,
         **kwargs,
     ):
-        """
-        aux_datasets (List[str], optional): List of paths pointing to auxiliary vector files to include in tiles. 55km is the range.
+        """Save background image tiles with additional optional datasets (vector or ship_density)
 
+        Args:
+            scene_id (str): The originating scene_id for the background and annotations.
+            layer_paths (List[str]): List of path in a scene folder corresponding to Background.png, Layer 1.png, etc. Order matters.
+            aux_datasets (List[str], optional): List of paths pointing to auxiliary vector files to include in tiles OR ship_density. 55km is the range by default. Defaults to [].
+            rescale (int, optional): Rescale factor (downscale) to apply to source imagery resolution. Defaults to 8.
+
+        Raises:
+            ValueError: Error if original source imagery is not VV polarization.
         """
+
         self.s1_scene_id = scene_id
         (
             self.s1_bounds,
