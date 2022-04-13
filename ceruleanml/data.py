@@ -687,8 +687,8 @@ def get_dist_array_from_vector(
     )
     dist_array = my_dr.dist_array
 
-    # inverse array values to match 0 - 1000 where 0 is furthest away from feature
-    dist_array = dist_array / (max_distance / 255)  # 55 km
+    # array values to match 0 - 255 where 255 is furthest away from feature
+    dist_array = dist_array / (max_distance / 255)  # 60 km
     dist_array[dist_array >= 255] = 255
 
     # resample to original res
