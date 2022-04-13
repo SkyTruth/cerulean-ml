@@ -16,7 +16,7 @@ import skimage.io as skio
 import skimage.transform
 from pycococreatortools import pycococreatortools
 from rasterio import transform
-from rasterio.enums import Resampling
+from rasterio.enums import ColorInterp, Resampling
 from rasterio.io import MemoryFile
 from rasterio.plot import reshape_as_image, reshape_as_raster
 from rasterio.vrt import WarpedVRT
@@ -297,7 +297,14 @@ class COCOtiler:
 
             with MemoryFile() as mem:
                 with mem.open(**profile) as m:
-                    m.write(src.read())
+
+                    ar = src.read()
+                    new_ar = np.zeros(ar.shape, dtype=ar.dtype)
+                    cmap = src.colormap(1)
+                    for k, v in cmap.items():
+                        new_ar[0, ar[0] == k] = v[0]
+                    m.write(new_ar)
+                    m.colorinterp = [ColorInterp.gray]
                     gcps_transform = transform.from_gcps(self.s1_gcps)
                     with WarpedVRT(
                         m,
@@ -307,8 +314,11 @@ class COCOtiler:
                     ) as vrt_dst:
                         # arr is (c, h, w)
                         arr = vrt_dst.read(
-                            out_shape=(vrt_dst.count, *self.s1_image_shape)
+                            out_shape=(vrt_dst.count, *self.s1_image_shape),
+                            out_dtype="uint8",
+                            # resampling=Resampling.nearest,
                         )
+
                         assert arr.shape[1:] == self.s1_image_shape
 
         # Make sure there are channels
