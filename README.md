@@ -36,4 +36,12 @@ cd ..
 jserve
 ```
 
+Add the AWS CLI with authentication to be able to reach out to the Sentinel-1 PDS S3 bucket, to generate tiles:
+```
+apt install snapd
+snap install aws-cli --classic
+aws configure 
+# Add AWS Access Key ID and AWS Secret Access Key from AWS account
+```
+
 If there are new dependencies you find we need, you can add them in the environment.yaml and install with make install (the top level makefile not the terraform makefile).
