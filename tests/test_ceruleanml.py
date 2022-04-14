@@ -188,17 +188,17 @@ def test_save_background_img_tiles(mock_fetch_sentinel_1_reprojection_parameters
             scene_id,
             layer_paths,
             aux_datasets=[
-                "tests/fixtures/oil_areas_inverted_clip.geojson",
-                "tests/fixtures/oil_areas_inverted_clip.geojson",
+                "tests/fixtures/infra_locations_clip.geojson",
+                "tests/fixtures/infra_locations_clip.geojson",
             ],
-            aux_resample_ratio=100,
+            aux_resample_ratio=10,
         )
 
         test_color_ar = skio.imread(
             tmp_dir
             + "/S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5_vv-image_local_tile_29.png"
         )
-        assert len(np.unique(test_color_ar[:, :, 0])) == 255
+        assert len(np.unique(test_color_ar[:, :, 0])) == 109
 
         assert len(os.listdir(tmp_dir)) == 40
 
