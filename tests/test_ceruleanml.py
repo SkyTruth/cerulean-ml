@@ -126,14 +126,12 @@ def test_fetch_sentinel1_reprojection_parameters():
         img_shape,
         gcps_transform,
         crs,
-        rescale,
     ) = data.fetch_sentinel1_reprojection_parameters(scene_id)
 
-    print(wgs84_bounds, img_shape, gcps_transform.to_gdal(), crs)
+    print(wgs84_bounds, img_shape, gcps_transform, crs)
     # Results are almost equal to 2 decimals, better to use wgs84 bounds
     np.testing.assert_almost_equal(wgs84_bounds, data.get_sentinel1_bounds(scene_id), 2)
-    assert img_shape == (20191, 29666)
-    assert False
+    assert img_shape == (5048, 7416)
 
 
 @patch("ceruleanml.data.fetch_sentinel1_reprojection_parameters")
@@ -144,7 +142,7 @@ def test_save_background_img_tiles(mock_fetch_sentinel_1_reprojection_parameters
 
     mock_fetch_sentinel_1_reprojection_parameters.return_value = (
         [55.69982872351191, 24.566447533809654, 58.53597315567021, 26.496758065384803],
-        (int(20191 / 8), int(29666 / 8)),
+        (5048, 7416),
         gcps,
         rasterio.crs.CRS.from_epsg(4326),
     )
@@ -196,11 +194,11 @@ def test_save_background_img_tiles(mock_fetch_sentinel_1_reprojection_parameters
 
         test_color_ar = skio.imread(
             tmp_dir
-            + "/S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5_vv-image_local_tile_29.png"
+            + "/S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5_vv-image_local_tile_10.png"
         )
-        assert len(np.unique(test_color_ar[:, :, 0])) == 109
+        assert len(np.unique(test_color_ar[:, :, 0])) == 217
 
-        assert len(os.listdir(tmp_dir)) == 40
+        assert len(os.listdir(tmp_dir)) == 150
 
 
 def test_create_coco_from_photopea_layers():
@@ -244,7 +242,7 @@ def test_create_coco_from_photopea_layers():
             58.53597315567021,
             26.496758065384803,
         ]
-        coco_tiler.s1_image_shape = (int(20191 / 8), int(29666 / 8))
+        coco_tiler.s1_image_shape = (5048, 7416)
         coco_tiler.s1_gcps = gcps
         coco_tiler.s1_crs = rasterio.crs.CRS.from_epsg(4326)
 
@@ -254,4 +252,4 @@ def test_create_coco_from_photopea_layers():
 
         coco_tiler.create_coco_from_photopea_layers(scene_id, layer_path, coco_output)
 
-        assert len(coco_tiler.coco_output["annotations"]) == 4
+        assert len(coco_tiler.coco_output["annotations"]) == 5

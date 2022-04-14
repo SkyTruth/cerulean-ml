@@ -20,7 +20,6 @@ from rasterio.enums import ColorInterp, Resampling
 from rasterio.io import MemoryFile
 from rasterio.plot import reshape_as_image, reshape_as_raster
 from rasterio.vrt import WarpedVRT
-from rio_tiler_pds.sentinel import s1_sceneid_parser
 
 # Hard Neg is overloaded with overlays but they shouldn't be exported during annotation
 # Hard Neg is just a class that we will use to measure performance gains metrics
@@ -261,7 +260,6 @@ class COCOtiler:
         scene_id: str,
         layer_paths: List[str],
         aux_datasets: List[str] = [],
-        rescale=8,
         **kwargs,
     ):
         """Save background image tiles with additional optional datasets (vector or ship_density)
@@ -272,7 +270,6 @@ class COCOtiler:
             scene_id (str): The originating scene_id for the background and annotations.
             layer_paths (List[str]): List of path in a scene folder corresponding to Background.png, Layer 1.png, etc. Order matters.
             aux_datasets (List[str], optional): List of paths pointing to auxiliary vector files to include in tiles OR ship_density. 55km is the range by default. Defaults to [].
-            rescale (int, optional): Rescale factor (downscale) to apply to source imagery resolution. Defaults to 8.
 
         Raises:
             ValueError: Error if original source imagery is not VV polarization.
@@ -284,7 +281,7 @@ class COCOtiler:
             self.s1_image_shape,
             self.s1_gcps,
             self.s1_crs,
-        ) = fetch_sentinel1_reprojection_parameters(scene_id, rescale=rescale)
+        ) = fetch_sentinel1_reprojection_parameters(scene_id)
 
         # saving vv image tiles (Background layer)
         img_path = layer_paths[0]
@@ -297,7 +294,6 @@ class COCOtiler:
 
             with MemoryFile() as mem:
                 with mem.open(**profile) as m:
-
                     ar = src.read()
                     new_ar = np.zeros(ar.shape, dtype=ar.dtype)
                     cmap = src.colormap(1)
@@ -316,9 +312,7 @@ class COCOtiler:
                         arr = vrt_dst.read(
                             out_shape=(vrt_dst.count, *self.s1_image_shape),
                             out_dtype="uint8",
-                            # resampling=Resampling.nearest,
                         )
-
                         assert arr.shape[1:] == self.s1_image_shape
 
         # Make sure there are channels
@@ -608,17 +602,7 @@ class COCOtiler:
 def fetch_sentinel1_reprojection_parameters(
     scene_id: str, rescale: int = 8
 ) -> Tuple[List[float], Tuple[int, int], List[Any], Any]:
-    _scheme: str = "s3"
-    _hostname: str = "sentinel-s1-l1c"
-    _prefix: str = (
-        "{product}/{acquisitionYear}/{_month}/{_day}/{beam}/{polarisation}/{scene}"
-    )
-
-    params = s1_sceneid_parser(scene_id)
-    prefix = _prefix.format(**params)
-    src_path = (
-        f"{_scheme}://{_hostname}/{prefix}/measurement/{params['beam'].lower()}-vv.tiff"
-    )
+    src_path = f"s3://skytruth-cerulean-sa-east-1/outputs/rasters/{scene_id}.tiff"
 
     with rasterio.Env(AWS_REQUEST_PAYER="requester"):
         with rasterio.open(src_path) as src:
@@ -632,8 +616,8 @@ def fetch_sentinel1_reprojection_parameters(
                 add_alpha=False,
             ) as vrt_dst:
                 wgs84_bounds = vrt_dst.bounds
-                vrt_width = int(vrt_dst.width / rescale)
-                vrt_height = int(vrt_dst.height / rescale)
+                vrt_width = vrt_dst.width
+                vrt_height = vrt_dst.height
 
     return list(wgs84_bounds), (vrt_height, vrt_width), gcps, crs
 
