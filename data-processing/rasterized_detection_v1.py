@@ -1,5 +1,5 @@
 import click
-from utils import vector2raster, raster2png, dir_
+from utils import dir_, raster2png, vector2raster
 
 
 @click.command(short_help="Script to convert vector to raster")
