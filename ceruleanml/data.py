@@ -244,6 +244,7 @@ class COCOtiler:
     def __init__(self, img_dir: str, coco_output: dict):
         self.instance_id = 0
         self.global_tile_id = 0
+        self.global_increment = 0
         self.big_image_id = 0
         self.coco_output = coco_output
         self.img_dir = img_dir
@@ -454,6 +455,8 @@ class COCOtiler:
                         }
                     )
                     self.coco_output["annotations"].append(annotation_info)
+                print("finished processing an instance tile")
+                print(f"global tile id: {self.global_tile_id}")
                 self.instance_id += 1
                 self.global_tile_id += 1
             self.global_tile_id = start_tile_n
