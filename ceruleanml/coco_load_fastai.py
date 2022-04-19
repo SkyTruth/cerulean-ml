@@ -1,7 +1,8 @@
-import numpy as np
-import icevision
-import pandas as pd
 from typing import List
+
+import icevision
+import numpy as np
+import pandas as pd
 
 # os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -27,7 +28,8 @@ def get_image_path(record_collection, record_id_list):
 
 
 def record_to_mask(
-    record_collection: icevision.data.record_collection.RecordCollection, record_id_list: List
+    record_collection: icevision.data.record_collection.RecordCollection,
+    record_id_list: List,
 ):
     """Takes a record collection containing coco dataset annotations and
         converts annotations to semantic masks.
@@ -58,7 +60,9 @@ def record_to_mask(
         for i in record_id_list:
             d = record_collection.get_by_record_id(i).as_dict()
             arr = (
-                d["detection"]["masks"][0].to_mask(d["common"]["height"], d["common"]["width"]).data
+                d["detection"]["masks"][0]
+                .to_mask(d["common"]["height"], d["common"]["width"])
+                .data
             )
             arr = (
                 arr * d["detection"]["label_ids"][0]

@@ -2,7 +2,7 @@
 
 """The setup script."""
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 # with open("README.rst") as readme_file:
 #     readme = readme_file.read()
@@ -12,10 +12,15 @@ from setuptools import setup, find_packages
 
 requirements = [
     "Click>=7.0",
-]
-
-test_requirements = [
-    "pytest>=3",
+    "Cython",
+    "distancerasters",
+    "scikit-image",
+    "dask",
+    "httpx",
+    "pycocotools @ git+https://github.com/philferriere/cocoapi.git#egg=pycocotools&subdirectory=PythonAPI",
+    "pycococreatortools @ git+https://github.com/waspinator/pycococreator.git#egg=pycocreatortools",
+    "geopandas",
+    "rio-tiler-pds",
 ]
 
 setup(
@@ -46,7 +51,6 @@ setup(
     name="ceruleanml",
     packages=find_packages(include=["ceruleanml", "ceruleanml.*"]),
     test_suite="tests",
-    tests_require=test_requirements,
     url="https://github.com/rbavery/ceruleanml",
     version="0.1.0",
     zip_safe=False,

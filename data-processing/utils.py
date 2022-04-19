@@ -1,10 +1,11 @@
+import os
+
+import geopandas as gpd
+import numpy as np
 import rasterio
 from rasterio.features import rasterize
-import geopandas as gpd
-from rio_cogeo import cog_translate, cog_profiles
 from rasterio.io import MemoryFile
-import numpy as np
-import os
+from rio_cogeo import cog_profiles, cog_translate
 
 
 def vector2raster(vector_file, raster_file, rasterize_file):

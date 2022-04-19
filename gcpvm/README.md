@@ -32,7 +32,7 @@ This will create a GCP Compute instance, and save in your local machine a privat
 
 ## The VM
 
-This VM contains a conda environment `fastai2` that can be activated with `mamba activate fastai2` and edited by editing `minimal-start-up-script.sh`, which runs commands when `terraform apply` is called. See the `start-up-script.sh` for reference (this wa sused to create the custom cerulean base image) and in particular use `-y` flags when installing packages with `mamba` so that there is no waiting for manual response.
+This VM contains a conda environment `fastai2` that can be activated with `mamba activate fastai2` and edited by editing `minimal-start-up-script.sh`, which runs commands when `terraform apply` is called. See the `start-up-script.sh` for reference (this was used to create the custom cerulean base image) and in particular use `-y` flags when installing packages with `mamba` so that there is no waiting for manual response.
 
 The VM also comes with docker and jupyter with port forwarding to your local machine (you can copy and paste a jupyter link on the VM to your local machine's browser).
 
