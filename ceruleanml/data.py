@@ -455,14 +455,10 @@ class COCOtiler:
                         }
                     )
                     self.coco_output["annotations"].append(annotation_info)
-                print("finished processing an instance tile")
-                print(f"global tile id: {self.global_tile_id}")
                 self.instance_id += 1
                 self.global_tile_id += 1
             self.global_tile_id = start_tile_n
-            print("finished processing an instance scene")
         self.big_image_id += 1
-        print(f"finished a full scene: {self.big_image_id}")
         self.global_tile_id = start_tile_n + tiles_n
 
     def create_coco_from_photopea_layers_no_tile(
