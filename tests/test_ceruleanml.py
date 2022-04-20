@@ -32,6 +32,36 @@ def test_content(response):
     # assert 'GitHub' in BeautifulSoup(response.content).title.string
 
 
+@pytest.fixture
+def coco_output():
+    info = {
+        "description": "Cerulean Dataset V2",
+        "url": "none",
+        "version": "1.0",
+        "year": 2021,
+        "contributor": "Skytruth",
+        "date_created": "2022/2/23",
+    }
+
+    licenses = [{"url": "none", "id": 1, "name": "CeruleanDataset V2"}]
+    categories = [
+        {"supercategory": "slick", "id": 1, "name": "infra_slick"},
+        {"supercategory": "slick", "id": 2, "name": "natural_seep"},
+        {"supercategory": "slick", "id": 3, "name": "coincident_vessel"},
+        {"supercategory": "slick", "id": 4, "name": "recent_vessel"},
+        {"supercategory": "slick", "id": 5, "name": "old_vessel"},
+        {"supercategory": "slick", "id": 6, "name": "ambiguous"},
+    ]
+
+    return {
+        "info": info,
+        "licenses": licenses,
+        "images": [],
+        "annotations": [],
+        "categories": categories,
+    }
+
+
 def test_command_line_interface():
     """Test the CLI."""
     runner = CliRunner()
@@ -135,7 +165,9 @@ def test_fetch_sentinel1_reprojection_parameters():
 
 
 @patch("ceruleanml.data.fetch_sentinel1_reprojection_parameters")
-def test_save_background_img_tiles(mock_fetch_sentinel_1_reprojection_parameters):
+def test_save_background_img_tiles(
+    mock_fetch_sentinel_1_reprojection_parameters, coco_output
+):
     scene_id = "S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5"
     with open("tests/fixtures/gcps_s1.xyz", "rb") as src:
         gcps = pickle.load(src)
@@ -146,33 +178,6 @@ def test_save_background_img_tiles(mock_fetch_sentinel_1_reprojection_parameters
         gcps,
         rasterio.crs.CRS.from_epsg(4326),
     )
-
-    info = {
-        "description": "Cerulean Dataset V2",
-        "url": "none",
-        "version": "1.0",
-        "year": 2021,
-        "contributor": "Skytruth",
-        "date_created": "2022/2/23",
-    }
-
-    licenses = [{"url": "none", "id": 1, "name": "CeruleanDataset V2"}]
-    categories = [
-        {"supercategory": "slick", "id": 1, "name": "infra_slick"},
-        {"supercategory": "slick", "id": 2, "name": "natural_seep"},
-        {"supercategory": "slick", "id": 3, "name": "coincident_vessel"},
-        {"supercategory": "slick", "id": 4, "name": "recent_vessel"},
-        {"supercategory": "slick", "id": 5, "name": "old_vessel"},
-        {"supercategory": "slick", "id": 6, "name": "ambiguous"},
-    ]
-
-    coco_output = {
-        "info": info,
-        "licenses": licenses,
-        "images": [],
-        "annotations": [],
-        "categories": categories,
-    }
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         coco_tiler = data.COCOtiler(tmp_dir, coco_output)
@@ -201,37 +206,10 @@ def test_save_background_img_tiles(mock_fetch_sentinel_1_reprojection_parameters
         assert len(os.listdir(tmp_dir)) == 150
 
 
-def test_create_coco_from_photopea_layers():
+def test_create_coco_from_photopea_layers(coco_output):
     scene_id = "S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5"
     with open("tests/fixtures/gcps_s1.xyz", "rb") as src:
         gcps = pickle.load(src)
-
-    info = {
-        "description": "Cerulean Dataset V2",
-        "url": "none",
-        "version": "1.0",
-        "year": 2021,
-        "contributor": "Skytruth",
-        "date_created": "2022/2/23",
-    }
-
-    licenses = [{"url": "none", "id": 1, "name": "CeruleanDataset V2"}]
-    categories = [
-        {"supercategory": "slick", "id": 1, "name": "infra_slick"},
-        {"supercategory": "slick", "id": 2, "name": "natural_seep"},
-        {"supercategory": "slick", "id": 3, "name": "coincident_vessel"},
-        {"supercategory": "slick", "id": 4, "name": "recent_vessel"},
-        {"supercategory": "slick", "id": 5, "name": "old_vessel"},
-        {"supercategory": "slick", "id": 6, "name": "ambiguous"},
-    ]
-
-    coco_output = {
-        "info": info,
-        "licenses": licenses,
-        "images": [],
-        "annotations": [],
-        "categories": categories,
-    }
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         coco_tiler = data.COCOtiler(tmp_dir, coco_output)

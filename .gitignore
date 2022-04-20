@@ -144,3 +144,6 @@ notebooks/*images*
 examples/
 scratch/
 *.DS_Store
+.
+.vscode
+terraform.tfstate

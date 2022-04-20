@@ -564,7 +564,6 @@ class COCOtiler:
                     }
                 )
                 self.coco_output["annotations"].append(annotation_info)
-                print("Processed one instance.")
             self.instance_id += 1
         self.big_image_id += 1
 
@@ -665,15 +664,19 @@ def get_dist_array_from_vector(
         shape=resampled_shape,
     )
 
-    my_dr = dr.DistanceRaster(
-        rv_array,
-        affine=affine,
-    )
-    dist_array = my_dr.dist_array
+    if (rv_array == 0).all():
+        dist_array = np.ones(img_shape) * 255
 
-    # array values to match 0 - 255 where 255 is furthest away from feature
-    dist_array = dist_array / (max_distance / 255)  # 60 km
-    dist_array[dist_array >= 255] = 255
+    else:
+        my_dr = dr.DistanceRaster(
+            rv_array,
+            affine=affine,
+        )
+        dist_array = my_dr.dist_array
+
+        # array values to match 0 - 255 where 255 is furthest away from feature
+        dist_array = dist_array / (max_distance / 255)  # 60 km
+        dist_array[dist_array >= 255] = 255
 
     # resample to original res
     upsampled_dist_array = skimage.transform.resize(dist_array, img_shape[0:2])
