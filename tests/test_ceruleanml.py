@@ -165,7 +165,7 @@ def test_fetch_sentinel1_reprojection_parameters():
 
 
 @patch("ceruleanml.data.fetch_sentinel1_reprojection_parameters")
-def test_save_background_img_tiles_with_reproject(
+def test_save_background_img_tiles(
     mock_fetch_sentinel_1_reprojection_parameters, coco_output
 ):
     scene_id = "S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5"
@@ -204,26 +204,6 @@ def test_save_background_img_tiles_with_reproject(
         assert len(np.unique(test_color_ar[:, :, 0])) == 217
 
         assert len(os.listdir(tmp_dir)) == 150
-
-
-def test_save_background_img_tiles(coco_output):
-    scene_id = "S1A_IW_GRDH_1SDV_20200819T062057_20200819T062126_033972_03F134_D4C1"
-    aux_datasets = [
-        "/root/work/notebooks/../../data/aux_datasets/infra_locations.json",
-        "ship_density",
-    ]
-    layer_pths = [
-        "/root/work/notebooks/../../data/cv2_transfer/outputs/skytruth_annotation/first_phase/canonical_vessel/S1A_IW_GRDH_1SDV_20200819T062057_20200819T062126_033972_03F134_D4C1/Background.png",
-        "/root/work/notebooks/../../data/cv2_transfer/outputs/skytruth_annotation/first_phase/canonical_vessel/S1A_IW_GRDH_1SDV_20200819T062057_20200819T062126_033972_03F134_D4C1/vessel_coincident_1.png",
-    ]
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        coco_tiler = data.COCOtiler(tmp_dir, coco_output)
-        coco_tiler.save_background_img_tiles(
-            scene_id,
-            layer_pths,
-            aux_datasets=aux_datasets,
-            aux_resample_ratio=8,
-        )
 
 
 def test_create_coco_from_photopea_layers(coco_output):
