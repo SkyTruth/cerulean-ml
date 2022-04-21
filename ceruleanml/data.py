@@ -376,10 +376,18 @@ class COCOtiler:
                 raise ValueError(f"The layer {instance_path} is not an instance label.")
 
             org_array = skio.imread(instance_path)
+            if (
+                len(org_array.shape) == 2 and "ambiguous" in instance_path
+            ):  # hack to handle ambiguous images saved with vals 0 and 255 rather than correct color mapping
+                org_array = org_array.clip(max=1)
+                org_array = np.expand_dims(org_array, axis=2)
             with rasterio.open(instance_path) as src:
                 profile = src.profile.copy()
                 profile["driver"] = "GTiff"
-                profile["count"] = 4
+                if org_array.shape[-1] == 1 and "ambiguous" in instance_path:
+                    profile["count"] = 1
+                else:
+                    profile["count"] = 4
                 profile["crs"] = self.s1_crs
                 profile["gcps"] = self.s1_gcps
 
@@ -424,20 +432,32 @@ class COCOtiler:
                 # go through each label image to extract annotation
                 if image_info not in self.coco_output["images"]:
                     self.coco_output["images"].append(image_info)
-                class_id = get_layer_cls(
-                    instance_tile, class_mapping_photopea, class_mapping_coco
-                )
-                if class_id != 0:
-                    category_info = {
-                        "id": class_id,
-                        "is_crowd": True,
-                    }  # forces compressed RLE format
+                if instance_tile.shape[-1] == 1 and "ambiguous" in instance_path:
+                    if 1 in np.unique(instance_tile):
+                        class_id = 6
+                        category_info = {
+                            "id": class_id,
+                            "is_crowd": True,
+                        }  # forces compressed RLE format
+                    else:
+                        class_id = 0
+                        category_info = {"id": class_id, "is_crowd": False}
+                    binary_mask = instance_tile[:, :, -1]
                 else:
-                    category_info = {"id": class_id, "is_crowd": False}
-                r, g, b = class_mapping_photopea[class_mapping_coco_inv[class_id]]
-                binary_mask = rgbalpha_to_binary(instance_tile, r, g, b).astype(
-                    np.uint8
-                )
+                    class_id = get_layer_cls(
+                        instance_tile, class_mapping_photopea, class_mapping_coco
+                    )
+                    if class_id != 0:
+                        category_info = {
+                            "id": class_id,
+                            "is_crowd": True,
+                        }  # forces compressed RLE format
+                    else:
+                        category_info = {"id": class_id, "is_crowd": False}
+                    r, g, b = class_mapping_photopea[class_mapping_coco_inv[class_id]]
+                    binary_mask = rgbalpha_to_binary(instance_tile, r, g, b).astype(
+                        np.uint8
+                    )
 
                 annotation_info = pycococreatortools.create_annotation_info(
                     self.instance_id,
