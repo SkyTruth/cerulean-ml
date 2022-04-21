@@ -1,6 +1,5 @@
 """Console script for ceruleanml."""
 import os
-import sys
 from datetime import date
 from pathlib import Path
 from typing import List
@@ -8,6 +7,11 @@ from typing import List
 import click
 
 import ceruleanml.data as data
+
+
+@click.group()
+def main():
+    """CeruleanML CLI scripts for data processing."""
 
 
 def make_coco_metadata(
@@ -56,27 +60,19 @@ def make_coco_metadata(
     }
 
 
-@click.command()
-def main(args=None):
-    """Console script for ceruleanml."""
-    click.echo("Replace this message by putting your code into " "ceruleanml.cli.main")
-    click.echo("See click documentation at https://click.palletsprojects.com/")
-    return 0
-
-
-@click.command()
+@main.command()
 def make_coco_dataset_with_tiles(
     class_folder_path: str,
     aux_data_path: str,
     coco_outdir: str,
     name: str = "Tiled Cerulean Dataset V2",
 ):
-    """_summary_
+    """Create the Cerulean Dataset V2 with tiles and context files (ship density and infra distance).
 
     Args:
-        class_folder_path (str): _description_
-        aux_data_path (str): _description_
-        coco_outdir (str): _description_
+        class_folder_path (str): the path to the folder containing class folders ("Infrastructure", "Coincident", etc.)
+        aux_data_path (str): the path to the folder containing the aux files (currently only infra_locations.json)
+        coco_outdir (str): the path to sav ethe coco json and the folder of tiled images.
     """
     os.makedirs(coco_outdir, exist_ok=True)
     os.makedirs(os.path.join(coco_outdir, "tiled_images"), exist_ok=True)
@@ -108,19 +104,17 @@ def make_coco_dataset_with_tiles(
     print(f"Images and COCO JSON have been saved in {coco_outdir}.")
 
 
-@click.command()
+@main.command()
 def make_coco_dataset_no_tiles(
     class_folder_path: str,
-    aux_data_path: str,
     coco_outdir: str,
     name="Untiled Cerulean Dataset V2 No Context Files",
 ):
-    """_summary_
+    """Create the Cerulean Dataset V2 without tiling and without context files.
 
     Args:
-        class_folder_path (str): _description_
-        aux_data_path (str): _description_
-        coco_outdir (str): _description_
+        class_folder_path (str): the path to the folder containing class folders ("Infrastructure", "Coincident", etc.)
+        coco_outdir (str): the path to sav ethe coco json and the folder of tiled images.
     """
     os.makedirs(coco_outdir, exist_ok=True)
     os.makedirs(os.path.join(coco_outdir, "untiled_images"), exist_ok=True)
@@ -145,19 +139,17 @@ def make_coco_dataset_no_tiles(
     print(f"Images and COCO JSON have been saved in {coco_outdir}.")
 
 
-@click.command()
+@main.command()
 def make_coco_dataset_no_context(
     class_folder_path: str,
-    aux_data_path: str,
     coco_outdir: str,
     name="Tiled Cerulean Dataset V2 No Context Files",
 ):
-    """_summary_
+    """Create the Cerulean Dataset V2 with tiles but without context files (ship density and infra distance).
 
     Args:
-        class_folder_path (str): _description_
-        aux_data_path (str): _description_
-        coco_outdir (str): _description_
+        class_folder_path (str): the path to the folder containing class folders ("Infrastructure", "Coincident", etc.)
+        coco_outdir (str): the path to sav ethe coco json and the folder of tiled images.
     """
     os.makedirs(coco_outdir, exist_ok=True)
     os.makedirs(os.path.join(coco_outdir, "tiled_images_no_context"), exist_ok=True)
@@ -188,4 +180,4 @@ def make_coco_dataset_no_context(
 
 
 if __name__ == "__main__":
-    sys.exit(main())  # pragma: no cover
+    main()
