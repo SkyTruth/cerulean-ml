@@ -67,12 +67,15 @@ def make_coco_dataset_with_tiles(
     coco_outdir: str,
     name: str = "Tiled Cerulean Dataset V2",
 ):
-    """Create the Cerulean Dataset V2 with tiles and context files (ship density and infra distance).
+    """Create the dataset with tiles and context files (ship density and infra distance).
 
     Args:
-        class_folder_path (str): the path to the folder containing class folders ("Infrastructure", "Coincident", etc.)
-        aux_data_path (str): the path to the folder containing the aux files (currently only infra_locations.json)
-        coco_outdir (str): the path to sav ethe coco json and the folder of tiled images.
+        class_folder_path (str): the path to the folder containing class
+            folders ("Infrastructure", "Coincident", etc.)
+        aux_data_path (str): the path to the folder containing the aux
+            files (currently only infra_locations.json)
+        coco_outdir (str): the path to save the coco json and the folder
+            of tiled images.
     """
     os.makedirs(coco_outdir, exist_ok=True)
     os.makedirs(os.path.join(coco_outdir, "tiled_images"), exist_ok=True)
@@ -110,11 +113,13 @@ def make_coco_dataset_no_tiles(
     coco_outdir: str,
     name="Untiled Cerulean Dataset V2 No Context Files",
 ):
-    """Create the Cerulean Dataset V2 without tiling and without context files.
+    """Create the dataset without tiling and without context files.
 
     Args:
-        class_folder_path (str): the path to the folder containing class folders ("Infrastructure", "Coincident", etc.)
-        coco_outdir (str): the path to sav ethe coco json and the folder of tiled images.
+        class_folder_path (str): the path to the folder containing class
+            folders ("Infrastructure", "Coincident", etc.)
+        coco_outdir (str): the path to save the coco json and the folder
+            of tiled images.
     """
     os.makedirs(coco_outdir, exist_ok=True)
     os.makedirs(os.path.join(coco_outdir, "untiled_images"), exist_ok=True)
@@ -145,11 +150,13 @@ def make_coco_dataset_no_context(
     coco_outdir: str,
     name="Tiled Cerulean Dataset V2 No Context Files",
 ):
-    """Create the Cerulean Dataset V2 with tiles but without context files (ship density and infra distance).
+    """Create the dataset with tiles but without context files (ship density and infra distance).
 
     Args:
-        class_folder_path (str): the path to the folder containing class folders ("Infrastructure", "Coincident", etc.)
-        coco_outdir (str): the path to sav ethe coco json and the folder of tiled images.
+        class_folder_path (str): the path to the folder containing class
+            folders ("Infrastructure", "Coincident", etc.)
+        coco_outdir (str): the path to save the coco json and the folder
+            of tiled images.
     """
     os.makedirs(coco_outdir, exist_ok=True)
     os.makedirs(os.path.join(coco_outdir, "tiled_images_no_context"), exist_ok=True)
