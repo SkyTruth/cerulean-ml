@@ -411,67 +411,30 @@ class COCOtiler:
             tiled_arr = reshape_split(reshape_as_image(arr), (512, 512))
             # saving annotations
             tiles_n, _, _, _ = tiled_arr.shape
+            delayed_results = []
             for local_tile_id in range(tiles_n):
-                instance_tile = tiled_arr[local_tile_id]
-                big_image_fname = (
-                    os.path.basename(os.path.dirname(instance_path)) + ".tif"
+                delayed_result = dask.delayed(get_annotation_and_image_info)(
+                    local_tile_id,
+                    self.global_tile_id,
+                    self.big_image_id,
+                    self.instance_id,
+                    instance_path,
+                    tiled_arr,
                 )
-                tile_fname = (
-                    os.path.basename(os.path.dirname(instance_path))
-                    + f"_vv-image_local_tile_{local_tile_id}.tif"
-                )
-                image_info = pycococreatortools.create_image_info(
-                    self.global_tile_id, tile_fname, (512, 512)
-                )
-                image_info.update(
-                    {
-                        "big_image_id": self.big_image_id,
-                        "big_image_original_fname": big_image_fname,
-                    }
-                )
+                delayed_results.append(delayed_result)
+            ainfo_iinfo_tuples = dask.compute(*delayed_results)
+            for tup in ainfo_iinfo_tuples:
+                annotation_info, image_info = tup
                 # go through each label image to extract annotation
                 if image_info not in self.coco_output["images"]:
                     self.coco_output["images"].append(image_info)
-                if instance_tile.shape[-1] == 1 and "ambiguous" in instance_path:
-                    if 1 in np.unique(instance_tile):
-                        class_id = 6
-                        category_info = {
-                            "id": class_id,
-                            "is_crowd": True,
-                        }  # forces compressed RLE format
-                    else:
-                        class_id = 0
-                        category_info = {"id": class_id, "is_crowd": False}
-                    binary_mask = instance_tile[:, :, -1]
-                else:
-                    class_id = get_layer_cls(
-                        instance_tile, class_mapping_photopea, class_mapping_coco
-                    )
-                    if class_id != 0:
-                        category_info = {
-                            "id": class_id,
-                            "is_crowd": True,
-                        }  # forces compressed RLE format
-                    else:
-                        category_info = {"id": class_id, "is_crowd": False}
-                    r, g, b = class_mapping_photopea[class_mapping_coco_inv[class_id]]
-                    binary_mask = rgbalpha_to_binary(instance_tile, r, g, b).astype(
-                        np.uint8
-                    )
-
-                annotation_info = pycococreatortools.create_annotation_info(
-                    self.instance_id,
-                    self.global_tile_id,
-                    category_info,
-                    binary_mask,
-                    binary_mask.shape,
-                    tolerance=0,
-                )
                 if annotation_info is not None:
                     annotation_info.update(
                         {
                             "big_image_id": self.big_image_id,
-                            "big_image_original_fname": big_image_fname,
+                            "big_image_original_fname": image_info[
+                                "big_image_original_fname"
+                            ],
                         }
                     )
                     self.coco_output["annotations"].append(annotation_info)
@@ -760,3 +723,57 @@ def get_ship_density(
     dens_array = ar / (max_dens / 255)
     dens_array[dens_array >= 255] = 255
     return np.squeeze(dens_array.astype("uint8"))
+
+
+def get_annotation_and_image_info(
+    local_tile_id, global_tile_id, big_image_id, instance_id, instance_path, tiled_arr
+):
+    instance_tile = tiled_arr[local_tile_id]
+    big_image_fname = os.path.basename(os.path.dirname(instance_path)) + ".tif"
+    tile_fname = (
+        os.path.basename(os.path.dirname(instance_path))
+        + f"_vv-image_local_tile_{local_tile_id}.tif"
+    )
+    image_info = pycococreatortools.create_image_info(
+        global_tile_id, tile_fname, (512, 512)
+    )
+    image_info.update(
+        {
+            "big_image_id": big_image_id,
+            "big_image_original_fname": big_image_fname,
+        }
+    )
+    if instance_tile.shape[-1] == 1 and "ambiguous" in instance_path:
+        if 1 in np.unique(instance_tile):
+            class_id = 6
+            category_info = {
+                "id": class_id,
+                "is_crowd": True,
+            }  # forces compressed RLE format
+        else:
+            class_id = 0
+            category_info = {"id": class_id, "is_crowd": False}
+        binary_mask = instance_tile[:, :, -1]
+    else:
+        class_id = get_layer_cls(
+            instance_tile, class_mapping_photopea, class_mapping_coco
+        )
+        if class_id != 0:
+            category_info = {
+                "id": class_id,
+                "is_crowd": True,
+            }  # forces compressed RLE format
+        else:
+            category_info = {"id": class_id, "is_crowd": False}
+        r, g, b = class_mapping_photopea[class_mapping_coco_inv[class_id]]
+        binary_mask = rgbalpha_to_binary(instance_tile, r, g, b).astype(np.uint8)
+
+    annotation_info = pycococreatortools.create_annotation_info(
+        instance_id,
+        global_tile_id,
+        category_info,
+        binary_mask,
+        binary_mask.shape,
+        tolerance=0,
+    )
+    return (annotation_info, image_info)

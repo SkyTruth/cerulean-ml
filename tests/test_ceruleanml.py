@@ -199,7 +199,7 @@ def test_save_background_img_tiles(
 
         test_color_ar = skio.imread(
             tmp_dir
-            + "/S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5_vv-image_local_tile_10.png"
+            + "/S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5_vv-image_local_tile_10.tif"
         )
         assert len(np.unique(test_color_ar[:, :, 0])) == 217
 
@@ -228,6 +228,6 @@ def test_create_coco_from_photopea_layers(coco_output):
         background_file = class_file.replace("ambiguous_1", "Background")
         layer_path = [background_file, class_file]
 
-        coco_tiler.create_coco_from_photopea_layers(scene_id, layer_path, coco_output)
+        coco_tiler.create_coco_from_photopea_layers(scene_id, layer_path)
 
         assert len(coco_tiler.coco_output["annotations"]) == 5
