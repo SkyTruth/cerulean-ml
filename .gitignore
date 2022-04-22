@@ -147,3 +147,5 @@ scratch/
 .
 .vscode
 terraform.tfstate
+*tiled*
+notebooks/models
