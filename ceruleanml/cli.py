@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import List
 
 import click
+from tqdm import tqdm
 
 import ceruleanml.data as data
 
@@ -166,8 +167,8 @@ def make_coco_dataset_no_context(
     coco_tiler = data.COCOtiler(
         os.path.join(coco_outdir, "tiled_images_no_context"), coco_output
     )
-    for class_folder in class_folders:
-        for scene_folder in list(class_folder.glob("*GRDH*")):
+    for class_folder in tqdm(class_folders):
+        for scene_folder in tqdm(list(class_folder.glob("*GRDH*")), leave=False):
             assert "S1" in str(scene_folder)
             scene_id = os.path.basename(scene_folder)
             layer_pths = [str(i) for i in list(scene_folder.glob("*png"))]

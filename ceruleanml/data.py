@@ -143,9 +143,11 @@ def save_tiles_from_3d(tiled_arr: np.ndarray, img_fname: str, outdir: str):
         fname = os.path.join(
             outdir,
             os.path.basename(os.path.dirname(img_fname))
-            + f"_vv-image_local_tile_{i}.png",
+            + f"_vv-image_local_tile_{i}.tif",
         )
-        lazy_result = dask.delayed(skio.imsave)(fname, tiled_arr[i])
+        lazy_result = dask.delayed(skio.imsave)(
+            fname, tiled_arr[i], "tifffile", False
+        )  # don't check contrast
         lazy_results.append(lazy_result)
     dask.compute(*lazy_results)
     print(f"finished saving {tiles_n} images")
@@ -418,7 +420,7 @@ class COCOtiler:
                 )
                 tile_fname = (
                     os.path.basename(os.path.dirname(instance_path))
-                    + f"_vv-image_local_tile_{local_tile_id}.png"
+                    + f"_vv-image_local_tile_{local_tile_id}.tif"
                 )
                 image_info = pycococreatortools.create_image_info(
                     self.global_tile_id, tile_fname, (512, 512)
