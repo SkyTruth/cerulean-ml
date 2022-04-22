@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import List
 
 import click
-from tqdm import tqdm
 
 import ceruleanml.data as data
 
@@ -62,6 +61,9 @@ def make_coco_metadata(
 
 
 @main.command()
+@click.argument("class_folder_path", nargs=1)
+@click.argument("aux_data_path", nargs=1)
+@click.argument("coco_outdir", nargs=1)
 def make_coco_dataset_with_tiles(
     class_folder_path: str,
     aux_data_path: str,
@@ -109,6 +111,8 @@ def make_coco_dataset_with_tiles(
 
 
 @main.command()
+@click.argument("class_folder_path", nargs=1)
+@click.argument("coco_outdir", nargs=1)
 def make_coco_dataset_no_tiles(
     class_folder_path: str,
     coco_outdir: str,
@@ -146,6 +150,8 @@ def make_coco_dataset_no_tiles(
 
 
 @main.command()
+@click.argument("class_folder_path", nargs=1)
+@click.argument("coco_outdir", nargs=1)
 def make_coco_dataset_no_context(
     class_folder_path: str,
     coco_outdir: str,
@@ -167,8 +173,8 @@ def make_coco_dataset_no_context(
     coco_tiler = data.COCOtiler(
         os.path.join(coco_outdir, "tiled_images_no_context"), coco_output
     )
-    for class_folder in tqdm(class_folders):
-        for scene_folder in tqdm(list(class_folder.glob("*GRDH*")), leave=False):
+    for class_folder in class_folders:
+        for scene_folder in list(class_folder.glob("*GRDH*")):
             assert "S1" in str(scene_folder)
             scene_id = os.path.basename(scene_folder)
             layer_pths = [str(i) for i in list(scene_folder.glob("*png"))]
