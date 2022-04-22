@@ -346,9 +346,7 @@ class COCOtiler:
             fnames_vv.extend(list(f.glob("**/Background.png")))  # type: ignore
         copy_whole_images(fnames_vv, self.img_dir)
 
-    def create_coco_from_photopea_layers(
-        self, scene_id: str, layer_pths: List[str], coco_output: dict
-    ):
+    def create_coco_from_photopea_layers(self, scene_id: str, layer_pths: List[str]):
         """Saves a COCO JSON with annotations compressed in RLE format and also saves corresponding image tiles.
 
         The COCO JSON is amended to add two keys for the full scene, referring to the folder name containing the
@@ -484,7 +482,7 @@ class COCOtiler:
         self.global_tile_id = start_tile_n + tiles_n
 
     def create_coco_from_photopea_layers_no_tile(
-        self, scene_id: str, layer_pths: List[str], coco_output: dict
+        self, scene_id: str, layer_pths: List[str]
     ):
         """Saves a COCO JSON with annotations compressed in RLE format, without tiling and referring to the
             original Background.png images.

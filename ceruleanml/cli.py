@@ -49,7 +49,7 @@ def make_coco_metadata(
     }
     licenses = [{"url": "none", "id": 1, "name": name}]
     categories = [
-        {"supercategory": "slick", "id": i, "name": cname}
+        {"supercategory": "slick", "id": i + 1, "name": cname}
         for i, cname in enumerate(class_list)
     ]  # order matters, check that this matches the ids used when annotating if you get a data loading error
     return {
@@ -102,9 +102,7 @@ def make_coco_dataset_with_tiles(
                 aux_datasets=aux_datasets,
                 aux_resample_ratio=8,
             )
-            coco_tiler.create_coco_from_photopea_layers(
-                scene_id, layer_pths, coco_output
-            )
+            coco_tiler.create_coco_from_photopea_layers(scene_id, layer_pths)
     coco_tiler.save_coco_output(
         os.path.join(coco_outdir, f"./instances_{name.replace('', '')}.json")
     )
@@ -141,9 +139,7 @@ def make_coco_dataset_no_tiles(
             assert "S1" in str(scene_folder)
             scene_id = os.path.basename(scene_folder)
             layer_pths = [str(i) for i in list(scene_folder.glob("*png"))]
-            coco_tiler.create_coco_from_photopea_layers_no_tile(
-                scene_id, layer_pths, coco_output
-            )
+            coco_tiler.create_coco_from_photopea_layers_no_tile(scene_id, layer_pths)
     coco_tiler.save_coco_output(
         os.path.join(coco_outdir, f"./instances_{name.replace('', '')}.json")
     )
@@ -185,9 +181,7 @@ def make_coco_dataset_no_context(
                 aux_datasets=[],
                 aux_resample_ratio=8,
             )
-            coco_tiler.create_coco_from_photopea_layers(
-                scene_id, layer_pths, coco_output
-            )
+            coco_tiler.create_coco_from_photopea_layers(scene_id, layer_pths)
     coco_tiler.save_coco_output(
         os.path.join(coco_outdir, f"./instances_{name.replace('', '')}.json")
     )
