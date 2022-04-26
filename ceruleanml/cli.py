@@ -90,7 +90,7 @@ def make_coco_dataset_with_tiles(
 
     aux_datasets = [os.path.join(aux_data_path, "infra_locations.json"), "ship_density"]
     for class_folder in class_folders:
-        for scene_folder in list(class_folder.glob("*GRDH*")):
+        for scene_folder in tqdm(list(class_folder.glob("*GRDH*")), total=len(list(class_folder.glob("*GRDH*")))):
             assert "S1" in str(scene_folder)
             print(scene_folder)
             scene_id = os.path.basename(scene_folder)
