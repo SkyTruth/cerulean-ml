@@ -32,7 +32,7 @@ resource "google_compute_disk" "default" {
   zone = data.google_compute_zones.available.names[0]
   #image = "ubuntu-os-cloud/ubuntu-2004-focal-v20220110" this is the base image used to create the cerulean image
   image = "ubuntu-2004-cuda113-fastai-cerulean"
-  size  = 50
+  size  = 300
 }
 resource "google_compute_instance" "jupyter" {
   count        = 1
