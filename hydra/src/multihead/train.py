@@ -18,9 +18,6 @@ import logging
 from pathlib import Path
 
 import hydra
-
-from dataset import DataLoader, MapillaryDataset
-from model import BaselineConvModel
 from omegaconf import DictConfig
 
 log = logging.getLogger(__name__)
@@ -31,7 +28,7 @@ def train(cfg: DictConfig):
     backbone = cfg.backbones.backbone_name
     parser = parsers.COCOMaskParser(annotations_filepath=cfg.annotations_filepath, img_dir=cfg.img_dir)
     train_records, valid_records = parser.parse()
-    class_map = cfg.datamodule.label_list
+    class_map = cfg.datamodule.class_map
 
     train_tfms = tfms.A.Adapter(
     [
@@ -44,10 +41,10 @@ def train(cfg: DictConfig):
     train_ds = Dataset(train_records, train_tfms)
     valid_ds = Dataset(valid_records, valid_tfms)
 
-    train_dl = model_type.train_dl(train_ds, batch_size=cfg.hparams.bs, num_workers=6, shuffle=True) # adjust num_workers for your processor count
-    valid_dl = model_type.valid_dl(valid_ds, batch_size=cfg.hparams.bs, num_workers=6, shuffle=False)
+    train_dl = model_type.train_dl(train_ds, batch_size=cfg.datamodule.bs, num_workers=6, shuffle=True) # adjust num_workers for your processor count
+    valid_dl = model_type.valid_dl(valid_ds, batch_size=cfg.datamodule.bs, num_workers=6, shuffle=False)
 
-    infer_dl = model_type.infer_dl(valid_ds, batch_size=8, shuffle=False)
+    infer_dl = model_type.infer_dl(valid_ds, batch_size=cfg.datamodule.bs, shuffle=False)
 
     model = model_type.model(backbone=backbone(pretrained=cfg.backbones.pretrained), num_classes=len(parser.class_map))
 

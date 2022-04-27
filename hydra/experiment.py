@@ -22,7 +22,6 @@ from PIL import Image
 from pycococreatortools import pycococreatortools
 
 from src.multihead.metrics import IoUMetric, IoUMetricType
-from src.multihead.parsers import CMParser
 from src.multihead.model import Model
 
 
@@ -40,11 +39,15 @@ def train(cfg: DictConfig):
     (Path(cwd) / "logs").mkdir(exist_ok=True)
 
     # DATAMODULE
-    dm = MapillaryDataModule(cfg.datamodule)
+    parser = parsers.COCOMaskParser(annotations_filepath=cfg.annotations_filepath, img_dir=cfg.img_dir)
+    train_records, valid_records = parser.parse()
+    class_map = cfg.datamodule.class_map
 
     # MODEL
-    model = Model(cfg)
+    model_type = cfg.model.model_name
+    backbone = cfg.backbones.backbone_name
 
+    """
     # LOGGERS
     wandb_logger = WandbLogger(
         project="cerulean",
@@ -63,16 +66,34 @@ def train(cfg: DictConfig):
             if "_target_" in cb_conf:
                 callbacks.append(hydra.utils.instantiate(cb_conf))
 
+    """
+
     # TRAINER
-    trainer = hydra.utils.instantiate(
-        cfg.trainer,
-        #callbacks=callbacks,
-        #logger=[wandb_logger, csv_logger],
-        #_convert_="partial",
+    train_tfms = tfms.A.Adapter(
+    [
+        tfms.A.Normalize(),
+    ]
     )
 
+    valid_tfms = tfms.A.Adapter([*tfms.A.resize_and_pad(size=cfg.datamodule.chip_sz), tfms.A.Normalize()])
+
+    train_ds = Dataset(train_records, train_tfms)
+    valid_ds = Dataset(valid_records, valid_tfms)
+
+    train_dl = model_type.train_dl(train_ds, batch_size=cfg.datamodule.bs, num_workers=cfg.trainer.num_workers, shuffle=True) # adjust num_workers for your processor count
+    valid_dl = model_type.valid_dl(valid_ds, batch_size=cfg.datamodule.bs, num_workers=cfg.trainer.num_workers, shuffle=False)
+
+    infer_dl = model_type.infer_dl(valid_ds, batch_size=cfg.datamodule.bs, shuffle=False)
+
+    model = model_type.model(backbone=backbone(pretrained=cfg.backbones.pretrained), num_classes=len(parser.class_map))
+
+    metrics = [cfg.trainer.metric(metric_type=cfg.trainer.metric_type)]
+
+    learn = model_type.fastai.learner(dls=[train_dl, valid_dl], model=model, metrics=metrics)
+
     # FIT
-    trainer.fit(model=model, datamodule=dm)
+    learn.fine_tune(cfg.hparams.num_epochs, cfg.hparams.lr)
+
 
 
 if __name__ == "__main__":

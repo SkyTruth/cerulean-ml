@@ -8,12 +8,5 @@ mount_path: "/root/data/"
 img_dir: "/root/data/tiled_images_test_small_v2"
 annotations_filepath: "/root/data/instances_slicks_test_v2_small.json"
 label: sm_tag
-label_list:
-    - 'Infrastructure'
-    - 'Natural Seep'
-    - 'Coincident Vessel'
-    - 'Recent Vessel'
-    - 'Old Vessel'
-    - 'Ambiguous'
-    - 'Hard Negatives'
+class_map: {"Infrastructure": 1,"Natural Seep": 2,"Coincident Vessel": 3,"Recent Vessel": 4,"Old Vessel": 5,"Ambiguous": 6,"Hard Negatives": 0,}
 

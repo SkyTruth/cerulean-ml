@@ -1,5 +1,7 @@
 _target_: icevision.Trainer
-
+metric: IoUMetric
+metric_type: IoUMetricType.mask
+num_workers: 6
 gpus: 1
 precision: 16
 min_epochs: 1
