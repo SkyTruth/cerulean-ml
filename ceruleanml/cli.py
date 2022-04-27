@@ -49,8 +49,7 @@ def make_coco_metadata(
     }
     licenses = [{"url": "none", "id": 1, "name": name}]
     categories = [
-        {"supercategory": "slick", "id": i + 1, "name": cname}
-        for i, cname in enumerate(class_list)
+        {"supercategory": "slick", "id": i + 1, "name": cname} for i, cname in enumerate(class_list)
     ]  # order matters, check that this matches the ids used when annotating if you get a data loading error
     return {
         "info": info,
@@ -85,26 +84,37 @@ def make_coco_dataset_with_tiles(
     os.makedirs(os.path.join(coco_outdir, "tiled_images"), exist_ok=True)
     class_foldes_path = Path(class_folder_path)
     class_folders = list(class_foldes_path.glob("*/"))
-    coco_output = make_coco_metadata(name=name)
-    coco_tiler = data.COCOtiler(os.path.join(coco_outdir, "tiled_images"), coco_output)
+    coco_tiler = data.COCOtiler(os.path.join(coco_outdir, "tiled_images"))
 
     aux_datasets = [os.path.join(aux_data_path, "infra_locations.json"), "ship_density"]
+    scene_index = 0
+    coco_outputs = []
     for class_folder in class_folders:
-        for scene_folder in tqdm(list(class_folder.glob("*GRDH*")), total=len(list(class_folder.glob("*GRDH*")))):
+        for scene_folder in tqdm(
+            list(class_folder.glob("*GRDH*")), total=len(list(class_folder.glob("*GRDH*")))
+        ):
             assert "S1" in str(scene_folder)
             print(scene_folder)
             scene_id = os.path.basename(scene_folder)
             layer_pths = [str(i) for i in list(scene_folder.glob("*png"))]
             print(layer_pths)
-            coco_tiler.save_background_img_tiles(
+            scene_data_tuple = coco_tiler.save_background_img_tiles(
                 scene_id,
                 layer_pths,
                 aux_datasets=aux_datasets,
                 aux_resample_ratio=8,
             )
-            coco_tiler.create_coco_from_photopea_layers(scene_id, layer_pths)
+            coco_output = coco_tiler.create_coco_from_photopea_layers(
+                scene_index, scene_data_tuple, layer_pths
+            )
+            coco_outputs.append(coco_output)
+            scene_index += 1
+    final_coco_output = make_coco_metadata(name=name)
+    for co in coco_outputs:
+        final_coco_output["images"].extend(co["images"])
+        final_coco_output["annotations"].extend(co["annotations"])
     coco_tiler.save_coco_output(
-        os.path.join(coco_outdir, f"./instances_{name.replace('', '')}.json")
+        os.path.join(coco_outdir, final_coco_output, f"./instances_{name.replace('', '')}.json")
     )
     print(f"Images and COCO JSON have been saved in {coco_outdir}.")
 
@@ -130,9 +140,7 @@ def make_coco_dataset_no_tiles(
     class_foldes_path = Path(class_folder_path)
     class_folders = list(class_foldes_path.glob("*/"))
     coco_output = make_coco_metadata(name=name)
-    coco_tiler = data.COCOtiler(
-        os.path.join(coco_outdir, "untiled_images"), coco_output
-    )
+    coco_tiler = data.COCOtiler(os.path.join(coco_outdir, "untiled_images"), coco_output)
     coco_tiler.copy_background_images([str(i) for i in class_folders])
     for class_folder in class_folders:
         for scene_folder in list(class_folder.glob("*GRDH*")):
@@ -167,9 +175,7 @@ def make_coco_dataset_no_context(
     class_foldes_path = Path(class_folder_path)
     class_folders = list(class_foldes_path.glob("*/"))
     coco_output = make_coco_metadata(name=name)
-    coco_tiler = data.COCOtiler(
-        os.path.join(coco_outdir, "tiled_images_no_context"), coco_output
-    )
+    coco_tiler = data.COCOtiler(os.path.join(coco_outdir, "tiled_images_no_context"), coco_output)
     for class_folder in tqdm(class_folders):
         for scene_folder in tqdm(list(class_folder.glob("*GRDH*"))):
             assert "S1" in str(scene_folder)

@@ -165,9 +165,7 @@ def test_fetch_sentinel1_reprojection_parameters():
 
 
 @patch("ceruleanml.data.fetch_sentinel1_reprojection_parameters")
-def test_save_background_img_tiles(
-    mock_fetch_sentinel_1_reprojection_parameters, coco_output
-):
+def test_save_background_img_tiles(mock_fetch_sentinel_1_reprojection_parameters):
     scene_id = "S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5"
     with open("tests/fixtures/gcps_s1.xyz", "rb") as src:
         gcps = pickle.load(src)
@@ -180,7 +178,7 @@ def test_save_background_img_tiles(
     )
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        coco_tiler = data.COCOtiler(tmp_dir, coco_output)
+        coco_tiler = data.COCOtiler(tmp_dir)
 
         class_file = f"tests/fixtures/{scene_id}/cv2_transfer_outputs_skytruth_annotation_first_phase_old_vessel_{scene_id}_ambiguous_1.png"
         background_file = class_file.replace("ambiguous_1", "Background")
@@ -212,7 +210,7 @@ def test_create_coco_from_photopea_layers(coco_output):
         gcps = pickle.load(src)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        coco_tiler = data.COCOtiler(tmp_dir, coco_output)
+        coco_tiler = data.COCOtiler(tmp_dir)
         coco_tiler.s1_scene_id = scene_id
         coco_tiler.s1_bounds = [
             55.69982872351191,
@@ -223,11 +221,20 @@ def test_create_coco_from_photopea_layers(coco_output):
         coco_tiler.s1_image_shape = (5048, 7416)
         coco_tiler.s1_gcps = gcps
         coco_tiler.s1_crs = rasterio.crs.CRS.from_epsg(4326)
+        n_tiles = 150
 
         class_file = f"tests/fixtures/{scene_id}/cv2_transfer_outputs_skytruth_annotation_first_phase_old_vessel_{scene_id}_ambiguous_1.png"
         background_file = class_file.replace("ambiguous_1", "Background")
         layer_path = [background_file, class_file]
+        scene_data_tuple = (
+            n_tiles,
+            coco_tiler.s1_image_shape,
+            coco_tiler.s1_gcps,
+            coco_tiler.s1_crs,
+        )
+        scene_index = 0
+        coco_output = coco_tiler.create_coco_from_photopea_layers(
+            scene_index, scene_data_tuple, layer_path
+        )
 
-        coco_tiler.create_coco_from_photopea_layers(scene_id, layer_path)
-
-        assert len(coco_tiler.coco_output["annotations"]) == 5
+        assert len(coco_output["annotations"]) == 5

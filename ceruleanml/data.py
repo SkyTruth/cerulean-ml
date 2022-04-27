@@ -6,7 +6,6 @@ from io import BytesIO
 from shutil import copy
 from typing import Any, List, Optional, Tuple
 
-import dask
 import distancerasters as dr
 import fiona
 import httpx
@@ -20,7 +19,7 @@ from rasterio.enums import ColorInterp, Resampling
 from rasterio.io import MemoryFile
 from rasterio.plot import reshape_as_image, reshape_as_raster
 from rasterio.vrt import WarpedVRT
-dask.config.set(scheduler='synchronous')
+
 # Hard Neg is overloaded with overlays but they shouldn't be exported during annotation
 # Hard Neg is just a class that we will use to measure performance gains metrics
 class_mapping_photopea = {
@@ -138,18 +137,12 @@ def save_tiles_from_3d(tiled_arr: np.ndarray, img_fname: str, outdir: str):
         outdir (str): The directory to save img tiles.
     """
     tiles_n, _, _, _ = tiled_arr.shape
-    lazy_results = []
     for i in range(tiles_n):
         fname = os.path.join(
             outdir,
-            os.path.basename(os.path.dirname(img_fname))
-            + f"_vv-image_local_tile_{i}.tif",
+            os.path.basename(os.path.dirname(img_fname)) + f"_vv-image_local_tile_{i}.tif",
         )
-        lazy_result = dask.delayed(skio.imsave)(
-            fname, tiled_arr[i], "tifffile", False
-        )  # don't check contrast
-        lazy_results.append(lazy_result)
-    dask.compute(*lazy_results)
+        skio.imsave(fname, tiled_arr[i], "tifffile", False)  # don't check contrast
     print(f"finished saving {tiles_n} images")
 
 
@@ -192,9 +185,7 @@ def rgbalpha_to_binary(arr: np.ndarray, r: int, g: int, b: int):
     Returns:
         np.ndarray: the binary array
     """
-    return np.logical_and.reduce(
-        [arr[:, :, 0] == r, arr[:, :, 1] == g, arr[:, :, 2] == b]
-    )
+    return np.logical_and.reduce([arr[:, :, 0] == r, arr[:, :, 1] == g, arr[:, :, 2] == b])
 
 
 def is_layer_of_class(arr, r, g, b):
@@ -243,12 +234,11 @@ def get_layer_cls(
 
 
 class COCOtiler:
-    def __init__(self, img_dir: str, coco_output: dict):
+    def __init__(self, img_dir: str):
         self.instance_id = 0
         self.global_tile_id = 0
         self.global_increment = 0
         self.big_image_id = 0
-        self.coco_output = coco_output
         self.img_dir = img_dir
 
         self.s1_scene_id: Optional[str] = None
@@ -276,13 +266,12 @@ class COCOtiler:
         Raises:
             ValueError: Error if original source imagery is not VV polarization.
         """
-
-        self.s1_scene_id = scene_id
+        s1_scene_id = scene_id
         (
-            self.s1_bounds,
-            self.s1_image_shape,
-            self.s1_gcps,
-            self.s1_crs,
+            s1_bounds,
+            s1_image_shape,
+            s1_gcps,
+            s1_crs,
         ) = fetch_sentinel1_reprojection_parameters(scene_id)
 
         # saving vv image tiles (Background layer)
@@ -291,8 +280,8 @@ class COCOtiler:
         with rasterio.open(img_path) as src:
             profile = src.profile.copy()
             profile["driver"] = "GTiff"
-            profile["crs"] = self.s1_crs
-            profile["gcps"] = self.s1_gcps
+            profile["crs"] = s1_crs
+            profile["gcps"] = s1_gcps
 
             with MemoryFile() as mem:
                 with mem.open(**profile) as m:
@@ -303,19 +292,19 @@ class COCOtiler:
                         new_ar[0, ar[0] == k] = v[0]
                     m.write(new_ar)
                     m.colorinterp = [ColorInterp.gray]
-                    gcps_transform = transform.from_gcps(self.s1_gcps)
+                    gcps_transform = transform.from_gcps(s1_gcps)
                     with WarpedVRT(
                         m,
-                        src_crs=self.s1_crs,
+                        src_crs=s1_crs,
                         src_transform=gcps_transform,
                         add_alpha=False,
                     ) as vrt_dst:
                         # arr is (c, h, w)
                         arr = vrt_dst.read(
-                            out_shape=(vrt_dst.count, *self.s1_image_shape),
+                            out_shape=(vrt_dst.count, *s1_image_shape),
                             out_dtype="uint8",
                         )
-                        assert arr.shape[1:] == self.s1_image_shape
+                        assert arr.shape[1:] == s1_image_shape
 
         # Make sure there are channels
         arr = reshape_as_image(arr)
@@ -324,9 +313,9 @@ class COCOtiler:
         if aux_datasets:
             aux_dataset_channels = self.handle_aux_datasets(
                 aux_datasets,
-                self.s1_scene_id,
-                self.s1_bounds,
-                self.s1_image_shape,
+                s1_scene_id,
+                s1_bounds,
+                s1_image_shape,
                 **kwargs,
             )
 
@@ -338,6 +327,12 @@ class COCOtiler:
             save_tiles_from_3d(tiled_arr, img_path, self.img_dir)
         else:
             raise ValueError(f"The layer {img_path} is not a VV image.")
+        return (
+            len(tiled_arr),
+            s1_image_shape,
+            s1_gcps,
+            s1_crs,
+        )
 
     def copy_background_images(self, class_folders: List[str]):
         fnames_vv = []
@@ -346,7 +341,9 @@ class COCOtiler:
             fnames_vv.extend(list(f.glob("**/Background.png")))  # type: ignore
         copy_whole_images(fnames_vv, self.img_dir)
 
-    def create_coco_from_photopea_layers(self, scene_id: str, layer_pths: List[str]):
+    def create_coco_from_photopea_layers(
+        self, scene_index: int, scene_data_tuple: tuple, layer_pths: List[str]
+    ):
         """Saves a COCO JSON with annotations compressed in RLE format and also saves corresponding image tiles.
 
         The COCO JSON is amended to add two keys for the full scene, referring to the folder name containing the
@@ -354,22 +351,23 @@ class COCOtiler:
         coordinates can be associated.
 
         Args:
+            scene_index (int): Unique id for the scene that can be used to set a unique global tile id.
+            scene_data_tuple (tuple): Tuple containing data from save_background_images that's needed to reproject, assign tile fnames.
             layer_pths (List[str]): List of path in a scene folder corresponding to Background.png, Layer 1.png, etc. Order matters.
-            coco_output (dict): the dict defining the metadata and data container for the dataset that will be created
-            coco_name (str, optional): the filename of the coco json. Defaults to "instances_slick_train_v2.json".
 
         Raises:
             ValueError: Errors if the path to the first file in layer_pths doesn't contain "Background"
             ValueError: Errors if a path to a label file in layer_pths doesn't contain "Layer"
         """
-
-        # Make sure scene id is the same and we have reproj params
-        assert scene_id == self.s1_scene_id, "First run  save_background_img_tiles!"
-        assert self.s1_crs is not None, "First run  save_background_img_tiles!"
-        assert self.s1_gcps is not None, "First run  save_background_img_tiles!"
-        assert self.s1_image_shape is not None, "First run  save_background_img_tiles!"
-
-        start_tile_n = self.global_tile_id
+        coco_output = {"images": [], "annotations": []}
+        (
+            n_tiles,
+            s1_image_shape,
+            s1_gcps,
+            s1_crs,
+        ) = scene_data_tuple
+        # 200 used because no scene has more than 200 tiles, guarantees global tile ids unique
+        global_tile_ids = [200 * scene_index + i for i in list(range(n_tiles))]
         for instance_path in layer_pths[1:]:
             # each label is of form class_instanceid.png
             if "_" not in str(instance_path):
@@ -388,65 +386,57 @@ class COCOtiler:
                     profile["count"] = 1
                 else:
                     profile["count"] = 4
-                profile["crs"] = self.s1_crs
-                profile["gcps"] = self.s1_gcps
+                profile["crs"] = s1_crs
+                profile["gcps"] = s1_gcps
 
                 with MemoryFile() as mem:
                     with mem.open(**profile) as m:
                         m.write(reshape_as_raster(org_array))
-                        gcps_transform = transform.from_gcps(self.s1_gcps)
+                        gcps_transform = transform.from_gcps(s1_gcps)
                         with WarpedVRT(
                             m,
-                            src_crs=self.s1_crs,
+                            src_crs=s1_crs,
                             src_transform=gcps_transform,
                             add_alpha=False,
                         ) as vrt_dst:
                             # arr is (c, h, w)
-                            arr = vrt_dst.read(
-                                out_shape=(vrt_dst.count, *self.s1_image_shape)
-                            )
+                            arr = vrt_dst.read(out_shape=(vrt_dst.count, *s1_image_shape))
 
-                            assert arr.shape[1:] == self.s1_image_shape
+                            assert arr.shape[1:] == s1_image_shape
 
             tiled_arr = reshape_split(reshape_as_image(arr), (512, 512))
             # saving annotations
             tiles_n, _, _, _ = tiled_arr.shape
-            delayed_results = []
-            for local_tile_id in range(tiles_n):
-                delayed_result = dask.delayed(get_annotation_and_image_info)(
+            ainfo_iinfo_tuples = []
+            for local_tile_id, global_tile_id in enumerate(global_tile_ids):
+                # we reassign instance ids after all have been saved in the
+                # coco format so that the last instance id is the total number of instances
+                tmp_instance_id = global_tile_id
+                result = get_annotation_and_image_info(
                     local_tile_id,
-                    self.global_tile_id,
-                    self.big_image_id,
-                    self.instance_id,
+                    global_tile_id,
+                    scene_index,
+                    tmp_instance_id,
                     instance_path,
                     tiled_arr,
                 )
-                delayed_results.append(delayed_result)
-            ainfo_iinfo_tuples = dask.compute(*delayed_results)
+                ainfo_iinfo_tuples.append(result)
             for tup in ainfo_iinfo_tuples:
                 annotation_info, image_info = tup
                 # go through each label image to extract annotation
-                if image_info not in self.coco_output["images"]:
-                    self.coco_output["images"].append(image_info)
+                if image_info not in coco_output["images"]:
+                    coco_output["images"].append(image_info)
                 if annotation_info is not None:
                     annotation_info.update(
                         {
-                            "big_image_id": self.big_image_id,
-                            "big_image_original_fname": image_info[
-                                "big_image_original_fname"
-                            ],
+                            "big_image_id": scene_index,
+                            "big_image_original_fname": image_info["big_image_original_fname"],
                         }
                     )
-                    self.coco_output["annotations"].append(annotation_info)
-                self.instance_id += 1
-                self.global_tile_id += 1
-            self.global_tile_id = start_tile_n
-        self.big_image_id += 1
-        self.global_tile_id = start_tile_n + tiles_n
+                    coco_output["annotations"].append(annotation_info)
+        return coco_output
 
-    def create_coco_from_photopea_layers_no_tile(
-        self, scene_id: str, layer_pths: List[str]
-    ):
+    def create_coco_from_photopea_layers_no_tile(self, scene_id: str, layer_pths: List[str]):
         """Saves a COCO JSON with annotations compressed in RLE format, without tiling and referring to the
             original Background.png images.
 
@@ -493,17 +483,11 @@ class COCOtiler:
                             add_alpha=False,
                         ) as vrt_dst:
                             # arr is (c, h, w)
-                            arr = vrt_dst.read(
-                                out_shape=(vrt_dst.count, *self.s1_image_shape)
-                            )
+                            arr = vrt_dst.read(out_shape=(vrt_dst.count, *self.s1_image_shape))
                             assert arr.shape[1:] == self.s1_image_shape
 
-            big_image_original_fname = (
-                os.path.basename(os.path.dirname(instance_path)) + ".tif"
-            )
-            big_image_fname = (
-                os.path.basename(os.path.dirname(instance_path)) + "_Background.png"
-            )
+            big_image_original_fname = os.path.basename(os.path.dirname(instance_path)) + ".tif"
+            big_image_fname = os.path.basename(os.path.dirname(instance_path)) + "_Background.png"
             image_info = pycococreatortools.create_image_info(
                 self.big_image_id, big_image_fname, arr.shape
             )
@@ -546,14 +530,12 @@ class COCOtiler:
             self.instance_id += 1
         self.big_image_id += 1
 
-    def save_coco_output(self, outpath: str = "./instances_slicks_test_v2.json"):
+    def save_coco_output(self, coco_output, outpath: str = "./instances_slicks_test_v2.json"):
         # saving the coco dataset
         with open(f"{outpath}", "w") as output_json_file:
-            json.dump(self.coco_output, output_json_file)
+            json.dump(coco_output, output_json_file)
 
-    def handle_aux_datasets(
-        self, aux_datasets, scene_id, bounds, image_shape, **kwargs
-    ):
+    def handle_aux_datasets(self, aux_datasets, scene_id, bounds, image_shape, **kwargs):
         assert (
             len(aux_datasets) == 2 or len(aux_datasets) == 3
         )  # so save as png file need RGB or RGBA
@@ -570,9 +552,7 @@ class COCOtiler:
             if aux_dataset_channels is None:
                 aux_dataset_channels = ar
             else:
-                aux_dataset_channels = np.concatenate(
-                    [aux_dataset_channels, ar], axis=2
-                )
+                aux_dataset_channels = np.concatenate([aux_dataset_channels, ar], axis=2)
 
         return aux_dataset_channels
 
@@ -634,9 +614,7 @@ def get_dist_array_from_vector(
         img_shape[0] // aux_resample_ratio,
         img_shape[1] // aux_resample_ratio,
     )
-    img_affine = rasterio.transform.from_bounds(
-        *bounds, resampled_shape[0], resampled_shape[1]
-    )
+    img_affine = rasterio.transform.from_bounds(*bounds, resampled_shape[0], resampled_shape[1])
     rv_array, affine = dr.rasterize(
         shp,
         affine=img_affine,
@@ -693,9 +671,7 @@ def get_ship_density(
                     "withgeo": True,
                 }
             },
-            "where": [
-                [{"col": "time", "test": "Equal", "value": f"{scene_date_month}"}]
-            ],
+            "where": [[{"col": "time", "test": "Equal", "value": f"{scene_date_month}"}]],
         },
     }
 
@@ -734,9 +710,7 @@ def get_annotation_and_image_info(
         os.path.basename(os.path.dirname(instance_path))
         + f"_vv-image_local_tile_{local_tile_id}.tif"
     )
-    image_info = pycococreatortools.create_image_info(
-        global_tile_id, tile_fname, (512, 512)
-    )
+    image_info = pycococreatortools.create_image_info(global_tile_id, tile_fname, (512, 512))
     image_info.update(
         {
             "big_image_id": big_image_id,
@@ -755,9 +729,7 @@ def get_annotation_and_image_info(
             category_info = {"id": class_id, "is_crowd": False}
         binary_mask = instance_tile[:, :, -1]
     else:
-        class_id = get_layer_cls(
-            instance_tile, class_mapping_photopea, class_mapping_coco
-        )
+        class_id = get_layer_cls(instance_tile, class_mapping_photopea, class_mapping_coco)
         if class_id != 0:
             category_info = {
                 "id": class_id,
