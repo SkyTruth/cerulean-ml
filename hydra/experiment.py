@@ -21,8 +21,7 @@ import os
 from PIL import Image
 from pycococreatortools import pycococreatortools
 
-from src.multihead.metrics import IoUMetric, IoUMetricType
-from src.multihead.model import Model
+from metrics import IoUMetric, IoUMetricType
 
 
 @hydra.main(config_path="config", config_name="config")
