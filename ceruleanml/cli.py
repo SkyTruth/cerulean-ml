@@ -11,7 +11,7 @@ import ceruleanml.data as data
 import dask
 import time
 
-dask.config.set(scheduler="processes")
+dask.config.set(scheduler="single-threaded")
 
 
 @click.group()

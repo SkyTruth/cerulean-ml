@@ -5,7 +5,7 @@ from datetime import datetime
 from io import BytesIO
 from shutil import copy
 from typing import Any, List, Optional, Tuple
-
+import dask
 import distancerasters as dr
 import fiona
 import httpx
@@ -19,6 +19,7 @@ from rasterio.enums import ColorInterp, Resampling
 from rasterio.io import MemoryFile
 from rasterio.plot import reshape_as_image, reshape_as_raster
 from rasterio.vrt import WarpedVRT
+import time
 
 # Hard Neg is overloaded with overlays but they shouldn't be exported during annotation
 # Hard Neg is just a class that we will use to measure performance gains metrics
@@ -266,6 +267,7 @@ class COCOtiler:
         Raises:
             ValueError: Error if original source imagery is not VV polarization.
         """
+        start = time.time()
         s1_scene_id = scene_id
         (
             s1_bounds,
@@ -308,7 +310,7 @@ class COCOtiler:
 
         # Make sure there are channels
         arr = reshape_as_image(arr)
-
+        print(f"Number of seconds for scene IO and transform: {time.time() - start}")
         # Handle aux dataset per scene
         if aux_datasets:
             aux_dataset_channels = self.handle_aux_datasets(
@@ -321,10 +323,13 @@ class COCOtiler:
 
             # append as channels to arr
             arr = np.concatenate([arr, aux_dataset_channels], axis=2)
-
+        start = time.time()
         tiled_arr = reshape_split(arr, (512, 512))
+        print(f"Number of seconds for tiling: {time.time() - start}")
         if "Background" in str(img_path):  # its the vv image
+            start = time.time()
             save_tiles_from_3d(tiled_arr, img_path, self.img_dir)
+            print(f"Number of seconds for img tile saving: {time.time() - start}")
         else:
             raise ValueError(f"The layer {img_path} is not a VV image.")
         return (
@@ -359,6 +364,7 @@ class COCOtiler:
             ValueError: Errors if the path to the first file in layer_pths doesn't contain "Background"
             ValueError: Errors if a path to a label file in layer_pths doesn't contain "Layer"
         """
+        start = time.time()
         coco_output = {"images": [], "annotations": []}
         (
             n_tiles,
@@ -434,6 +440,7 @@ class COCOtiler:
                         }
                     )
                     coco_output["annotations"].append(annotation_info)
+        print(f"Number of seconds for coco_output creation: {time.time() - start}")
         return coco_output
 
     def create_coco_from_photopea_layers_no_tile(self, scene_id: str, layer_pths: List[str]):
