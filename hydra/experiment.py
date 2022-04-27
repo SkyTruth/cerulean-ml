@@ -92,7 +92,7 @@ def train(cfg: DictConfig):
     learn = model_type.fastai.learner(dls=[train_dl, valid_dl], model=model, metrics=metrics)
 
     # FIT
-    learn.fine_tune(cfg.hparams.num_epochs, cfg.hparams.lr)
+    learn.fine_tune(cfg.trainer.num_epochs, cfg.trainer.lr)
 
 
 
