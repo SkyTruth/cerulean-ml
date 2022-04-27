@@ -1,0 +1,33 @@
+data_dir: ${data_dir}
+num_workers: 8
+bs: 88
+num_samples: 25600
+chip_sz: 384
+mean:
+    - 0.5303
+    - 0.5418
+    - 0.5057
+std:
+    - 0.2606
+    - 0.2752
+    - 0.3255
+im_type: png
+trn_file: trn-tag-1.csv
+val_file: val-tag-1.csv
+tst_file: tst-tag-1.csv
+label: tag
+label_list:
+    - 'board-wd'
+    - 'broke-wd'
+    - 'fade'
+    - 'fenced'
+    - 'litter-house'
+    - 'litter-lot'
+    - 'miss-wd'
+    - 'ovrgrn'
+    - 'ovrgrn-lawn'
+    - 'ovrgrn-shrub'
+    - 'paved'
+    - 'roof'
+    - 'structure'
+    - 'unpaved'

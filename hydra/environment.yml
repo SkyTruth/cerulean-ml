@@ -1,0 +1,30 @@
+name: env
+channels:
+  - pytorch
+  - conda-forge
+dependencies:
+  - python=3
+  - pip
+  - cudatoolkit=11.3
+  - pytorch
+  - torchvision
+  - pytorch-lightning
+  - icevision
+  - ipykernel
+  - dask
+  - pip:
+      - albumentations
+      - pycocotools
+      - pycococreatortools
+      - hydra-core
+      - hydra-optuna-sweeper
+      - ipywidgets
+      - jupyterlab
+      - matplotlib
+      - nbdiff
+      - opencv-python
+      - pre-commit
+      - pandas
+      - rich
+      - timm
+      - tqdm
