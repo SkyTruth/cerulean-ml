@@ -10,8 +10,7 @@ from tqdm import tqdm
 import ceruleanml.data as data
 import dask
 import time
-
-dask.config.set(scheduler="single-threaded")
+from dask.distributed import Client, progress
 
 
 @click.group()
@@ -84,6 +83,7 @@ def make_coco_dataset_with_tiles(
         coco_outdir (str): the path to save the coco json and the folder
             of tiled images.
     """
+    client = Client()  # this needs to be commented out to use single threaded for profiling
     start = time.time()
     os.makedirs(coco_outdir, exist_ok=True)
     os.makedirs(os.path.join(coco_outdir, "tiled_images"), exist_ok=True)
@@ -111,7 +111,13 @@ def make_coco_dataset_with_tiles(
             coco_outputs.append(coco_output)
             scene_index += 1
     final_coco_output = make_coco_metadata(name=name)
+    # when we create a distributed client, dask.compute uses that isntead of thread scheduler by default
+    coco_outputs = dask.persist(*coco_outputs)  # start computation in the background
+    progress(coco_outputs)  # watch progress
     coco_outputs = dask.compute(*coco_outputs)
+    # coco_outputs = dask.compute(
+    #     *coco_outputs, scheduler="single-threaded"
+    # )  # convert to final result when done
     for co in coco_outputs:
         final_coco_output["images"].extend(co["images"])
         final_coco_output["annotations"].extend(co["annotations"])

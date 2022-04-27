@@ -248,6 +248,20 @@ class COCOtiler:
         self.s1_gcps: Optional[List[Any]] = None
         self.s1_crs: Optional[Any] = None
 
+    def save_background_img_tiles_sleep(
+        self,
+        scene_id: str,
+        layer_paths: List[str],
+        aux_datasets: List[str] = [],
+        **kwargs,
+    ):
+        time.sleep(2)
+
+    def create_coco_from_photopea_layers_sleep(
+        self, scene_index: int, scene_data_tuple: tuple, layer_pths: List[str]
+    ):
+        time.sleep(2)
+
     def save_background_img_tiles(
         self,
         scene_id: str,
@@ -756,3 +770,11 @@ def get_annotation_and_image_info(
         tolerance=0,
     )
     return (annotation_info, image_info)
+
+def save_background_img_tiles_sleep():
+    time.sleep(2)
+    return "o"
+
+def create_coco_from_photopea_layers_sleep(i):
+    time.sleep(2)
+    return i
