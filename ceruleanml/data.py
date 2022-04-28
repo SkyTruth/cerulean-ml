@@ -770,11 +770,3 @@ def get_annotation_and_image_info(
         tolerance=0,
     )
     return (annotation_info, image_info)
-
-def save_background_img_tiles_sleep():
-    time.sleep(2)
-    return "o"
-
-def create_coco_from_photopea_layers_sleep(i):
-    time.sleep(2)
-    return i
