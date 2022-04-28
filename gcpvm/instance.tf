@@ -29,16 +29,16 @@ resource "google_compute_address" "jupyter-static-ip-address" {
 
 resource "google_compute_disk" "default" {
   name = "${local.name}-jupyter-disk"
-  zone = data.google_compute_zones.available.names[0]
+  zone = "europe-west3-b" #data.google_compute_zones.available.names[0]
   #image = "ubuntu-os-cloud/ubuntu-2004-focal-v20220110" this is the base image used to create the cerulean image
   image = "ubuntu-2004-cuda113-fastai-cerulean"
-  size  = 50
+  size  = 300
 }
 resource "google_compute_instance" "jupyter" {
   count        = 1
   name         = local.name
   machine_type = var.instance-type
-  zone         = data.google_compute_zones.available.names[0] // Call it from variable "zone"
+  zone         = "europe-west3-b" // Call it from variable "zone"
 
   tags = ["http", "http-server"]
 
@@ -58,8 +58,8 @@ resource "google_compute_instance" "jupyter" {
   }
 
   guest_accelerator {
-    type  = "nvidia-tesla-k80" // Type of GPU attahced
-    count = 1                  // Num of GPU attached
+    type  = "nvidia-tesla-t4" // Type of GPU attahced
+    count = 1                 // Num of GPU attached
   }
 
   scheduling {
