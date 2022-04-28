@@ -1,5 +1,6 @@
-import dask
 import time
+
+import dask
 
 
 def foo():

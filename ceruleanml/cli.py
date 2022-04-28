@@ -1,16 +1,16 @@
 """Console script for ceruleanml."""
 import os
+import time
 from datetime import date
 from pathlib import Path
 from typing import List
 
 import click
+import dask
+from dask.distributed import Client, progress
 from tqdm import tqdm
 
 import ceruleanml.data as data
-import dask
-import time
-from dask.distributed import Client, progress
 
 
 @click.group()
@@ -52,7 +52,8 @@ def make_coco_metadata(
     }
     licenses = [{"url": "none", "id": 1, "name": name}]
     categories = [
-        {"supercategory": "slick", "id": i + 1, "name": cname} for i, cname in enumerate(class_list)
+        {"supercategory": "slick", "id": i + 1, "name": cname}
+        for i, cname in enumerate(class_list)
     ]  # order matters, check that this matches the ids used when annotating if you get a data loading error
     return {
         "info": info,
@@ -83,7 +84,9 @@ def make_coco_dataset_with_tiles(
         coco_outdir (str): the path to save the coco json and the folder
             of tiled images.
     """
-    client = Client()  # this needs to be commented out to use single threaded for profiling
+    client = (
+        Client()
+    )  # this needs to be commented out to use single threaded for profiling
     start = time.time()
     os.makedirs(coco_outdir, exist_ok=True)
     os.makedirs(os.path.join(coco_outdir, "tiled_images"), exist_ok=True)
@@ -122,7 +125,8 @@ def make_coco_dataset_with_tiles(
         final_coco_output["images"].extend(co["images"])
         final_coco_output["annotations"].extend(co["annotations"])
     coco_tiler.save_coco_output(
-        final_coco_output, os.path.join(coco_outdir, f"./instances_{name.replace('', '')}.json")
+        final_coco_output,
+        os.path.join(coco_outdir, f"./instances_{name.replace('', '')}.json"),
     )
     num_images = len(final_coco_output["images"])
     print(f"Number of seconds for {num_images} images: {time.time() - start}")
@@ -150,7 +154,9 @@ def make_coco_dataset_no_tiles(
     class_foldes_path = Path(class_folder_path)
     class_folders = list(class_foldes_path.glob("*/"))
     coco_output = make_coco_metadata(name=name)
-    coco_tiler = data.COCOtiler(os.path.join(coco_outdir, "untiled_images"), coco_output)
+    coco_tiler = data.COCOtiler(
+        os.path.join(coco_outdir, "untiled_images"), coco_output
+    )
     coco_tiler.copy_background_images([str(i) for i in class_folders])
     for class_folder in class_folders:
         for scene_folder in list(class_folder.glob("*GRDH*")):
@@ -181,7 +187,9 @@ def make_coco_dataset_no_context(
             of tiled images.
     """
     start = time.time()
-    client = Client()  # this needs to be commented out to use single threaded for profiling
+    client = (
+        Client()
+    )  # this needs to be commented out to use single threaded for profiling
     os.makedirs(coco_outdir, exist_ok=True)
     os.makedirs(os.path.join(coco_outdir, "tiled_images_no_context"), exist_ok=True)
     class_foldes_path = Path(class_folder_path)
@@ -218,7 +226,8 @@ def make_coco_dataset_no_context(
         final_coco_output["images"].extend(co["images"])
         final_coco_output["annotations"].extend(co["annotations"])
     coco_tiler.save_coco_output(
-        final_coco_output, os.path.join(coco_outdir, f"./instances_{name.replace('', '')}.json")
+        final_coco_output,
+        os.path.join(coco_outdir, f"./instances_{name.replace('', '')}.json"),
     )
     num_images = len(final_coco_output["images"])
     print(f"Number of seconds for {num_images} images: {time.time() - start}")
