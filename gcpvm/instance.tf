@@ -58,7 +58,7 @@ resource "google_compute_instance" "jupyter" {
   }
 
   guest_accelerator {
-    type  = "nvidia-tesla-t4" // Type of GPU attahced
+    type  = "nvidia-tesla-t4" // Type of GPU attached
     count = var.gpu-count     // Num of GPU attached
   }
 
