@@ -587,6 +587,8 @@ class COCOtiler:
             if aux_ds == "ship_density":
                 scene_date_month = get_scene_date_month(scene_id)
                 ar = get_ship_density(bounds, image_shape, scene_date_month)
+            elif aux_ds.endswith(".tiff"):
+                ar = get_dist_array(bounds, image_shape, aux_ds)
             else:
                 ar = get_dist_array_from_vector(bounds, image_shape, aux_ds, **kwargs)
 

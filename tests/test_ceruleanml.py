@@ -104,6 +104,22 @@ def test_handle_aux_datasets():
     )
     assert ar.shape == (4181, 6458, 2)
 
+    ar = coco_tiler.handle_aux_datasets(
+        [
+            "tests/fixtures/test_cogeo.tiff",
+            "tests/fixtures/test_cogeo.tiff",
+        ],
+        scene_id="S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5",
+        bounds=[
+            55.69982872351191,
+            24.566447533809654,
+            58.53597315567021,
+            26.496758065384803,
+        ],
+        image_shape=(4181, 6458),
+    )
+    assert ar.shape == (4181, 6458, 2)
+
 
 def test_get_dist_array():
 
