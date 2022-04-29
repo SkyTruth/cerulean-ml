@@ -384,7 +384,7 @@ class COCOtiler:
             ValueError: Errors if a path to a label file in layer_pths doesn't contain "Layer"
         """
         start = time.time()
-        coco_output = {"images": [], "annotations": []}
+        coco_output: dict = {"images": [], "annotations": []}
         (
             n_tiles,
             s1_image_shape,
