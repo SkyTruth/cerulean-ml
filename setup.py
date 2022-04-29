@@ -21,6 +21,7 @@ requirements = [
     "pycococreatortools @ git+https://github.com/waspinator/pycococreator.git#egg=pycocreatortools",
     "geopandas",
     "rio-tiler-pds",
+    "rio-cogeo",
 ]
 
 setup(

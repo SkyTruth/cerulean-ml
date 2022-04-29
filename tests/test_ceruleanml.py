@@ -67,7 +67,7 @@ def test_command_line_interface():
     runner = CliRunner()
     result = runner.invoke(cli.main)
     assert result.exit_code == 0
-    assert "ceruleanml.cli.main" in result.output
+    # assert "ceruleanml.cli.main" in result.output
     help_result = runner.invoke(cli.main, ["--help"])
     assert help_result.exit_code == 0
     assert "--help  Show this message and exit." in help_result.output
@@ -86,7 +86,7 @@ def mock_scene_info():
 
 
 def test_handle_aux_datasets():
-    coco_tiler = data.COCOtiler("", {})
+    coco_tiler = data.COCOtiler("")
 
     ar = coco_tiler.handle_aux_datasets(
         [
@@ -103,6 +103,37 @@ def test_handle_aux_datasets():
         image_shape=(4181, 6458),
     )
     assert ar.shape == (4181, 6458, 2)
+
+    ar = coco_tiler.handle_aux_datasets(
+        [
+            "tests/fixtures/test_cogeo.tiff",
+            "tests/fixtures/test_cogeo.tiff",
+        ],
+        scene_id="S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5",
+        bounds=[
+            55.69982872351191,
+            24.566447533809654,
+            58.53597315567021,
+            26.496758065384803,
+        ],
+        image_shape=(4181, 6458),
+    )
+    assert ar.shape == (4181, 6458, 2)
+
+
+def test_get_dist_array():
+
+    arr = data.get_dist_array(
+        bounds=(55.698181, 24.565813, 58.540211, 26.494711),
+        img_shape=(4181, 6458),
+        raster_ds="tests/fixtures/test_cogeo.tiff",
+    )
+    assert arr.shape == (4181, 6458)
+    assert arr.dtype == np.dtype(np.uint8)
+    assert np.max(arr) == 255
+    assert np.min(arr) == 0
+
+    # test all 0 input
 
 
 def test_get_dist_array_from_vector():
@@ -165,9 +196,7 @@ def test_fetch_sentinel1_reprojection_parameters():
 
 
 @patch("ceruleanml.data.fetch_sentinel1_reprojection_parameters")
-def test_save_background_img_tiles(
-    mock_fetch_sentinel_1_reprojection_parameters, coco_output
-):
+def test_save_background_img_tiles(mock_fetch_sentinel_1_reprojection_parameters):
     scene_id = "S1A_IW_GRDH_1SDV_20200802T141646_20200802T141711_033729_03E8C7_E4F5"
     with open("tests/fixtures/gcps_s1.xyz", "rb") as src:
         gcps = pickle.load(src)
@@ -180,7 +209,7 @@ def test_save_background_img_tiles(
     )
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        coco_tiler = data.COCOtiler(tmp_dir, coco_output)
+        coco_tiler = data.COCOtiler(tmp_dir)
 
         class_file = f"tests/fixtures/{scene_id}/cv2_transfer_outputs_skytruth_annotation_first_phase_old_vessel_{scene_id}_ambiguous_1.png"
         background_file = class_file.replace("ambiguous_1", "Background")
@@ -212,7 +241,7 @@ def test_create_coco_from_photopea_layers(coco_output):
         gcps = pickle.load(src)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
-        coco_tiler = data.COCOtiler(tmp_dir, coco_output)
+        coco_tiler = data.COCOtiler(tmp_dir)
         coco_tiler.s1_scene_id = scene_id
         coco_tiler.s1_bounds = [
             55.69982872351191,
@@ -223,11 +252,20 @@ def test_create_coco_from_photopea_layers(coco_output):
         coco_tiler.s1_image_shape = (5048, 7416)
         coco_tiler.s1_gcps = gcps
         coco_tiler.s1_crs = rasterio.crs.CRS.from_epsg(4326)
+        n_tiles = 150
 
         class_file = f"tests/fixtures/{scene_id}/cv2_transfer_outputs_skytruth_annotation_first_phase_old_vessel_{scene_id}_ambiguous_1.png"
         background_file = class_file.replace("ambiguous_1", "Background")
         layer_path = [background_file, class_file]
+        scene_data_tuple = (
+            n_tiles,
+            coco_tiler.s1_image_shape,
+            coco_tiler.s1_gcps,
+            coco_tiler.s1_crs,
+        )
+        scene_index = 0
+        coco_output = coco_tiler.create_coco_from_photopea_layers(
+            scene_index, scene_data_tuple, layer_path
+        )
 
-        coco_tiler.create_coco_from_photopea_layers(scene_id, layer_path)
-
-        assert len(coco_tiler.coco_output["annotations"]) == 5
+        assert len(coco_output["annotations"]) == 5

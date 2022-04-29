@@ -33,3 +33,9 @@ variable "project" {
   description = "Project"
   default     = "cerulean-338116"
 }
+
+variable "gpu-count" {
+  type        = number
+  description = "how many gpus to attach to instance"
+  default     = 1
+}

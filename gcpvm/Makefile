@@ -38,4 +38,4 @@ status:
 
 # ssh into machine with jupyter lab
 ssh:
-	ssh -i ${PATH_SSH_KEY} -L 8888:localhost:8888 -L 6006:localhost:6006 -o IdentitiesOnly=yes ${VM_CONN}
+	ssh -i ${PATH_SSH_KEY} -L 8888:localhost:8888 -L 6006:localhost:6006 -L 8786:localhost:8786 -o IdentitiesOnly=yes ${VM_CONN}
