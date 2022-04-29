@@ -149,3 +149,9 @@ scratch/
 terraform.tfstate
 *tiled*
 notebooks/models
+
+dask-worker-space/	
+mydask.png
+notebooks/instances_slicks_test*
+task_graph.svg
+test-dask-*

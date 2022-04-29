@@ -83,9 +83,6 @@ def make_coco_dataset_with_tiles(
         coco_outdir (str): the path to save the coco json and the folder
             of tiled images.
     """
-    client = (
-        Client()
-    )  # this needs to be commented out to use single threaded for profiling
     start = time.time()
     os.makedirs(coco_outdir, exist_ok=True)
     os.makedirs(os.path.join(coco_outdir, "tiled_images"), exist_ok=True)
@@ -93,43 +90,50 @@ def make_coco_dataset_with_tiles(
     class_folders = list(class_foldes_path.glob("*/"))
     coco_tiler = data.COCOtiler(os.path.join(coco_outdir, "tiled_images"))
 
-    aux_datasets = [os.path.join(aux_data_path, "infra_locations.json"), "ship_density"]
-    scene_index = 0
-    coco_outputs = []
-    for class_folder in class_folders:
-        for scene_folder in list(class_folder.glob("*GRDH*")):
-            assert "S1" in str(scene_folder)
-            scene_id = os.path.basename(scene_folder)
-            layer_pths = [str(i) for i in list(scene_folder.glob("*png"))]
-            scene_data_tuple = dask.delayed(coco_tiler.save_background_img_tiles)(
-                scene_id,
-                layer_pths,
-                aux_datasets=aux_datasets,
-                aux_resample_ratio=8,
-            )
-            coco_output = dask.delayed(coco_tiler.create_coco_from_photopea_layers)(
-                scene_index, scene_data_tuple, layer_pths
-            )
-            coco_outputs.append(coco_output)
-            scene_index += 1
-    final_coco_output = make_coco_metadata(name=name)
-    # when we create a distributed client
-    coco_outputs = client.persist(*coco_outputs)  # start computation in the background
-    progress(coco_outputs)  # watch progress
-    coco_outputs = client.compute(*coco_outputs)
-    # coco_outputs = dask.compute(
-    #     *coco_outputs, scheduler="single-threaded"
-    # )  # convert to final result when done
-    for co in coco_outputs:
-        final_coco_output["images"].extend(co["images"])
-        final_coco_output["annotations"].extend(co["annotations"])
-    coco_tiler.save_coco_output(
-        final_coco_output,
-        os.path.join(coco_outdir, f"./instances_{name.replace('', '')}.json"),
-    )
-    num_images = len(final_coco_output["images"])
-    print(f"Number of seconds for {num_images} images: {time.time() - start}")
-    print(f"Images and COCO JSON have been saved in {coco_outdir}.")
+    aux_datasets = [
+        os.path.join(aux_data_path, "infra_locations_01_cogeo.tiff"),
+        "ship_density",
+    ]
+    with Client() as client:  # this needs to be commented out to use single threaded for profiling
+        print("Dask client dashboard link: ", client.dashboard_link)
+        scene_index = 0
+        coco_outputs = []
+        for class_folder in class_folders:
+            for scene_folder in list(class_folder.glob("*GRDH*"))[0:1]:
+                assert "S1" in str(scene_folder)
+                scene_id = os.path.basename(scene_folder)
+                layer_pths = [str(i) for i in list(scene_folder.glob("*png"))]
+                scene_data_tuple = dask.delayed(coco_tiler.save_background_img_tiles)(
+                    scene_id,
+                    layer_pths,
+                    aux_datasets=aux_datasets,
+                    aux_resample_ratio=8,
+                )
+                coco_output = dask.delayed(coco_tiler.create_coco_from_photopea_layers)(
+                    scene_index, scene_data_tuple, layer_pths
+                )
+                coco_outputs.append(coco_output)
+                scene_index += 1
+        final_coco_output = make_coco_metadata(name=name)
+        # when we create a distributed client
+        coco_outputs = dask.persist(
+            *coco_outputs
+        )  # start computation in the background
+        progress(coco_outputs)  # watch progress
+        coco_outputs = dask.compute(*coco_outputs)
+        # coco_outputs = dask.compute(
+        #     *coco_outputs, scheduler="single-threaded"
+        # )  # convert to final result when done
+        for co in coco_outputs:
+            final_coco_output["images"].extend(co["images"])
+            final_coco_output["annotations"].extend(co["annotations"])
+        coco_tiler.save_coco_output(
+            final_coco_output,
+            os.path.join(coco_outdir, f"./instances_{name.replace('', '')}.json"),
+        )
+        num_images = len(final_coco_output["images"])
+        print(f"Number of seconds for {num_images} images: {time.time() - start}")
+        print(f"Images and COCO JSON have been saved in {coco_outdir}.")
 
 
 @main.command()
