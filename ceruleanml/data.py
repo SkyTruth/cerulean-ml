@@ -252,20 +252,6 @@ class COCOtiler:
         self.s1_gcps: Optional[List[Any]] = None
         self.s1_crs: Optional[Any] = None
 
-    def save_background_img_tiles_sleep(
-        self,
-        scene_id: str,
-        layer_paths: List[str],
-        aux_datasets: List[str] = [],
-        **kwargs,
-    ):
-        time.sleep(2)
-
-    def create_coco_from_photopea_layers_sleep(
-        self, scene_index: int, scene_data_tuple: tuple, layer_pths: List[str]
-    ):
-        time.sleep(2)
-
     def save_background_img_tiles(
         self,
         scene_id: str,
@@ -383,7 +369,7 @@ class COCOtiler:
             ValueError: Errors if a path to a label file in layer_pths doesn't contain "Layer"
         """
         start = time.time()
-        coco_output = {"images": [], "annotations": []}
+        coco_output: dict = {"images": [], "annotations": []}  # type: ignore
         (
             n_tiles,
             s1_image_shape,
@@ -489,7 +475,7 @@ class COCOtiler:
         assert self.s1_crs is not None, "First run  save_background_img_tiles!"
         assert self.s1_gcps is not None, "First run  save_background_img_tiles!"
         assert self.s1_image_shape is not None, "First run  save_background_img_tiles!"
-
+        coco_output: dict = {"images": [], "annotations": []}  # type: ignore
         for instance_path in layer_pths[1:]:
             # each label is of form class_instanceid.png
             if "_" not in str(instance_path):
@@ -535,8 +521,8 @@ class COCOtiler:
                 }
             )
             # go through each label image to extract annotation
-            if image_info not in self.coco_output["images"]:
-                self.coco_output["images"].append(image_info)
+            if image_info not in coco_output["images"]:
+                coco_output["images"].append(image_info)
             class_id = get_layer_cls(arr, class_mapping_photopea, class_mapping_coco)
             if class_id != 0:
                 category_info = {
@@ -563,7 +549,7 @@ class COCOtiler:
                         "big_image_fname": big_image_fname,
                     }
                 )
-                self.coco_output["annotations"].append(annotation_info)
+                coco_output["annotations"].append(annotation_info)
             self.instance_id += 1
         self.big_image_id += 1
 

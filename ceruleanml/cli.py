@@ -8,7 +8,6 @@ from typing import List
 import click
 import dask
 from dask.distributed import Client, progress
-from tqdm import tqdm
 
 import ceruleanml.data as data
 
@@ -114,10 +113,10 @@ def make_coco_dataset_with_tiles(
             coco_outputs.append(coco_output)
             scene_index += 1
     final_coco_output = make_coco_metadata(name=name)
-    # when we create a distributed client, dask.compute uses that isntead of thread scheduler by default
-    coco_outputs = dask.persist(*coco_outputs)  # start computation in the background
+    # when we create a distributed client
+    coco_outputs = client.persist(*coco_outputs)  # start computation in the background
     progress(coco_outputs)  # watch progress
-    coco_outputs = dask.compute(*coco_outputs)
+    coco_outputs = client.compute(*coco_outputs)
     # coco_outputs = dask.compute(
     #     *coco_outputs, scheduler="single-threaded"
     # )  # convert to final result when done
@@ -153,10 +152,8 @@ def make_coco_dataset_no_tiles(
     os.makedirs(os.path.join(coco_outdir, "untiled_images"), exist_ok=True)
     class_foldes_path = Path(class_folder_path)
     class_folders = list(class_foldes_path.glob("*/"))
-    coco_output = make_coco_metadata(name=name)
-    coco_tiler = data.COCOtiler(
-        os.path.join(coco_outdir, "untiled_images"), coco_output
-    )
+    # coco_output = make_coco_metadata(name=name)
+    coco_tiler = data.COCOtiler(os.path.join(coco_outdir, "untiled_images"))
     coco_tiler.copy_background_images([str(i) for i in class_folders])
     for class_folder in class_folders:
         for scene_folder in list(class_folder.glob("*GRDH*")):
@@ -216,9 +213,9 @@ def make_coco_dataset_no_context(
             scene_index += 1
     final_coco_output = make_coco_metadata(name=name)
     # when we create a distributed client, dask.compute uses that isntead of thread scheduler by default
-    coco_outputs = dask.persist(*coco_outputs)  # start computation in the background
+    coco_outputs = client.persist(*coco_outputs)  # start computation in the background
     progress(coco_outputs)  # watch progress
-    coco_outputs = dask.compute(*coco_outputs)
+    coco_outputs = client.compute(*coco_outputs)
     # coco_outputs = dask.compute(
     #     *coco_outputs, scheduler="single-threaded"
     # )  # convert to final result when done
