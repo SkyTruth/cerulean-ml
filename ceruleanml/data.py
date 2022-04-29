@@ -21,6 +21,7 @@ from rasterio.enums import ColorInterp, Resampling
 from rasterio.io import MemoryFile
 from rasterio.plot import reshape_as_image, reshape_as_raster
 from rasterio.vrt import WarpedVRT
+from rio_tiler.io import COGReader
 
 # Hard Neg is overloaded with overlays but they shouldn't be exported during annotation
 # Hard Neg is just a class that we will use to measure performance gains metrics
@@ -643,6 +644,27 @@ def get_scene_date_month(scene_id: str) -> str:
     date_time_obj = datetime.strptime(date_time_str, "%Y%m%dT%H%M%S")
     date_time_obj = date_time_obj.replace(day=1, hour=0, minute=0, second=0)
     return date_time_obj.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def get_dist_array(
+    bounds: Tuple[float, float, float, float],
+    img_shape: Tuple[int, int, int],
+    raster_ds: str,
+    max_distance: int = 60000,
+):
+    with COGReader(raster_ds) as image:
+        img = image.part(bounds)
+        data = img.data_as_image()
+    if (data == 0).all():
+        data = np.ones(img_shape) * 255
+    else:
+        data = data / (max_distance / 255)  # 60 km
+        data[data >= 255] = 255
+    upsampled = skimage.transform.resize(
+        data, (*img_shape[0:2], 1), preserve_range=True
+    )
+    upsampled = np.squeeze(upsampled)
+    return upsampled.astype(np.uint8)
 
 
 def get_dist_array_from_vector(

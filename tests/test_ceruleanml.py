@@ -105,6 +105,21 @@ def test_handle_aux_datasets():
     assert ar.shape == (4181, 6458, 2)
 
 
+def test_get_dist_array():
+
+    arr = data.get_dist_array(
+        bounds=(55.698181, 24.565813, 58.540211, 26.494711),
+        img_shape=(4181, 6458),
+        raster_ds="tests/fixtures/test_cogeo.tiff",
+    )
+    assert arr.shape == (4181, 6458)
+    assert arr.dtype == np.dtype(np.uint8)
+    assert np.max(arr) == 255
+    assert np.min(arr) == 0
+
+    # test all 0 input
+
+
 def test_get_dist_array_from_vector():
 
     arr = data.get_dist_array_from_vector(
