@@ -129,7 +129,7 @@ def make_coco_dataset_with_tiles(
             final_coco_output["annotations"].extend(co["annotations"])
         coco_tiler.save_coco_output(
             final_coco_output,
-            os.path.join(coco_outdir, f"./instances_{name.replace('', '')}.json"),
+            os.path.join(coco_outdir, f"./instances_{name.replace(' ', '')}.json"),
         )
         num_images = len(final_coco_output["images"])
         print(f"Number of seconds for {num_images} images: {time.time() - start}")
