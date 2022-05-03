@@ -514,8 +514,7 @@ class COCOtiler:
                 os.path.basename(os.path.dirname(instance_path)) + ".tif"
             )
             big_image_fname = os.path.join(
-                os.path.dirname(instance_path),
-                os.path.basename(os.path.dirname(instance_path)) + "_Background.png",
+                os.path.dirname(instance_path), "Background.png"
             )
             image_info = pycococreatortools.create_image_info(
                 scene_index, big_image_fname, arr.shape
