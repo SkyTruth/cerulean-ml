@@ -453,7 +453,7 @@ class COCOtiler:
         return coco_output
 
     def create_coco_from_photopea_layers_no_tile(
-        self, scene_id: str, layer_pths: List[str]
+        self, scene_index: str, scene_data_tuple: tuple, layer_pths: List[str]
     ):
         """Saves a COCO JSON with annotations compressed in RLE format, without tiling and referring to the
             original Background.png images.
@@ -471,12 +471,16 @@ class COCOtiler:
             ValueError: Errors if the path to the first file in layer_pths doesn't contain "Background"
             ValueError: Errors if a path to a label file in layer_pths doesn't contain "Layer"
         """
+        (
+            s1_image_shape,
+            s1_gcps,
+            s1_crs,
+        ) = scene_data_tuple
         # Make sure scene id is the same and we have reproj params
-        assert scene_id == self.s1_scene_id, "First run  save_background_img_tiles!"
-        assert self.s1_crs is not None, "First run  save_background_img_tiles!"
-        assert self.s1_gcps is not None, "First run  save_background_img_tiles!"
-        assert self.s1_image_shape is not None, "First run  save_background_img_tiles!"
         coco_output: dict = {"images": [], "annotations": []}  # type: ignore
+        tmp_instance_id = (
+            0  # reset after all instances processed so last id is number of instances
+        )
         for instance_path in layer_pths[1:]:
             # each label is of form class_instanceid.png
             if "_" not in str(instance_path):
@@ -487,43 +491,45 @@ class COCOtiler:
                 profile = src.profile.copy()
                 profile["driver"] = "GTiff"
                 profile["count"] = 4
-                profile["crs"] = self.s1_crs
-                profile["gcps"] = self.s1_gcps
+                profile["crs"] = s1_crs
+                profile["gcps"] = s1_gcps
 
                 with MemoryFile() as mem:
                     with mem.open(**profile) as m:
                         m.write(reshape_as_raster(org_array))
-                        gcps_transform = transform.from_gcps(self.s1_gcps)
+                        gcps_transform = transform.from_gcps(s1_gcps)
                         with WarpedVRT(
                             m,
-                            src_crs=self.s1_crs,
+                            src_crs=s1_crs,
                             src_transform=gcps_transform,
                             add_alpha=False,
                         ) as vrt_dst:
                             # arr is (c, h, w)
                             arr = vrt_dst.read(
-                                out_shape=(vrt_dst.count, *self.s1_image_shape)
+                                out_shape=(vrt_dst.count, *s1_image_shape)
                             )
-                            assert arr.shape[1:] == self.s1_image_shape
+                            assert arr.shape[1:] == s1_image_shape
 
             big_image_original_fname = (
                 os.path.basename(os.path.dirname(instance_path)) + ".tif"
             )
-            big_image_fname = (
-                os.path.basename(os.path.dirname(instance_path)) + "_Background.png"
+            big_image_fname = os.path.join(
+                os.path.dirname(instance_path),
+                os.path.basename(os.path.dirname(instance_path)) + "_Background.png",
             )
             image_info = pycococreatortools.create_image_info(
-                self.big_image_id, big_image_fname, arr.shape
+                scene_index, big_image_fname, arr.shape
             )
             image_info.update(
                 {
-                    "big_image_id": self.big_image_id,
+                    "big_image_id": scene_index,
                     "big_image_original_fname": big_image_original_fname,
                 }
             )
             # go through each label image to extract annotation
             if image_info not in coco_output["images"]:
                 coco_output["images"].append(image_info)
+            arr = np.moveaxis(arr, 0, -1)
             class_id = get_layer_cls(arr, class_mapping_photopea, class_mapping_coco)
             if class_id != 0:
                 category_info = {
@@ -534,10 +540,9 @@ class COCOtiler:
                 category_info = {"id": class_id, "is_crowd": False}
             r, g, b = class_mapping_photopea[class_mapping_coco_inv[class_id]]
             binary_mask = rgbalpha_to_binary(arr, r, g, b).astype(np.uint8)
-
             annotation_info = pycococreatortools.create_annotation_info(
-                self.instance_id,
-                self.big_image_id,
+                tmp_instance_id,
+                scene_index,
                 category_info,
                 binary_mask,
                 binary_mask.shape,
@@ -546,13 +551,13 @@ class COCOtiler:
             if annotation_info is not None:
                 annotation_info.update(
                     {
-                        "big_image_id": self.big_image_id,
+                        "big_image_id": scene_index,
                         "big_image_fname": big_image_fname,
                     }
                 )
                 coco_output["annotations"].append(annotation_info)
-            self.instance_id += 1
-        self.big_image_id += 1
+            tmp_instance_id += 1
+        return coco_output
 
     def save_coco_output(
         self, coco_output, outpath: str = "./instances_slicks_test_v2.json"
