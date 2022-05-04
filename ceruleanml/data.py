@@ -4,6 +4,7 @@ import time
 import zipfile
 from datetime import datetime
 from io import BytesIO
+from pathlib import Path
 from shutil import copy
 from typing import Any, List, Optional, Tuple
 
@@ -348,7 +349,7 @@ class COCOtiler:
         fnames_vv = []
         for f in class_folders:
             # TODO: fix types
-            fnames_vv.extend(list(f.glob("**/Background.png")))  # type: ignore
+            fnames_vv.extend(list(Path(f).glob("**/Background.png")))  # type: ignore
         copy_whole_images(fnames_vv, self.img_dir)
 
     def create_coco_from_photopea_layers(
@@ -487,10 +488,18 @@ class COCOtiler:
                 raise ValueError(f"The layer {instance_path} is not an instance label.")
 
             org_array = skio.imread(instance_path)
+            if (
+                len(org_array.shape) == 2 and "ambiguous" in instance_path
+            ):  # hack to handle ambiguous images saved with vals 0 and 255 rather than correct color mapping
+                org_array = org_array.clip(max=1)
+                org_array = np.expand_dims(org_array, axis=2)
             with rasterio.open(instance_path) as src:
                 profile = src.profile.copy()
                 profile["driver"] = "GTiff"
-                profile["count"] = 4
+                if org_array.shape[-1] == 1 and "ambiguous" in instance_path:
+                    profile["count"] = 1
+                else:
+                    profile["count"] = 4
                 profile["crs"] = s1_crs
                 profile["gcps"] = s1_gcps
 

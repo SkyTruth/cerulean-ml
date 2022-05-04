@@ -166,20 +166,17 @@ def make_coco_dataset_no_tiles(
         scene_index = 0
         coco_outputs = []
         for class_folder in class_folders:
-            for scene_folder in list(class_folder.glob("*GRDH*"))[0:1]:
+            for scene_folder in list(class_folder.glob("*GRDH*")):
                 assert "S1" in str(scene_folder)
                 scene_id = os.path.basename(scene_folder)
                 layer_pths = [str(i) for i in list(scene_folder.glob("*png"))]
-                (
-                    s1_bounds,
-                    s1_image_shape,
-                    s1_gcps,
-                    s1_crs,
-                ) = data.fetch_sentinel1_reprojection_parameters(scene_id)
+                delayed_tuple = dask.delayed(
+                    data.fetch_sentinel1_reprojection_parameters
+                )(scene_id)
                 scene_data_tuple = (
-                    s1_image_shape,
-                    s1_gcps,
-                    s1_crs,
+                    delayed_tuple[1],
+                    delayed_tuple[2],
+                    delayed_tuple[3],
                 )
                 coco_output = dask.delayed(
                     coco_tiler.create_coco_from_photopea_layers_no_tile
@@ -188,14 +185,10 @@ def make_coco_dataset_no_tiles(
                 scene_index += 1
         final_coco_output = make_coco_metadata(name=name)
         # when we create a distributed client
-        coco_outputs = dask.persist(
-            *coco_outputs
-        )  # start computation in the background
+        coco_outputs = dask.persist(*coco_outputs)
+        # start computation in the background
         progress(coco_outputs)  # watch progress
         coco_outputs = dask.compute(*coco_outputs)
-        # coco_outputs = dask.compute(
-        #     *coco_outputs, scheduler="single-threaded"
-        # )  # convert to final result when done
         for co in coco_outputs:
             final_coco_output["images"].extend(co["images"])
             final_coco_output["annotations"].extend(co["annotations"])
