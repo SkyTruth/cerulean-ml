@@ -538,7 +538,32 @@ class COCOtiler:
             if image_info not in coco_output["images"]:
                 coco_output["images"].append(image_info)
             arr = np.moveaxis(arr, 0, -1)
-            class_id = get_layer_cls(arr, class_mapping_photopea, class_mapping_coco)
+
+            if org_array.shape[-1] == 1 and "ambiguous" in instance_path:
+                if 1 in np.unique(org_array):
+                    class_id = 6
+                    category_info = {
+                        "id": class_id,
+                        "is_crowd": True,
+                    }  # forces compressed RLE format
+                else:
+                    class_id = 0
+                    category_info = {"id": class_id, "is_crowd": False}
+                arr = org_array[:, :, -1]
+            else:
+                class_id = get_layer_cls(
+                    arr, class_mapping_photopea, class_mapping_coco
+                )
+            if class_id != 0:
+                category_info = {
+                    "id": class_id,
+                    "is_crowd": True,
+                }  # forces compressed RLE format
+            else:
+                category_info = {"id": class_id, "is_crowd": False}
+            r, g, b = class_mapping_photopea[class_mapping_coco_inv[class_id]]
+            binary_mask = rgbalpha_to_binary(org_array, r, g, b).astype(np.uint8)
+
             if class_id != 0:
                 category_info = {
                     "id": class_id,
