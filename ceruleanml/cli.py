@@ -99,7 +99,7 @@ def make_coco_dataset_with_tiles(
         scene_index = 0
         coco_outputs = []
         for class_folder in class_folders:
-            for scene_folder in list(class_folder.glob("*GRDH*"))[0:1]:
+            for scene_folder in list(class_folder.glob("*GRDH*")):
                 assert "S1" in str(scene_folder)
                 scene_id = os.path.basename(scene_folder)
                 layer_pths = [str(i) for i in list(scene_folder.glob("*png"))]
@@ -230,7 +230,7 @@ def make_coco_dataset_no_context(
         scene_index = 0
         coco_outputs = []
         for class_folder in class_folders:
-            for scene_folder in list(class_folder.glob("*GRDH*"))[0:3]:
+            for scene_folder in list(class_folder.glob("*GRDH*")):
                 assert "S1" in str(scene_folder)
                 scene_id = os.path.basename(scene_folder)
                 layer_pths = [str(i) for i in list(scene_folder.glob("*png"))]

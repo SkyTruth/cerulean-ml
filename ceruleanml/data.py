@@ -528,7 +528,8 @@ class COCOtiler:
                 instance_path,
                 reshape_as_image(arr),
             )
-            coco_output["annotations"].append(annotation_info)
+            if annotation_info is not None:
+                coco_output["annotations"].append(annotation_info)
             coco_output["images"].append(image_info)
             tmp_instance_id += 1
         return coco_output
