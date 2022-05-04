@@ -426,13 +426,14 @@ class COCOtiler:
                 # we reassign instance ids after all have been saved in the
                 # coco format so that the last instance id is the total number of instances
                 tmp_instance_id = global_tile_id
+                instance_tile = tiled_arr[local_tile_id]
                 result = get_annotation_and_image_info(
                     local_tile_id,
                     global_tile_id,
                     scene_index,
                     tmp_instance_id,
                     instance_path,
-                    tiled_arr,
+                    instance_tile,
                 )
                 ainfo_iinfo_tuples.append(result)
             for tup in ainfo_iinfo_tuples:
@@ -519,76 +520,16 @@ class COCOtiler:
                             )
                             assert arr.shape[1:] == s1_image_shape
 
-            big_image_original_fname = (
-                os.path.basename(os.path.dirname(instance_path)) + ".tif"
-            )
-            big_image_fname = os.path.join(
-                os.path.dirname(instance_path), "Background.png"
-            )
-            image_info = pycococreatortools.create_image_info(
-                scene_index, big_image_fname, arr.shape
-            )
-            image_info.update(
-                {
-                    "big_image_id": scene_index,
-                    "big_image_original_fname": big_image_original_fname,
-                }
-            )
-            # go through each label image to extract annotation
-            if image_info not in coco_output["images"]:
-                coco_output["images"].append(image_info)
-            arr = np.moveaxis(arr, 0, -1)
-
-            if org_array.shape[-1] == 1 and "ambiguous" in instance_path:
-                if 1 in np.unique(org_array):
-                    class_id = 6
-                    category_info = {
-                        "id": class_id,
-                        "is_crowd": True,
-                    }  # forces compressed RLE format
-                else:
-                    class_id = 0
-                    category_info = {"id": class_id, "is_crowd": False}
-                arr = org_array[:, :, -1]
-            else:
-                class_id = get_layer_cls(
-                    arr, class_mapping_photopea, class_mapping_coco
-                )
-            if class_id != 0:
-                category_info = {
-                    "id": class_id,
-                    "is_crowd": True,
-                }  # forces compressed RLE format
-            else:
-                category_info = {"id": class_id, "is_crowd": False}
-            r, g, b = class_mapping_photopea[class_mapping_coco_inv[class_id]]
-            binary_mask = rgbalpha_to_binary(org_array, r, g, b).astype(np.uint8)
-
-            if class_id != 0:
-                category_info = {
-                    "id": class_id,
-                    "is_crowd": True,
-                }  # forces compressed RLE format
-            else:
-                category_info = {"id": class_id, "is_crowd": False}
-            r, g, b = class_mapping_photopea[class_mapping_coco_inv[class_id]]
-            binary_mask = rgbalpha_to_binary(arr, r, g, b).astype(np.uint8)
-            annotation_info = pycococreatortools.create_annotation_info(
-                tmp_instance_id,
+            annotation_info, image_info = get_annotation_and_image_info(
                 scene_index,
-                category_info,
-                binary_mask,
-                binary_mask.shape,
-                tolerance=0,
+                scene_index,
+                scene_index,
+                tmp_instance_id,
+                instance_path,
+                reshape_as_image(arr),
             )
-            if annotation_info is not None:
-                annotation_info.update(
-                    {
-                        "big_image_id": scene_index,
-                        "big_image_fname": big_image_fname,
-                    }
-                )
-                coco_output["annotations"].append(annotation_info)
+            coco_output["annotations"].append(annotation_info)
+            coco_output["images"].append(image_info)
             tmp_instance_id += 1
         return coco_output
 
@@ -797,9 +738,8 @@ def get_ship_density(
 
 
 def get_annotation_and_image_info(
-    local_tile_id, global_tile_id, big_image_id, instance_id, instance_path, tiled_arr
+    local_tile_id, global_tile_id, big_image_id, instance_id, instance_path, arr
 ):
-    instance_tile = tiled_arr[local_tile_id]
     big_image_fname = os.path.basename(os.path.dirname(instance_path)) + ".tif"
     tile_fname = (
         os.path.basename(os.path.dirname(instance_path))
@@ -814,8 +754,8 @@ def get_annotation_and_image_info(
             "big_image_original_fname": big_image_fname,
         }
     )
-    if instance_tile.shape[-1] == 1 and "ambiguous" in instance_path:
-        if 1 in np.unique(instance_tile):
+    if arr.shape[-1] == 1 and "ambiguous" in instance_path:
+        if 1 in np.unique(arr):
             class_id = 6
             category_info = {
                 "id": class_id,
@@ -824,11 +764,9 @@ def get_annotation_and_image_info(
         else:
             class_id = 0
             category_info = {"id": class_id, "is_crowd": False}
-        binary_mask = instance_tile[:, :, -1]
+        binary_mask = arr[:, :, -1]
     else:
-        class_id = get_layer_cls(
-            instance_tile, class_mapping_photopea, class_mapping_coco
-        )
+        class_id = get_layer_cls(arr, class_mapping_photopea, class_mapping_coco)
         if class_id != 0:
             category_info = {
                 "id": class_id,
@@ -837,7 +775,7 @@ def get_annotation_and_image_info(
         else:
             category_info = {"id": class_id, "is_crowd": False}
         r, g, b = class_mapping_photopea[class_mapping_coco_inv[class_id]]
-        binary_mask = rgbalpha_to_binary(instance_tile, r, g, b).astype(np.uint8)
+        binary_mask = rgbalpha_to_binary(arr, r, g, b).astype(np.uint8)
 
     annotation_info = pycococreatortools.create_annotation_info(
         instance_id,
