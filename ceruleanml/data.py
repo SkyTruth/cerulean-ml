@@ -519,7 +519,7 @@ class COCOtiler:
                                 out_shape=(vrt_dst.count, *s1_image_shape)
                             )
                             assert arr.shape[1:] == s1_image_shape
-
+            img_name = os.path.join(os.path.dirname(instance_path), "Background.png")
             annotation_info, image_info = get_annotation_and_image_info(
                 scene_index,
                 scene_index,
@@ -527,9 +527,13 @@ class COCOtiler:
                 tmp_instance_id,
                 instance_path,
                 reshape_as_image(arr),
+                img_name,
             )
             if annotation_info is not None:
                 coco_output["annotations"].append(annotation_info)
+            image_info["file_name"] = os.path.join(
+                os.path.dirname(instance_path), "Background.png"
+            )
             coco_output["images"].append(image_info)
             tmp_instance_id += 1
         return coco_output
@@ -739,13 +743,23 @@ def get_ship_density(
 
 
 def get_annotation_and_image_info(
-    local_tile_id, global_tile_id, big_image_id, instance_id, instance_path, arr
+    local_tile_id,
+    global_tile_id,
+    big_image_id,
+    instance_id,
+    instance_path,
+    arr,
+    template_str="_vv-image_local_tile_",
+    img_name="",
 ):
     big_image_fname = os.path.basename(os.path.dirname(instance_path)) + ".tif"
-    tile_fname = (
-        os.path.basename(os.path.dirname(instance_path))
-        + f"_vv-image_local_tile_{local_tile_id}.tif"
-    )
+    if len(img_name) == 0:
+        tile_fname = (
+            os.path.basename(os.path.dirname(instance_path))
+            + f"{template_str}{local_tile_id}.tif"
+        )
+    else:
+        tile_fname = img_name
     image_info = pycococreatortools.create_image_info(
         global_tile_id, tile_fname, (512, 512)
     )
