@@ -1,6 +1,8 @@
+import dask
 import icevision
 import numpy as np
 import pandas as pd
+from distributed import Client
 from skimage import measure
 
 class_map = {
@@ -38,6 +40,38 @@ def minor_axis_length_bbox(bbox):
     return ml3
 
 
+def create_mask_skimage_format(record_dict, i):
+    m = record_dict["detection"]["masks"][i]
+    return np.squeeze(
+        m.to_mask(record_dict["common"]["height"], record_dict["common"]["width"]).data
+    )
+
+
+@dask.delayed
+def get_table(d, i, properties):
+    image = create_mask_skimage_format(d, i)
+    table = measure.regionprops_table(np.squeeze(image), properties=properties)
+    return table
+
+
+def extract_masks_and_compute_tables(
+    record_collection: icevision.data.record_collection.RecordCollection,
+    instance_label_type: str,
+    properties,
+):
+    tables = []
+    with Client() as client:
+        for r in record_collection:
+            masks = r.as_dict()["detection"]["masks"]
+            labels = r.as_dict()["detection"]["labels"]
+            for i in range(len(masks)):
+                if labels[i] == instance_label_type:
+                    table = get_table(r.as_dict(), i, properties)
+                    tables.append(table)
+            tables = client.compute(*tables)
+    return tables
+
+
 def region_props_for_instance_type(
     record_collection: icevision.data.record_collection.RecordCollection,
     instance_label_type: str,
@@ -52,26 +86,14 @@ def region_props_for_instance_type(
         _type_: A pandas dataframe of statistics for the instance type.
     """
 
-    def create_mask_skimage_format(d, i):
-        m = d["detection"]["masks"][i]
-        return np.squeeze(m.to_mask(d["common"]["height"], d["common"]["width"]).data)
-
-    mask_arrays = []
-    for r in record_collection:
-        masks = r.as_dict()["detection"]["masks"]
-        labels = r.as_dict()["detection"]["labels"]
-        for i in range(len(masks)):
-            if labels[i] == instance_label_type:
-                mask_arrays.append(create_mask_skimage_format(r.as_dict(), i))
-
     img_names = [d.as_dict()["common"]["filepath"] for d in record_collection]
 
     properties = ["area", "bbox_area", "major_axis_length", "bbox"]
 
-    tables = [
-        measure.regionprops_table(np.squeeze(image), properties=properties)
-        for image in mask_arrays
-    ]
+    tables = extract_masks_and_compute_tables(
+        record_collection, instance_label_type, properties
+    )
+
     tables = [pd.DataFrame(table) for table in tables]
     for img_name, table in zip(img_names, tables):
         table["img_name"] = img_name
