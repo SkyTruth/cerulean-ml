@@ -791,7 +791,6 @@ def get_annotation_and_image_info(
             category_info = {"id": class_id, "is_crowd": False}
         r, g, b = class_mapping_photopea[class_mapping_coco_inv[class_id]]
         binary_mask = rgbalpha_to_binary(arr, r, g, b).astype(np.uint8)
-
     annotation_info = pycococreatortools.create_annotation_info(
         instance_id,
         global_tile_id,
