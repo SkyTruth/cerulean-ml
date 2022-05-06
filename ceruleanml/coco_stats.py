@@ -63,9 +63,6 @@ def minor_axis_length_bbox(bbox):
 
 
 def create_mask_skimage_format(record_dict, i):
-    import pdb
-
-    pdb.set_trace()
     m = record_dict["detection"]["masks"][i]
     return np.squeeze(
         m.to_mask(record_dict["common"]["height"], record_dict["common"]["width"]).data
@@ -141,11 +138,18 @@ def region_props_for_instance_type(
 def get_table_whole_image(path, properties, instance_type):
     image = skio.imread(path)
     r, g, b = class_dict_coco_rgb[instance_type]
-    image = data.rgbalpha_to_binary(image, r, g, b)
-    import pdb
-
-    pdb.set_trace()
+    image = data.rgbalpha_to_binary(image, r, g, b) * 1
     table = measure.regionprops_table(np.squeeze(image), properties=properties)
+    table["img_name"] = str(path)
+    table["category"] = instance_type
+    table["axis_minor_length_bbox"] = minor_axis_length_bbox(
+        [
+            table["bbox-0"],
+            table["bbox-1"],
+            table["bbox-2"],
+            table["bbox-3"],
+        ]
+    )
     return table
 
 
@@ -154,7 +158,7 @@ def extract_masks_and_compute_tables_whole_image(
     instance_label_type: str,
     properties,
 ):
-    tables_and_pth_tuples = []
+    tables = []
     for d in record_collection:
         pths = list(
             Path(os.path.dirname(d.as_dict()["common"]["filepath"])).glob("*_*")
@@ -172,8 +176,8 @@ def extract_masks_and_compute_tables_whole_image(
             assert len(label_type) == 1
             if instance_label_type in label_type:
                 table = get_table_whole_image(pth, properties, instance_label_type)
-                tables_and_pth_tuples.append((table, pth))
-    return tables_and_pth_tuples
+                tables.append(pd.DataFrame(table))
+    return tables
 
 
 def region_props_for_instance_type_whole_image(
@@ -192,25 +196,10 @@ def region_props_for_instance_type_whole_image(
 
     properties = ["area", "bbox_area", "major_axis_length", "bbox"]
 
-    tables_and_pth_tuples = extract_masks_and_compute_tables_whole_image(
+    tables = extract_masks_and_compute_tables_whole_image(
         record_collection, instance_label_type, properties
     )
 
-    tables = [pd.DataFrame(table_tup[0]) for table_tup in tables_and_pth_tuples]
-    for table, img_name in tables_and_pth_tuples:
-        table["img_name"] = img_name
-        import pdb
-
-        pdb.set_trace()
-        table["axis_minor_length_bbox"] = minor_axis_length_bbox(
-            [
-                table["bbox-0"],
-                table["bbox-1"],
-                table["bbox-2"],
-                table["bbox-3"],
-            ]
-        )
-        table["category"] = instance_label_type
     if all(v is None for v in tables):
         print(
             f"No categories found to calculate stats for class {instance_label_type}."

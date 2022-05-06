@@ -99,7 +99,7 @@ def make_coco_dataset_with_tiles(
         scene_index = 0
         coco_outputs = []
         for class_folder in class_folders:
-            for scene_folder in list(class_folder.glob("*GRDH*")):
+            for scene_folder in list(class_folder.glob("*GRDH*"))[0:2]:
                 assert "S1" in str(scene_folder)
                 scene_id = os.path.basename(scene_folder)
                 layer_pths = [str(i) for i in list(scene_folder.glob("*png"))]
