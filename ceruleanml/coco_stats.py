@@ -138,7 +138,12 @@ def region_props_for_instance_type(
 def get_table_whole_image(path, properties, instance_type):
     image = skio.imread(path)
     r, g, b = class_dict_coco_rgb[instance_type]
-    image = data.rgbalpha_to_binary(image, r, g, b) * 1
+    if len(image.shape) == 2 and instance_type == "ambiguous":
+        pass
+    elif len(image.shape) == 2 and instance_type != "ambiguous":
+        return None
+    else:
+        image = data.rgbalpha_to_binary(image, r, g, b) * 1
     table = measure.regionprops_table(np.squeeze(image), properties=properties)
     table["img_name"] = str(path)
     table["category"] = instance_type
@@ -163,17 +168,29 @@ def extract_masks_and_compute_tables_whole_image(
         pths = list(
             Path(os.path.dirname(d.as_dict()["common"]["filepath"])).glob("*_*")
         )
+        pths = [
+            pth
+            for pth in pths
+            if "S1A" not in os.path.basename(pth)
+            and "S1B" not in os.path.basename(pth)
+            and ".DS" not in os.path.basename(pth)
+            and ".ipynb" not in os.path.basename(pth)
+        ]  # some folders incorrectly contain files names S1A... or S1B...
         for pth in pths:
-            assert (
-                len(os.path.basename(str(pth)).split("_")) == 3
-                or len(os.path.basename(str(pth)).split("_")) == 2
-            )
+
+            if (
+                len(os.path.basename(str(pth)).split("_")) != 3
+                and len(os.path.basename(str(pth)).split("_")) != 2
+            ):
+                raise ValueError(f"{os.path.basename(str(pth))}")
             label_type_and_extra_lst = os.path.basename(str(pth)).split("_")
             label_type = []
             for lstr in label_type_and_extra_lst:
                 if lstr in class_dict_coco.keys():
                     label_type.append(class_dict_coco[lstr])
-            assert len(label_type) == 1
+            if len(label_type) != 1:
+                print("unexpected path, no keywords", label_type_and_extra_lst)
+                raise ValueError(f"{label_type}")
             if instance_label_type in label_type:
                 table = get_table_whole_image(pth, properties, instance_label_type)
                 tables.append(pd.DataFrame(table))
