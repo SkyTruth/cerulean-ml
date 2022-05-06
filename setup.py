@@ -17,7 +17,7 @@ requirements = [
     "scikit-image",
     "dask",
     "httpx",
-    "pycocotools @ git+https://github.com/philferriere/cocoapi.git#egg=pycocotools&subdirectory=PythonAPI",
+    "pycocotools==2.0.4",
     "pycococreatortools @ git+https://github.com/waspinator/pycococreator.git#egg=pycocreatortools",
     "geopandas",
     "rio-tiler-pds",
