@@ -52,7 +52,7 @@ Options:
   --help  Show this message and exit.
 ```
 
-# Setup
+# VM Setup
 
 Deploy the VM, sync the git directory, and ssh with port forwarding
 ```
@@ -81,3 +81,14 @@ aws configure
 ```
 
 If there are new dependencies you find we need, you can add them in the environment.yaml and install with make install (the top level makefile not the terraform makefile).
+
+### Experiment Setup
+
+Make sure you have copied the dataset to the local SSD of the VM at /root. This will result in IO speed improvements. For example, parsing/loading the data with icevision from a GCP bucket takes a full 2 minutes compared to 17 seconds when data is already on the VM SSD.
+
+You can run the following for example to copy a dataset from the bucket to the vm quickly.
+
+```
+mkdir tile-cerulean-v2-partial-with-context
+gsutil -m rsync -ravzp gs://ceruleanml/tile-cerulean-v2-partial-with-context tile-cerulean-v2-partial-with-context
+```
