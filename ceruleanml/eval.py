@@ -2,6 +2,11 @@ import os
 import numpy as np
 from sklearn.metrics import confusion_matrix, f1_score
 import skimage.io as skio
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+mpl.rcParams['axes.grid'] = False
+mpl.rcParams['figure.figsize'] = (12,12)
+import matplotlib.image as mpimg
 
 
 def cm_f1(arrays_gt, arrays_pred, num_classes, save_dir): 
