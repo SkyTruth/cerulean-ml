@@ -71,7 +71,7 @@ def make_coco_dataset_with_tiles(
     class_folder_path: str,
     aux_data_path: str,
     coco_outdir: str,
-    name: str = "Tiled Cerulean Dataset V2",
+    name: str = "TiledCeruleanDatasetV2",
 ):
     """Create the dataset with tiles and context files (ship density and infra distance).
 
@@ -144,7 +144,7 @@ def make_coco_dataset_with_tiles(
 def make_coco_dataset_no_tiles(
     class_folder_path: str,
     coco_outdir: str,
-    name="Untiled Cerulean Dataset V2 No Context Files",
+    name="UntiledCeruleanDatasetV2NoContextFiles",
 ):
     """Create the dataset without tiling and without context files.
 
@@ -207,7 +207,7 @@ def make_coco_dataset_no_tiles(
 def make_coco_dataset_no_context(
     class_folder_path: str,
     coco_outdir: str,
-    name="Tiled Cerulean Dataset V2 No Context Files",
+    name="TiledCeruleanDatasetV2NoContextFiles",
 ):
     """Create the dataset with tiles but without context files (ship density and infra distance).
 
@@ -262,7 +262,7 @@ def make_coco_dataset_no_context(
             ann["id"] = i
         coco_tiler.save_coco_output(
             final_coco_output,
-            os.path.join(coco_outdir, f"./instances_{name.replace('', '')}.json"),
+            os.path.join(coco_outdir, f"./instances_{name.replace(' ', '')}.json"),
         )
         num_images = len(final_coco_output["images"])
         print(f"Number of seconds for {num_images} images: {time.time() - start}")

@@ -17,7 +17,7 @@ pip install -e .
 pip install -r requirements_dev.txt
 ```
 
-# Run the CLI
+# Run the CLIs
 ceruleanml is both a python module and CLI for running data preprocessing dataset creation scripts. You can invoke it like so:
 
 ```
@@ -51,6 +51,23 @@ Usage: ceruleanml make-coco-dataset-no-context [OPTIONS]
 Options:
   --help  Show this message and exit.
 ```
+
+## Run the Hydra Model Training CLI
+Hydra is a robust configuration and experiment management tool. It is composed of a python module, `hydra`, and a `config` directory, with a hierarchy of yaml config files to define hyperparameters and settings for training your model.
+
+A set of experiments can be started by using Hydra's command line interface:
+
+`python experiment.py`
+
+and configs can be adapted on the fly like so:
+
+```
+python experiment.py model.pretrained=True
+```
+
+or by editing the config file directly. Configs should specify good defaults (once you know what they are) and/or the set of configs necessary to reproduce an important experiment.
+
+TODO instructions for viewing wandb logging and switching between fastai and icevision.
 
 # VM Setup
 

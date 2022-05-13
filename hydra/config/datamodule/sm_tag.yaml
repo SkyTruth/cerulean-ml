@@ -1,0 +1,12 @@
+data_dir: ${data_dir}
+num_workers: 8
+bs: 32
+num_samples: ???
+chip_sz: 512
+im_type: png
+mount_path: "/root/data/"
+img_dir: "/root/data/tiled_images_test_small_v2"
+annotations_filepath: "/root/data/instances_slicks_test_v2_small.json"
+label: sm_tag
+class_map: {"Infrastructure": 1,"Natural Seep": 2,"Coincident Vessel": 3,"Recent Vessel": 4,"Old Vessel": 5,"Ambiguous": 6,"Hard Negatives": 0,}
+

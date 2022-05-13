@@ -1,0 +1,4 @@
+project: cerulean
+name: ${name}
+save_dir: logs
+log_model: false
