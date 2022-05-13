@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import skimage.io as skio
 from skimage import measure
+from tqdm import tqdm
 
 from ceruleanml import data
 
@@ -45,6 +46,22 @@ class_dict_coco_rgb = {
     "old_vessel": (255, 0, 255),
     "ambiguous": (255, 255, 255),
 }
+
+
+def sample_stat_lists(arr):
+    return np.mean(arr, axis=(0, 1)), np.std(arr, axis=(0, 1))
+
+
+def all_sample_stat_lists(train_records):
+    means = []
+    stds = []
+    for r in tqdm(train_records):
+        p = r.as_dict()["common"]["filepath"]
+        arr = skio.imread(p)
+        mean_lst, std_lst = sample_stat_lists(arr)
+        means.append(mean_lst)
+        stds.append(std_lst)
+    return np.array(means), np.array(stds)
 
 
 def minor_axis_length_bbox(bbox):
