@@ -1,0 +1,5 @@
+backbone_name: torchvision.models.resnet18
+num_classes: 6
+pretrained: false
+thresh: 0.5
+label_smooth: 0.2

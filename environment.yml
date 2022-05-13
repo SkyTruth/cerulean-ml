@@ -12,6 +12,7 @@ dependencies:
     - scikit-image
     - dask
     - tensorboard
+    - hydra-core
     - pip:
           - eodag
           - pycocotools==2.0.4

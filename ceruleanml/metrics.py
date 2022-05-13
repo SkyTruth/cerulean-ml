@@ -1,16 +1,10 @@
-from icevision import models, parsers, show_records, tfms, Dataset, Metric, COCOMetric, COCOMetricType
-from pycocotools.coco import COCO
-from pycocotools.cocoeval import COCOeval
- 
-from icevision.imports import *
-from icevision.utils import *
-from icevision.data import *
-from icevision.metrics.metric import *
+from enum import Enum
+from typing import Dict, Optional, Sequence
 
 import numpy as np
-
-import json
-import os
+from icevision import Metric
+from icevision.data import create_coco_eval
+from icevision.utils import CaptureStdout
 
 __all__ = ["IoUMetric", "IoUMetricType"]
 
@@ -35,15 +29,17 @@ class IoUMetric(Metric):
     def __init__(
         self,
         metric_type: IoUMetricType = IoUMetricType.bbox,
-        iou_thresholds: Optional[Sequence[float]] = np.linspace(.05, 0.95, int(np.round((0.95 - .05) / .05)) + 1, endpoint=True), #None,
-        print_summary: bool = False, 
+        iou_thresholds: Optional[Sequence[float]] = np.linspace(
+            0.05, 0.95, int(np.round((0.95 - 0.05) / 0.05)) + 1, endpoint=True
+        ),  # None,
+        print_summary: bool = False,
         show_pbar: bool = True,
     ):
         self.metric_type = metric_type
         self.iou_thresholds = iou_thresholds
         self.print_summary = print_summary
         self.show_pbar = show_pbar
-        self._records, self._preds = [], []
+        self._records, self._preds = [], []  # type: ignore
 
     def _reset(self):
         self._records.clear()
@@ -69,7 +65,7 @@ class IoUMetric(Metric):
         with CaptureStdout(propagate_stdout=self.print_summary):
             coco_eval.summarize()
 
-        stats = coco_eval.stats
+        # stats = coco_eval.stats
         ious = coco_eval.ious
 
         ious_l = []
@@ -79,21 +75,20 @@ class IoUMetric(Metric):
             else:
                 iou = iou
             ious_l.append(iou)
-        
+
         flat_ious_l = [item for sublist in ious_l for item in sublist]
         if len(flat_ious_l) == 0:
             flat_ious_l.append([0])
         flat_ious_l = [item for items in flat_ious_l for item in items]
         ious_avg = np.array(flat_ious_l).mean()
-        ious_min = np.array(flat_ious_l).min()
-        ious_max = np.array(flat_ious_l).max()
-        
+        # ious_min = np.array(flat_ious_l).min()
+        # ious_max = np.array(flat_ious_l).max()
+
         logs = {
-            #"Min IoU area=all": ious_min,
-            #"Max IoU area=all": ious_max,
-            "Avg. IoU area=all": ious_avg, 
+            # "Min IoU area=all": ious_min,
+            # "Max IoU area=all": ious_max,
+            "Avg. IoU area=all": ious_avg,
         }
         self._reset()
-        
-        
+
         return logs
