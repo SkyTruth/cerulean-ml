@@ -1,3 +1,4 @@
+import glob
 import os
 import random
 import shutil
@@ -8,6 +9,7 @@ dest_path = "./data/partitions/"
 val_scenes = 10
 test_scenes = 3
 
+train_scenes = []
 val_scenes_select = []
 test_scenes_select = []
 
@@ -35,9 +37,12 @@ def partition_scenes(c):
     """
     print("Selecting from class: ", c)
     if os.path.isdir(f"{source_path}/{c}"):
-        if not os.path.exists(f"{source_path}/{c}/val/") and os.path.exists(
-            f"{source_path}/{c}/test/"
+        if (
+            not os.path.exists(f"{dest_path}/train/{c}")
+            and os.path.exists(f"{dest_path}/val/{c}")
+            and os.path.exists(f"{dest_path}/test/{c}/")
         ):
+            os.makedirs(f"{dest_path}/train/{c}")
             os.makedirs(f"{dest_path}/val/{c}")
             os.makedirs(f"{dest_path}/test/{c}")
         for i in range(val_scenes):
@@ -69,6 +74,20 @@ def partition_scenes(c):
                 f"{dest_path}/test/{c}/{test_scene}",
                 dirs_exist_ok=True,
             )
+        scenes = glob.glob(f"{source_path}/{c}/*")
+        for train_scene in scenes:
+            train_scene = os.path.splitext(train_scene)[-1]
+            if (
+                train_scene not in val_scenes_select
+                and train_scene not in test_scenes_select
+            ):
+                shutil.copytree(
+                    f"{source_path}/{c}/{train_scene}",
+                    f"{dest_path}/train/{c}/{train_scene}",
+                    dirs_exist_ok=True,
+                )
+            train_scenes.append(train_scene)
+            print("Train scene: ", train_scene)
     return
 
 
