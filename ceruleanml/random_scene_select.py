@@ -1,9 +1,9 @@
 import glob
 import os
 import random
-import shutil
+import subprocess
 
-source_path = "./data-cv2/"  # os.getcwd()
+source_path = "./data-cv2/"
 dest_path = "./data/partitions/"
 
 val_scenes = 10
@@ -27,7 +27,6 @@ def getRandomDir(path):
     return randomDir
 
 
-# Loop through classes
 def partition_scenes(c):
     """Applies random selection of scenes for mutually exclusive partitions.
     Args:
@@ -38,28 +37,26 @@ def partition_scenes(c):
     print("Selecting from class: ", c)
     if os.path.isdir(f"{source_path}/{c}"):
         if (
-            not os.path.exists(f"{dest_path}/train/{c}")
-            and os.path.exists(f"{dest_path}/val/{c}")
-            and os.path.exists(f"{dest_path}/test/{c}/")
+            not os.path.exists(f"{dest_path}train/{c}")
+            and os.path.exists(f"{dest_path}val/{c}")
+            and os.path.exists(f"{dest_path}test/{c}/")
         ):
-            os.makedirs(f"{dest_path}/train/{c}")
-            os.makedirs(f"{dest_path}/val/{c}")
-            os.makedirs(f"{dest_path}/test/{c}")
+            os.makedirs(f"{dest_path}train/{c}")
+            os.makedirs(f"{dest_path}val/{c}")
+            os.makedirs(f"{dest_path}test/{c}")
         for i in range(val_scenes):
             val_scene = getRandomDir(f"{source_path}/{c}")
+            val_scene = f"{c}/{val_scene}"
             if val_scene not in val_scenes_select:
                 val_scenes_select.append(val_scene)
             else:
                 val_scene = getRandomDir(f"{source_path}/{c}")
+                val_scene = f"{c}/{val_scene}"
                 val_scenes_select.append(val_scene)
             print("Validation scene selected: ", val_scene)
-            shutil.copytree(
-                f"{source_path}/{c}/{val_scene}",
-                f"{dest_path}/val/{c}/{val_scene}",
-                dirs_exist_ok=True,
-            )
         for i in range(test_scenes):
             test_scene = getRandomDir(f"{source_path}/{c}")
+            test_scene = f"{c}/{test_scene}"
             if (
                 test_scene not in val_scenes_select
                 and test_scene not in test_scenes_select
@@ -67,29 +64,63 @@ def partition_scenes(c):
                 test_scenes_select.append(test_scene)
             else:
                 test_scene = getRandomDir(f"{source_path}/{c}")
+                test_scene = f"{c}/{test_scene}"
                 test_scenes_select.append(test_scene)
             print("Test scene selected: ", test_scene)
-            shutil.copytree(
-                f"{source_path}/{c}/{test_scene}",
-                f"{dest_path}/test/{c}/{test_scene}",
-                dirs_exist_ok=True,
-            )
         scenes = glob.glob(f"{source_path}/{c}/*")
         for train_scene in scenes:
-            train_scene = os.path.splitext(train_scene)[-1]
+            train_scene = train_scene.split("/")[
+                -1
+            ]  # os.path.splitext(train_scene)[-1]
             if (
                 train_scene not in val_scenes_select
                 and train_scene not in test_scenes_select
             ):
-                shutil.copytree(
-                    f"{source_path}/{c}/{train_scene}",
-                    f"{dest_path}/train/{c}/{train_scene}",
-                    dirs_exist_ok=True,
-                )
-            train_scenes.append(train_scene)
-            print("Train scene: ", train_scene)
+                train_scene = f"{c}/{train_scene}"
+                train_scenes.append(train_scene)
+                print("Train scene: ", train_scene)
     return
 
 
 for c in classes:
     partition_scenes(c)
+
+with open(os.path.join(dest_path, "train_scenes.txt"), "w") as f:
+    for item in train_scenes:
+        f.write("%s\n" % item)
+
+with open(os.path.join(dest_path, "val_scenes.txt"), "w") as f:
+    for item in val_scenes_select:
+        f.write("%s\n" % item)
+
+with open(os.path.join(dest_path, "test_scenes.txt"), "w") as f:
+    for item in test_scenes_select:
+        f.write("%s\n" % item)
+
+subprocess.run(
+    [
+        "rsync",
+        "-r",
+        "--files-from=./data/partitions/val_scenes.txt",
+        "data-cv2/",
+        "data/partitions/val/",
+    ]
+)
+subprocess.run(
+    [
+        "rsync",
+        "-r",
+        "--files-from=./data/partitions/test_scenes.txt",
+        "data-cv2/",
+        "data/partitions/test/",
+    ]
+)
+subprocess.run(
+    [
+        "rsync",
+        "-r",
+        "--files-from=./data/partitions/train_scenes.txt",
+        "data-cv2/",
+        "data/partitions/train/",
+    ]
+)
