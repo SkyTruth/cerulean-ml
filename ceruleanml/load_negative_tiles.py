@@ -1,18 +1,24 @@
+import os
 from pathlib import Path
-import os, glob
-from icevision.parsers import COCOMaskParser
-from icevision.data import SingleSplitSplitter
-from ceruleanml.coco_load_fastai import record_collection_to_record_ids, get_image_path, record_to_mask
+
 from icevision.all import *
 
+from ceruleanml.coco_load_fastai import (
+    get_image_path,
+    record_collection_to_record_ids,
+    record_to_mask,
+)
 
 negative_template_record = InstanceSegmentationRecord()
 Parser.generate_template(negative_template_record)
 
+
 class NegativeImageParser(Parser):
     def __init__(self, template_record, data_dir, images_positive, count):
         super().__init__(template_record=template_record)
-        self.image_filepaths = get_negative_image_files(data_dir, images_positive, count) #get_image_files(data_dir)
+        self.image_filepaths = get_negative_image_files(
+            data_dir, images_positive, count
+        )  # get_image_files(data_dir)
 
     def __iter__(self) -> Any:
         yield from self.image_filepaths
@@ -28,9 +34,11 @@ class NegativeImageParser(Parser):
             record.set_img_size(get_img_size(o))
             record.set_filepath(o)
 
+
 __all__ = ["get_files", "get_image_files"]
 
 from icevision.imports import *
+
 
 # All copied from fastai
 def _get_files(p, fs, extensions=None):
@@ -95,13 +103,19 @@ def parse_negative_tiles(data_dir, record_ids, positive_train_records, count):
 
     def get_image_by_record_id(record_id):
         return get_image_path(positive_train_records, record_id)
+
     def get_mask_by_record_id(record_id):
         return record_to_mask(positive_train_records, record_id)
 
     for i in record_ids:
         im = get_image_by_record_id(i)
         images_positive.append(im)
-        
-    negative_parser = NegativeImageParser(negative_template_record, data_dir=data_dir, images_positive=images_positive, count=count)
-    negative_train_records, negative_valid_records = negative_parser.parse()    
+
+    negative_parser = NegativeImageParser(
+        negative_template_record,
+        data_dir=data_dir,
+        images_positive=images_positive,
+        count=count,
+    )
+    negative_train_records, negative_valid_records = negative_parser.parse()
     return negative_train_records, negative_valid_records
