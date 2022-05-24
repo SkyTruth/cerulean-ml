@@ -10,7 +10,20 @@ def save_fastai_model_state_dict_and_tracing(learner, dls, savename, experiment_
     learner.model.cuda()
     learner.model.eval()
     torch.jit.save(
-        torch.jit.trace(learner.model, x), f"{experiment_dir}/tracing_{savename}"
+        torch.jit.trace(learner.model, x), f"{experiment_dir}/tracing_gpu_{savename}"
+    )
+    learner.model.to("cpu")
+    torch.jit.save(
+        torch.jit.trace(learner.model, x.to("cpu")),
+        f"{experiment_dir}/tracing_cpu_{savename}",
+    )
+    print(f"{experiment_dir}/tracing_gpu_{savename}")
+    print(f"{experiment_dir}/tracing_cpu_{savename}")
+    print(f"{experiment_dir}/state_dict_{savename}")
+    return (
+        f"{experiment_dir}/state_dict_{savename}",
+        f"{experiment_dir}/tracing_gpu_{savename}",
+        f"{experiment_dir}/tracing_cpu_{savename}",
     )
 
 
