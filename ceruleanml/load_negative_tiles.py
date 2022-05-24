@@ -1,15 +1,14 @@
 import os
 from pathlib import Path
 
-from icevision.all import *
+from icevision.parsers.parser import Parser
+from icevision.core import record_defaults
+from icevision.utils.get_files import get_image_files
+from icevision.utils.imageio import get_img_size
 
-from ceruleanml.coco_load_fastai import (
-    get_image_path,
-    record_collection_to_record_ids,
-    record_to_mask,
-)
+from ceruleanml.coco_load_fastai import get_image_path, record_to_mask
 
-negative_template_record = InstanceSegmentationRecord()
+negative_template_record = record_defaults.InstanceSegmentationRecord()
 Parser.generate_template(negative_template_record)
 
 
@@ -36,8 +35,6 @@ class NegativeImageParser(Parser):
 
 
 __all__ = ["get_files", "get_image_files"]
-
-from icevision.imports import *
 
 
 # All copied from fastai
