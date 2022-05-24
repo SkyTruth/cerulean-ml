@@ -30,7 +30,7 @@ def getRandomDir(path):
 def partition_scenes(c):
     """Applies random selection of scenes for mutually exclusive partitions.
     Args:
-        class (str): a target class.
+        c (str): a target class.
     Returns:
         n/a.
     """
