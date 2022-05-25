@@ -13,7 +13,7 @@ from icevision.utils.imageio import get_img_size
 from ceruleanml.coco_load_fastai import get_image_path, record_to_mask
 
 negative_template_record = record_defaults.InstanceSegmentationRecord()
-Parser.generate_template(negative_template_record)
+# Parser.generate_template(negative_template_record)
 
 
 class NegativeImageParser(Parser):

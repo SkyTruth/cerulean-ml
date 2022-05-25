@@ -1,9 +1,8 @@
 import icevision
 import numpy as np
 
+
 # os.chdir(os.path.dirname(os.path.abspath(__file__)))
-
-
 def record_collection_to_record_ids(
     record_collection: icevision.data.record_collection.RecordCollection,
 ):

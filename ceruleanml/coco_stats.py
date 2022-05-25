@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import List
 
 import icevision
 import numpy as np
@@ -242,3 +243,68 @@ def region_props_for_instance_type_whole_image(
     else:
         rprops_table = pd.concat(tables, axis=0)
         return rprops_table
+
+
+def get_record_area_label_list(
+    positive_train_record: icevision.data.record_collection.RecordCollection,
+):
+    record_area_label_list = []
+    positive_train_record = positive_train_record.as_dict()
+    for i in range(len(positive_train_record["detection"]["areas"])):
+        record_area_label = (
+            positive_train_record["common"]["record_id"],
+            positive_train_record["detection"]["labels"][i],
+            positive_train_record["detection"]["areas"][i],
+        )
+        # print(record_area_label)
+        record_area_label_list.append(record_area_label)
+    return record_area_label_list
+
+
+def assemble_record_label_lists(
+    record_collection: icevision.data.record_collection.RecordCollection,
+):
+    area_label_lists = []
+    for i in range(len(record_collection)):
+        area_label_lists.extend(get_record_area_label_list(record_collection[i]))
+    return area_label_lists
+
+
+def get_all_record_area_lists_for_class(record_area_label_lists: List, class_name: str):
+    class_names = [
+        "infra_slick",
+        "natural_seep",
+        "coincident_vessel",
+        "recent_vessel",
+        "old_vessel",
+        "ambiguous",
+    ]
+    assert class_name in class_names
+    rs = []
+    for r in record_area_label_lists:
+        if r[1] == class_name:
+            rs.append(r)
+    return rs
+
+
+def ignore_record_by_area(
+    record: icevision.data.record_collection.BaseRecord, area_thresh: int
+):
+    record_d = record.as_dict()
+    for i in range(len(record_d["detection"]["areas"])):
+        if record_d["detection"]["areas"][i] < area_thresh:
+            record_d["detection"]["areas"].pop(i)
+            record_d["detection"]["labels"].pop(i)
+            record_d["detection"]["label_ids"].pop(i)
+            record_d["detection"]["bboxes"].pop(i)
+            record_d["detection"]["masks"].pop(i)
+            record_d["detection"]["iscrowds"].pop(i)
+        return record_d
+
+
+def ignore_low_area_records(
+    record_collection: icevision.data.record_collection.RecordCollection,
+    area_thresh: int,
+):
+    for record in record_collection:
+        ignore_record_by_area(record, area_thresh)
