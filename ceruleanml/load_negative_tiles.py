@@ -6,11 +6,12 @@ from typing import Any, Hashable
 from fastcore.basics import setify
 from fastcore.foundation import L
 from icevision.core import record_defaults
+from icevision.data import SingleSplitSplitter
 from icevision.parsers.parser import Parser
 from icevision.utils.get_files import get_image_files
 from icevision.utils.imageio import get_img_size
 
-from ceruleanml.coco_load_fastai import get_image_path, record_to_mask
+from ceruleanml.coco_load_fastai import get_image_path
 
 negative_template_record = record_defaults.InstanceSegmentationRecord()
 # Parser.generate_template(negative_template_record)
@@ -99,14 +100,14 @@ def get_negative_image_files(path, images_positive, count, recurse=True, folders
     return images_negative[0:count]
 
 
-def parse_negative_tiles(data_dir, record_ids, positive_train_records, count):
+def parse_negative_tiles(data_dir, record_ids, positive_records, count):
     images_positive = []
 
     def get_image_by_record_id(record_id):
-        return get_image_path(positive_train_records, record_id)
+        return get_image_path(positive_records, record_id)
 
-    def get_mask_by_record_id(record_id):
-        return record_to_mask(positive_train_records, record_id)
+    # def get_mask_by_record_id(record_id):
+    #     return record_to_mask(positive_records, record_id)
 
     for i in record_ids:
         im = get_image_by_record_id(i)
@@ -118,5 +119,5 @@ def parse_negative_tiles(data_dir, record_ids, positive_train_records, count):
         images_positive=images_positive,
         count=count,
     )
-    negative_train_records, negative_valid_records = negative_parser.parse()
-    return negative_train_records, negative_valid_records
+    negative_records = negative_parser.parse(data_splitter=SingleSplitSplitter())
+    return negative_records[0]  # single split comes nested so we get the actual record
