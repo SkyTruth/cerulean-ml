@@ -99,7 +99,7 @@ def make_coco_dataset_with_tiles(
         scene_index = 0
         coco_outputs = []
         for class_folder in class_folders:
-            for scene_folder in list(class_folder.glob("*GRDH*"))[0:2]:
+            for scene_folder in list(class_folder.glob("*GRDH*")):
                 assert "S1" in str(scene_folder)
                 scene_id = os.path.basename(scene_folder)
                 layer_pths = [str(i) for i in list(scene_folder.glob("*png"))]
@@ -116,11 +116,11 @@ def make_coco_dataset_with_tiles(
                 scene_index += 1
         final_coco_output = make_coco_metadata(name=name)
         # when we create a distributed client
-        coco_outputs = dask.persist(
+        coco_outputs = client.persist(
             *coco_outputs
         )  # start computation in the background
         progress(coco_outputs)  # watch progress
-        coco_outputs = dask.compute(*coco_outputs)
+        coco_outputs = client.compute(coco_outputs, sync=True)
         # coco_outputs = dask.compute(
         #     *coco_outputs, scheduler="single-threaded"
         # )  # convert to final result when done
@@ -136,6 +136,7 @@ def make_coco_dataset_with_tiles(
         num_images = len(final_coco_output["images"])
         print(f"Number of seconds for {num_images} images: {time.time() - start}")
         print(f"Images and COCO JSON have been saved in {coco_outdir}.")
+    print("Now, sync images to destination bucket on gcp")
 
 
 @main.command()
@@ -188,7 +189,7 @@ def make_coco_dataset_no_tiles(
         coco_outputs = dask.persist(*coco_outputs)
         # start computation in the background
         progress(coco_outputs)  # watch progress
-        coco_outputs = dask.compute(*coco_outputs)
+        coco_outputs = client.compute(coco_outputs, sync=True)
         for co in coco_outputs:
             final_coco_output["images"].extend(co["images"])
             final_coco_output["annotations"].extend(co["annotations"])
@@ -199,6 +200,7 @@ def make_coco_dataset_no_tiles(
             os.path.join(coco_outdir, f"./instances_{name.replace(' ', '')}.json"),
         )
     print(f"Images and COCO JSON have been saved in {coco_outdir}.")
+    print("Now, sync images to destination bucket on gcp")
 
 
 @main.command()
@@ -219,6 +221,7 @@ def make_coco_dataset_no_context(
     """
     start = time.time()
     with Client() as client:  # this needs to be commented out to use single threaded for profiling
+        print("Dask client dashboard link: ", client.dashboard_link)
         os.makedirs(coco_outdir, exist_ok=True)
         os.makedirs(os.path.join(coco_outdir, "tiled_images_no_context"), exist_ok=True)
         class_foldes_path = Path(class_folder_path)
@@ -248,13 +251,11 @@ def make_coco_dataset_no_context(
         final_coco_output = make_coco_metadata(name=name)
         # when we create a distributed client, dask.compute uses that isntead of thread scheduler by default
         coco_outputs = client.persist(
-            *coco_outputs
+            coco_outputs
         )  # start computation in the background
         progress(coco_outputs)  # watch progress
-        coco_outputs = client.compute(*coco_outputs)
-        # coco_outputs = dask.compute(
-        #     *coco_outputs, scheduler="single-threaded"
-        # )  # convert to final result when done
+        coco_outputs = client.compute(coco_outputs, sync=True)
+        # coco_outputs = dask.compute(*coco_outputs, scheduler="processes")
         for co in coco_outputs:
             final_coco_output["images"].extend(co["images"])
             final_coco_output["annotations"].extend(co["annotations"])
@@ -267,6 +268,7 @@ def make_coco_dataset_no_context(
         num_images = len(final_coco_output["images"])
         print(f"Number of seconds for {num_images} images: {time.time() - start}")
         print(f"Images and COCO JSON have been saved in {coco_outdir}.")
+    print("Now, sync images to destination bucket on gcp")
 
 
 if __name__ == "__main__":

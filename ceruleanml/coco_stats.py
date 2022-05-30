@@ -306,5 +306,5 @@ def ignore_low_area_records(
     record_collection: icevision.data.record_collection.RecordCollection,
     area_thresh: int,
 ):
-    for record in record_collection:
+    for record in tqdm(record_collection):
         ignore_record_by_area(record, area_thresh)

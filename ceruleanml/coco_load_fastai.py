@@ -39,15 +39,18 @@ def record_to_mask(
         np.ndarray: A semantic segmentation label array
     """
     d = record_collection.get_by_record_id(record_id).as_dict()
-    arrs = []
-    for label_index, sparse_mask in enumerate(d["detection"]["masks"]):
-        arr = sparse_mask.to_mask(d["common"]["height"], d["common"]["width"]).data
-        arr = (
-            arr * d["detection"]["label_ids"][label_index]
-        )  # each record only contains one instance, binary to id
-        arrs.append(arr)
-    add_mask = (np.concatenate(arrs) > 0).sum(
-        axis=0
-    ) <= 1  # True where there are no overlapping class ids
-    out = arrs[0].copy()  # if there's overlap, we just assign the first class
-    return np.add.reduce(arrs, where=add_mask, out=out).squeeze()
+    if len(d["detection"]["masks"]) > 0:
+        arrs = []
+        for label_index, sparse_mask in enumerate(d["detection"]["masks"]):
+            arr = sparse_mask.to_mask(d["common"]["height"], d["common"]["width"]).data
+            arr = (
+                arr * d["detection"]["label_ids"][label_index]
+            )  # each record only contains one instance, binary to id
+            arrs.append(arr)
+        add_mask = (np.concatenate(arrs) > 0).sum(
+            axis=0
+        ) <= 1  # True where there are no overlapping class ids
+        out = arrs[0].copy()  # if there's overlap, we just assign the first class
+        return np.add.reduce(arrs, where=add_mask, out=out).squeeze()
+    else:
+        return np.zeros((d["common"]["height"], d["common"]["width"]))
