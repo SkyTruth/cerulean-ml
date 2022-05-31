@@ -67,11 +67,13 @@ def make_coco_metadata(
 @click.argument("class_folder_path", nargs=1)
 @click.argument("aux_data_path", nargs=1)
 @click.argument("coco_outdir", nargs=1)
+@click.argument("tile_length", type=int, nargs=1)
 def make_coco_dataset_with_tiles(
     class_folder_path: str,
     aux_data_path: str,
     coco_outdir: str,
     name: str = "TiledCeruleanDatasetV2",
+    tile_length: int = 512,
 ):
     """Create the dataset with tiles and context files (ship density and infra distance).
 
@@ -108,16 +110,17 @@ def make_coco_dataset_with_tiles(
                     layer_pths,
                     aux_datasets=aux_datasets,
                     aux_resample_ratio=8,
+                    tile_length=tile_length,
                 )
                 coco_output = dask.delayed(coco_tiler.create_coco_from_photopea_layers)(
-                    scene_index, scene_data_tuple, layer_pths
+                    scene_index, scene_data_tuple, layer_pths, tile_length=tile_length
                 )
                 coco_outputs.append(coco_output)
                 scene_index += 1
         final_coco_output = make_coco_metadata(name=name)
         # when we create a distributed client
         coco_outputs = client.persist(
-            *coco_outputs
+            coco_outputs
         )  # start computation in the background
         progress(coco_outputs)  # watch progress
         coco_outputs = client.compute(coco_outputs, sync=True)
@@ -186,7 +189,7 @@ def make_coco_dataset_no_tiles(
                 scene_index += 1
         final_coco_output = make_coco_metadata(name=name)
         # when we create a distributed client
-        coco_outputs = dask.persist(*coco_outputs)
+        coco_outputs = dask.persist(coco_outputs)
         # start computation in the background
         progress(coco_outputs)  # watch progress
         coco_outputs = client.compute(coco_outputs, sync=True)
@@ -206,10 +209,12 @@ def make_coco_dataset_no_tiles(
 @main.command()
 @click.argument("class_folder_path", nargs=1)
 @click.argument("coco_outdir", nargs=1)
+@click.argument("tile_length", type=int, nargs=1)
 def make_coco_dataset_no_context(
     class_folder_path: str,
     coco_outdir: str,
     name="TiledCeruleanDatasetV2NoContextFiles",
+    tile_length: int = 512,
 ):
     """Create the dataset with tiles but without context files (ship density and infra distance).
 
@@ -242,9 +247,10 @@ def make_coco_dataset_no_context(
                     layer_pths,
                     aux_datasets=[],
                     aux_resample_ratio=8,
+                    tile_length=tile_length,
                 )
                 coco_output = dask.delayed(coco_tiler.create_coco_from_photopea_layers)(
-                    scene_index, scene_data_tuple, layer_pths
+                    scene_index, scene_data_tuple, layer_pths, tile_length=tile_length
                 )
                 coco_outputs.append(coco_output)
                 scene_index += 1

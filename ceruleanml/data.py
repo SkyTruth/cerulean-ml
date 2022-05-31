@@ -258,6 +258,7 @@ class COCOtiler:
         self,
         scene_id: str,
         layer_paths: List[str],
+        tile_length: int,
         aux_datasets: List[str] = [],
         **kwargs,
     ):
@@ -269,6 +270,8 @@ class COCOtiler:
             scene_id (str): The originating scene_id for the background and annotations.
             layer_paths (List[str]): List of path in a scene folder corresponding to Background.png, Layer 1.png, etc. Order matters.
             aux_datasets (List[str], optional): List of paths pointing to auxiliary vector files to include in tiles OR ship_density. 55km is the range by default. Defaults to [].
+            tile_length (int): length of the tile. 512 results in more 512x512 tiles, 1024 results in less 1024x1024, etc.
+
 
         Raises:
             ValueError: Error if original source imagery is not VV polarization.
@@ -330,7 +333,7 @@ class COCOtiler:
             # append as channels to arr
             arr = np.concatenate([arr, aux_dataset_channels], axis=2)
         start = time.time()
-        tiled_arr = reshape_split(arr, (512, 512))
+        tiled_arr = reshape_split(arr, (tile_length, tile_length))
         print(f"Number of seconds for tiling: {time.time() - start}")
         if "Background" in str(img_path):  # its the vv image
             start = time.time()
@@ -353,7 +356,11 @@ class COCOtiler:
         copy_whole_images(fnames_vv, self.img_dir)
 
     def create_coco_from_photopea_layers(
-        self, scene_index: int, scene_data_tuple: tuple, layer_pths: List[str]
+        self,
+        scene_index: int,
+        scene_data_tuple: tuple,
+        layer_pths: List[str],
+        tile_length: int,
     ):
         """Saves a COCO JSON with annotations compressed in RLE format and also saves corresponding image tiles.
 
@@ -365,6 +372,7 @@ class COCOtiler:
             scene_index (int): Unique id for the scene that can be used to set a unique global tile id.
             scene_data_tuple (tuple): Tuple containing data from save_background_images that's needed to reproject, assign tile fnames.
             layer_pths (List[str]): List of path in a scene folder corresponding to Background.png, Layer 1.png, etc. Order matters.
+            tile_length (int): length of the tile. 512 results in more 512x512 tiles, 1024 results in less 1024x1024, etc.
 
         Raises:
             ValueError: Errors if the path to the first file in layer_pths doesn't contain "Background"
@@ -418,7 +426,7 @@ class COCOtiler:
 
                             assert arr.shape[1:] == s1_image_shape
 
-            tiled_arr = reshape_split(reshape_as_image(arr), (512, 512))
+            tiled_arr = reshape_split(reshape_as_image(arr), (tile_length, tile_length))
             # saving annotations
             tiles_n, _, _, _ = tiled_arr.shape
             ainfo_iinfo_tuples = []
@@ -434,6 +442,7 @@ class COCOtiler:
                     tmp_instance_id,
                     instance_path,
                     instance_tile,
+                    tile_length,
                 )
                 ainfo_iinfo_tuples.append(result)
             for tup in ainfo_iinfo_tuples:
@@ -749,6 +758,7 @@ def get_annotation_and_image_info(
     instance_id,
     instance_path,
     arr,
+    tile_length,
     template_str="_vv-image_local_tile_",
     img_name="",
 ):
@@ -761,7 +771,7 @@ def get_annotation_and_image_info(
     else:
         tile_fname = img_name
     image_info = pycococreatortools.create_image_info(
-        global_tile_id, tile_fname, (512, 512)
+        global_tile_id, tile_fname, (tile_length, tile_length)
     )
     image_info.update(
         {
