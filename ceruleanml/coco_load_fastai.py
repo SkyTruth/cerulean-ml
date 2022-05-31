@@ -53,4 +53,4 @@ def record_to_mask(
         out = arrs[0].copy()  # if there's overlap, we just assign the first class
         return np.add.reduce(arrs, where=add_mask, out=out).squeeze()
     else:
-        return np.zeros((d["common"]["height"], d["common"]["width"]))
+        return np.zeros((d["common"]["height"], d["common"]["width"]), dtype=np.int8)
