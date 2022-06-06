@@ -7,7 +7,7 @@ mpl.rcParams["axes.grid"] = False
 mpl.rcParams["figure.figsize"] = (12, 12)
 
 
-def cm_f1(arrays_gt, arrays_pred, num_classes, save_dir):
+def cm_f1(arrays_gt, arrays_pred, num_classes, save_dir, normalize=None):
     """Takes paired arrays for ground truth and predicition masks, as well
         as the number of target classes and a directory to save the
         normalized confusion matrix plot to.
@@ -28,11 +28,13 @@ def cm_f1(arrays_gt, arrays_pred, num_classes, save_dir):
     flat_preds = np.concatenate(arrays_gt).flatten()
     flat_truth = np.concatenate(arrays_pred).flatten()
     OUTPUT_CHANNELS = num_classes
-    cm = confusion_matrix(flat_truth, flat_preds, labels=list(range(OUTPUT_CHANNELS)))
+    cm = confusion_matrix(
+        flat_truth, flat_preds, labels=list(range(OUTPUT_CHANNELS)), normalize=normalize
+    )
 
     classes = list(range(0, num_classes))
 
-    cm = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis]
+    # cm = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis]
     fig, ax = plt.subplots(figsize=(10, 10))
     im = ax.imshow(cm, interpolation="nearest", cmap=plt.cm.Blues)
     ax.figure.colorbar(im, ax=ax)
@@ -43,7 +45,7 @@ def cm_f1(arrays_gt, arrays_pred, num_classes, save_dir):
         # ... and label them with the respective list entries
         xticklabels=list(range(OUTPUT_CHANNELS)),
         yticklabels=list(range(OUTPUT_CHANNELS)),
-        title="Normalized Confusion Matrix",
+        title="Confusion Matrix",
         ylabel="True label",
         xlabel="Predicted label",
     )
@@ -67,7 +69,12 @@ def cm_f1(arrays_gt, arrays_pred, num_classes, save_dir):
     fig.tight_layout(pad=2.0, h_pad=2.0, w_pad=2.0)
     ax.set_ylim(len(classes) - 0.5, -0.5)
 
-    plt.savefig(f"{save_dir}/cm.png")
+    cm_name = (
+        f"{save_dir}/cm_normed.png"
+        if normalize is not None
+        else f"{save_dir}/cm_count.png"
+    )
+    plt.savefig(cm_name)
 
     # compute f1 score
     f1 = f1_score(flat_truth, flat_preds, average="macro")

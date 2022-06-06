@@ -5,6 +5,6 @@ mkdir -p data/
 mkdir -p data-cv2/
 gcsfuse --implicit-dirs ceruleanml data/
 gcsfuse --implicit-dirs cv2-training data-cv2/
-printf "alias cdata='gcsfuse --implicit-dirs ceruleanml data/'\n" >> /root/.bashrc #persists mounting of processed data bucket
+printf "alias cdata='gcsfuse --implicit-dirs ceruleanml-biggpuregion data/'\n" >> /root/.bashrc #persists mounting of processed data bucket
 printf "alias cdata2='gcsfuse --implicit-dirs cv2-training data-cv2/'\n" >> /root/.bashrc #persists mounting of source data bucket. treat as read only!
 printf "alias jserve='jupyter lab --allow-root --no-browser'\n" >> /root/.bashrc #start jupyter
