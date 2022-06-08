@@ -43,7 +43,7 @@ def get_area_df(coco_json_path, tiled_images_folder):
 
 
 def load_set_record_collection(
-    coco_json_path, tiled_images_folder, area_thresh, negative_sample_count
+    coco_json_path, tiled_images_folder, area_thresh=10, negative_sample_count=0, preprocess=False
 ):
     parser = COCOMaskParser(
         annotations_filepath=coco_json_path,
@@ -52,16 +52,20 @@ def load_set_record_collection(
     positive_records = parser.parse(autofix=False, data_splitter=SingleSplitSplitter())[
         0
     ]
+    
+    if preprocess:
 
-    ignore_low_area_records(positive_records, area_thresh=area_thresh)
+        ignore_low_area_records(positive_records, area_thresh=area_thresh)
 
-    record_ids = record_collection_to_record_ids(positive_records)
+        record_ids = record_collection_to_record_ids(positive_records)
 
-    negative_records = load_negative_tiles.parse_negative_tiles(
-        data_dir=tiled_images_folder,
-        record_ids=record_ids,
-        positive_records=positive_records,
-        count=negative_sample_count,
-    )
-    combined_records = positive_records + negative_records
-    return combined_records
+        negative_records = load_negative_tiles.parse_negative_tiles(
+            data_dir=tiled_images_folder,
+            record_ids=record_ids,
+            positive_records=positive_records,
+            count=negative_sample_count,
+        )
+        combined_records = positive_records + negative_records
+        return combined_records
+    else:
+        return positive_records
