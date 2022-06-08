@@ -13,6 +13,7 @@ dependencies:
     - dask
     - tensorboard
     - hydra-core
+    - ipykernel>=6
     - pip:
           - eodag
           - pycocotools==2.0.4

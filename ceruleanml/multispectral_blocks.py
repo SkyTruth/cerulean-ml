@@ -4,13 +4,14 @@ It's also adapted to work with the record collection object returned by icevisio
 The multispectral image is assumed to have channels last in the dim order."""
 
 import numpy as np
-from fastai.vision.core import TensorImage, TensorMask
+from fastai.vision.core import TensorImage, TensorMask, Transform
 from numpy import ndarray
 import skimage.io as skio
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 from ceruleanml.coco_load_fastai import get_image_path, record_to_mask
 import torch
+from scipy.ndimage import zoom
+from fastcore.xtras import is_listy
 
 
 def open_n_channel_img(fn, chnls=None, cls=torch.Tensor):
@@ -49,9 +50,9 @@ class MSTensorImage(TensorImage):
         plt.imshow(visu_img) if ctx is None else ctx.imshow(visu_img)
         return ctx
 
-    # def __repr__(self):
+    def __repr__(self):
 
-    #     return f"MSTensorImage: {self.shape}"
+        return f"MSTensorImage: {self.shape}"
 
 
 class MSTensorMask(TensorMask):
@@ -73,6 +74,34 @@ class MSTensorMask(TensorMask):
             pass
         return ctx
 
-    # def __repr__(self):
+    def __repr__(self):
 
-    #     return f"MSTensorImage: {self.shape}"
+        return f"MSTensorImage: {self.shape}"
+
+
+class TensorImageResizer(Transform):
+    order = 1
+    "Resize image to `size` using `resample`"
+
+    def __init__(self, size, resample=None):
+        if not is_listy(size):
+            size = (size, size)
+        if resample is None:
+            resample = 3  # = Image.BILINEAR
+        self.size, self.resample = size, resample
+
+    def resize(self, vol, size, resample):
+        """resample multi-channel numpy"""
+        if not is_listy(size):
+            size = (size, size)
+        if len(vol.shape) == 3 and len(size) == 2:
+            size = np.array([vol.shape[0], *size])
+        zoom_ratio = tuple(size / np.array(vol.shape))
+        vol_resize = zoom(vol, zoom_ratio, order=resample)
+        return torch.Tensor(vol_resize)
+
+    def encodes(self, o: MSTensorImage):
+        return self.resize(vol=o, size=self.size, resample=3)  # self.resample)
+
+    def encodes(self, o: MSTensorMask):
+        return self.resize(vol=o, size=self.size, resample=0)  # = Image.NEAREST
