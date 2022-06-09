@@ -6,10 +6,9 @@ import numpy as np
 def record_collection_to_record_ids(
     record_collection: icevision.data.record_collection.RecordCollection,
 ):
-    # check that each record only has one sparse mask
     record_ids = []
     for r in record_collection:
-        record_ids.append(r.as_dict()["common"]["record_id"])
+        record_ids.append(r.common.record_id)
     return record_ids
 
 

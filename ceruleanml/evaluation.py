@@ -80,3 +80,24 @@ def cm_f1(arrays_gt, arrays_pred, num_classes, save_dir, normalize=None):
     f1 = f1_score(flat_truth, flat_preds, average="macro")
 
     return cm, f1
+
+
+def get_cm_for_learner(dls, learner, save_path):
+    """
+    this doesn't support eval on negative samples if they ar ein the dls,
+    since val masks don't exist with neg samples. need to be constructed with np.zeros
+
+    returns cm and f1 score
+    """
+    with learner.no_bar():
+        val_arrs = []
+        class_preds = []
+        for batch_tuple in dls.valid:
+            for img, val_mask in zip(batch_tuple[0], batch_tuple[1]):
+                semantic_mask = val_mask.cpu().detach().numpy()
+                class_pred = learner.predict(img.cpu())
+                class_pred = class_pred[0].cpu().detach().numpy()
+                val_arrs.append(semantic_mask)
+                class_preds.append(class_pred)
+
+        return cm_f1(val_arrs, class_preds, 6, save_path)  # todo add normalize false
