@@ -12,6 +12,8 @@ mkdir ../val-with-context-512/
 gsutil -m rsync -r  gs://ceruleanml/partitions/val-with-context-512/ ../val-with-context-512/
 
 cd ~
-mkdir partititions
+mkdir partitions
 mv train* partitions/
 mv val* partitions/
+
+mkdir -p experiments/cv2
