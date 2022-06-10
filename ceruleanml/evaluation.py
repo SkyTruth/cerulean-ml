@@ -75,9 +75,10 @@ def cm_f1(arrays_gt, arrays_pred, num_classes, save_dir, normalize=None):
         else f"{save_dir}/cm_count.png"
     )
     plt.savefig(cm_name)
-
+    print(f"Confusion matrix saved at {cm_name}")
     # compute f1 score
     f1 = f1_score(flat_truth, flat_preds, average="macro")
+    print("f1_score", f1)
 
     return cm, f1
 
