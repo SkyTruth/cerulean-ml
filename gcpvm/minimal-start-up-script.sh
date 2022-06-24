@@ -8,3 +8,6 @@ gcsfuse --implicit-dirs cv2-training data-cv2/
 printf "alias cdata='gcsfuse --implicit-dirs ceruleanml-biggpuregion data/'\n" >> /root/.bashrc #persists mounting of processed data bucket
 printf "alias cdata2='gcsfuse --implicit-dirs cv2-training data-cv2/'\n" >> /root/.bashrc #persists mounting of source data bucket. treat as read only!
 printf "alias jserve='jupyter lab --allow-root --no-browser'\n" >> /root/.bashrc #start jupyter
+printf "export CUDA_HOME=/usr/local/cuda"
+printf "export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/cuda/lib64:/usr/local/cuda/extras/CUPTI/lib64"
+printf "export PATH=$PATH:$CUDA_HOME/bin"
