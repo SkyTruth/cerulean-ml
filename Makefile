@@ -1,6 +1,6 @@
 .PHONY: clean clean-build clean-pyc clean-test dist help install lint lint/flake8 lint/black
 .DEFAULT_GOAL := help
-
+SHELL := /bin/bash
 define BROWSER_PYSCRIPT
 import os, webbrowser, sys
 
@@ -71,12 +71,26 @@ install: clean ## install the package to the fastai2 env on the terraform gcp vm
 	/root/miniconda3/envs/fastai2/bin/pip install -e . # install local ceruleanml package after deps installed with conda
 
 install-icevision: ## install the package to the icevision env on the terraform gcp vm
+	# cd ..
+	# git clone https://github.com/airctic/icevision --depth 1
+	# cd work
 	rm -rf .ice-env
 	python -m venv .ice-env
 	chmod +x ./.ice-env/bin/activate
-	./.ice-env/bin/activate # outside of a script, source needs to be used when activiating
+	source ./.ice-env/bin/activate # outside of a script, source needs to be used when activiating
 	bash ../icevision/icevision_install.sh cuda11 master
 	./.ice-env/bin/pip install -e . # install local ceruleanml package after deps installed with conda
 	pip install "git+https://github.com/waspinator/pycococreator.git@0.2.0"
 	pip install jupyterlab
 	python -m ipykernel install --user --name=icevision
+
+install-pl: ## install the package to the pl env on the terraform gcp vm
+	rm -rf .pl
+	python -m venv .pl
+	chmod +x ./.pl/bin/activate
+	./.pl/bin/activate # outside of a script, source needs to be used when activiating
+	./.pl/bin/pip install pytorch-lightning lightning-flash torch torchvision torchaudio icevision --extra-index-url https://download.pytorch.org/whl/cu113
+	./.pl/bin/pip install -e . # install local ceruleanml package after deps installed with conda
+	./.pl/bin/pip install "git+https://github.com/waspinator/pycococreator.git@0.2.0"
+	./.pl/bin/pip install jupyterlab
+	./.pl/bin/python -m ipykernel install --user --name=pl

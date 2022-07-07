@@ -52,8 +52,29 @@ Options:
   --help  Show this message and exit.
 ```
 
+## Environments
+
+The fastai2 environment is a conda environment created with `make install`. activate it with
+```
+conda activate fastai2
+```
+
+The icevision environment is a venv created with `make install-icevision`. activate it with 
+
+```
+source ./.ice-env/bin/activate
+```
+
 ## Run the Hydra Model Training CLI
 Hydra is a robust configuration and experiment management tool. It is composed of a python module, `hydra`, and a `config` directory, with a hierarchy of yaml config files to define hyperparameters and settings for training your model.
+
+First, install and activate the icevision environment (see above).
+
+Then, run the script to move datasets to the gpu vm
+
+```
+bash scripts/move_datasets_to_ssd.sh
+```
 
 A set of experiments can be started by using Hydra's command line interface:
 
@@ -62,7 +83,7 @@ A set of experiments can be started by using Hydra's command line interface:
 and configs can be adapted on the fly like so:
 
 ```
-python experiment.py model.pretrained=True
+python experiment.py model.pretrained=True datamodule.img_dir=/root/partitions/train-with-context-512/tiled_images/ datamodule.annotations_filepath=/root/partitions/train-with-context-512/instances_TiledCeruleanDatasetV2.json
 ```
 
 or by editing the config file directly. Configs should specify good defaults (once you know what they are) and/or the set of configs necessary to reproduce an important experiment.
