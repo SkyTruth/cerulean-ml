@@ -8,6 +8,7 @@ from ceruleanml.coco_stats import (
     assemble_record_label_lists,
     get_all_record_area_lists_for_class,
     ignore_low_area_records,
+    remap_records_class,
 )
 
 
@@ -48,6 +49,7 @@ def load_set_record_collection(
     area_thresh=10,
     negative_sample_count=0,
     preprocess=False,
+    remap_dict={}
 ):
     parser = COCOMaskParser(
         annotations_filepath=coco_json_path,
@@ -56,6 +58,8 @@ def load_set_record_collection(
     positive_records = parser.parse(autofix=False, data_splitter=SingleSplitSplitter())[
         0
     ]
+
+    remap_records_class(positive_records, remap_dict)
 
     if preprocess:
 
