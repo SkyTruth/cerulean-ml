@@ -70,19 +70,22 @@ install: clean ## install the package to the fastai2 env on the terraform gcp vm
 	mamba env update --name fastai2 --file environment.yml --prune
 	/root/miniconda3/envs/fastai2/bin/pip install -e . # install local ceruleanml package after deps installed with conda
 
-install-icevision: ## install the package to the icevision env on the terraform gcp vm
+setup-icevision-env: ## install the package to the icevision env on the terraform gcp vm
 	# cd ..
 	# git clone https://github.com/airctic/icevision --depth 1
 	# cd work
+	# requires activating env outside of makefile after this step
 	rm -rf .ice-env
 	python -m venv .ice-env
 	chmod +x ./.ice-env/bin/activate
-	source ./.ice-env/bin/activate # outside of a script, source needs to be used when activiating
-	bash ../icevision/icevision_install.sh cuda11 master
+	source ./.ice-env/bin/activate # outside of a script, source needs to be used when activating
+
+install-icevision-deps:
 	./.ice-env/bin/pip install -e . # install local ceruleanml package after deps installed with conda
-	pip install "git+https://github.com/waspinator/pycococreator.git@0.2.0"
-	pip install jupyterlab
+	./.ice-env/bin/pip install "git+https://github.com/waspinator/pycococreator.git@0.2.0"
+	./.ice-env/bin/pip install jupyterlab
 	python -m ipykernel install --user --name=icevision
+	./.ice-env/bin/pip install -e ../icevision
 
 install-pl: ## install the package to the pl env on the terraform gcp vm
 	rm -rf .pl
