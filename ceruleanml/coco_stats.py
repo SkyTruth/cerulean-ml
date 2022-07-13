@@ -11,6 +11,16 @@ from tqdm import tqdm
 
 from ceruleanml import data
 
+class_map_coco = {
+    "background": 0,
+    "infra_slick": 1,
+    "natural_seep": 2,
+    "coincident_vessel": 3,
+    "recent_vessel": 4,
+    "old_vessel": 5,
+    "ambiguous": 6,
+}
+
 class_map = {
     "Infrastructure": 1,
     "Natural Seep": 2,
@@ -308,3 +318,28 @@ def ignore_low_area_records(
 ):
     for record in tqdm(record_collection):
         ignore_record_by_area(record, area_thresh)
+
+
+def remap_records_class(
+    record_collection: icevision.data.record_collection.RecordCollection,
+    remap_dict: dict,
+):
+    """
+    remap_dict keys/values: "infra_slick", "natural_seep", "coincident_vessel", "recent_vessel", "old_vessel", "ambiguous", None
+    Deletes class if key in dict has value = None
+    """
+    for record in tqdm(record_collection):
+        record_d = record.as_dict()
+        for i, label in enumerate(record_d["detection"]["labels"]):
+            if label in remap_dict:
+                if remap_dict[label] == None:
+                    [
+                        record_d["detection"][key].pop(i)
+                        for key, value in record_d["detection"].items()
+                        if value is not None
+                    ]
+                else:
+                    record_d["detection"]["labels"][i] = remap_dict[label]
+                    record_d["detection"]["label_ids"][i] = class_map_coco[
+                        remap_dict[label]
+                    ]
