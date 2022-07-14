@@ -26,6 +26,25 @@ def save_fastai_model_state_dict_and_tracing(learner, dls, savename, experiment_
         f"{experiment_dir}/tracing_cpu_{savename}",
     )
 
+def save_icevision_model_state_dict_and_tracing(learner, savename, experiment_dir):
+    sd = learner.model.state_dict()
+    torch.save(
+        sd, f"{experiment_dir}/state_dict_{savename}"
+    )  # saves state_dict for loading with fastai
+    learner.model.eval()
+    learner.model.to("cpu")
+    scripted_model = torch.jit.script(learner.model)
+    torch.jit.save(
+        scripted_model,
+        f"{experiment_dir}/scripting_cpu_{save_template}",
+    )
+    print(f"{experiment_dir}/scripting_cpu_{savename}")
+    print(f"{experiment_dir}/state_dict_{savename}")
+    return (
+        f"{experiment_dir}/state_dict_{savename}",
+        f"{experiment_dir}/scripting_cpu_{savename}",
+    )
+
 
 def load_tracing_model(savepath):
     tracing_model = torch.jit.load(savepath)
