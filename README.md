@@ -78,7 +78,7 @@ bash scripts/move_datasets_to_ssd.sh
 
 A set of experiments can be started by using Hydra's command line interface:
 
-`python experiment.py`
+`python experiment.py --help`
 
 and configs can be adapted on the fly like so:
 

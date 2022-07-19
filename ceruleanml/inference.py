@@ -64,3 +64,15 @@ def logits_to_classes(out_batch_logits):
     probs = torch.nn.functional.softmax(out_batch_logits, dim=1)
     conf, classes = torch.max(probs, 1)
     return conf, classes
+
+def apply_conf_threshold(conf, classes, conf_threshold):
+    """Apply a confidence threshold to the output of logits_to_classes for a tile.
+    Args:
+        conf (np.ndarray): an array of shape [H, W] of max confidence scores for each pixel
+        classes (np.ndarray): an array of shape [H, W] of class integers for the max confidence scores for each pixel
+        conf_threshold (float): the threshold to use to determine whether a pixel is background or maximally confident category
+    Returns:
+        torch.Tensor: An array of shape [H,W] with the class ids that satisfy the confidence threshold. This can be vectorized.
+    """
+    high_conf_mask = torch.any(torch.where(conf > conf_threshold, 1, 0), axis=0)
+    return torch.where(high_conf_mask, classes, 0)

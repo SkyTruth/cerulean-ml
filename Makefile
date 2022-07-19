@@ -85,7 +85,7 @@ install-icevision-deps:
 	./.ice-env/bin/pip install "git+https://github.com/waspinator/pycococreator.git@0.2.0"
 	./.ice-env/bin/pip install jupyterlab
 	python -m ipykernel install --user --name=icevision
-	./.ice-env/bin/pip install -e ../icevision
+	# ./.ice-env/bin/pip install -e .[dev] # run this in terminal after cd to icevision
 
 install-pl: ## install the package to the pl env on the terraform gcp vm
 	rm -rf .pl
