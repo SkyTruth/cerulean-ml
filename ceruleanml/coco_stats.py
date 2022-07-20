@@ -332,7 +332,7 @@ def remap_records_class(
         record_d = record.as_dict()
         for i, label in enumerate(record_d["detection"]["labels"]):
             if label in remap_dict:
-                if remap_dict[label] == None:
+                if remap_dict[label] is None:
                     [
                         record_d["detection"][key].pop(i)
                         for key, value in record_d["detection"].items()
