@@ -129,7 +129,7 @@ def apply_conf_threshold_instances(pred_dict, bbox_conf_threshold):
     return new_dict
 
 
-def apply_conf_threshold_masks(pred_dict, mask_conf_threshold):
+def apply_conf_threshold_masks(pred_dict, mask_conf_threshold, size):
     """Apply a confidence threshold to the output of apply_conf_threshold_instances on the masks to get class masks.
     Args:
         pred_dict (dict): a dict with {'boxes':[], 'labels':[], 'scores':[], 'masks':[]}
@@ -138,11 +138,18 @@ def apply_conf_threshold_masks(pred_dict, mask_conf_threshold):
     Returns:
         torch.Tensor: An array of shape [H,W] with the class ids that satisfy the confidence threshold. This can be vectorized.
     """
-    high_conf_masks = []
-    for i, mask in enumerate(pred_dict["masks"]):
-        classes = torch.ones_like(mask) * pred_dict["labels"][i]
-        classes = classes.type(torch.LongTensor)
-        high_conf_mask = apply_conf_threshold(mask, classes, mask_conf_threshold)
-        high_conf_masks.append(high_conf_mask)
-    stacked_arr = torch.dstack(high_conf_masks)
-    return torch.max(stacked_arr, axis=0)[0]  # we only want the value array
+    high_conf_classes = []
+    if len(pred_dict["masks"]) > 0:
+        for i, mask in enumerate(pred_dict["masks"]):
+            classes = torch.ones_like(mask) * pred_dict["labels"][i]
+            classes = classes.long().squeeze()
+            high_conf_class_mask = torch.where(mask > mask_conf_threshold, 1, 0)
+            high_conf_class_mask = torch.where(high_conf_class_mask.bool(), classes, 0)
+            high_conf_classes.append(high_conf_class_mask.squeeze())
+        if len(high_conf_classes) > 1:
+            stacked_arr = torch.dstack(high_conf_classes)
+            return torch.max(stacked_arr, axis=2)[0]  # we only want the value array
+        else:
+            return high_conf_class_mask.squeeze()
+    else:
+        return torch.zeros(size, size).long()

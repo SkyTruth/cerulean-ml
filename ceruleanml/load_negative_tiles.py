@@ -6,6 +6,7 @@ from typing import Any, Hashable
 from fastcore.basics import setify
 from fastcore.foundation import L
 from icevision.core import record_defaults
+from icevision.core.class_map import ClassMap
 from icevision.data import SingleSplitSplitter
 from icevision.parsers.parser import Parser
 from icevision.utils.get_files import get_image_files
@@ -18,8 +19,9 @@ negative_template_record = record_defaults.InstanceSegmentationRecord()
 
 
 class NegativeImageParser(Parser):
-    def __init__(self, template_record, data_dir, images_positive, count):
+    def __init__(self, template_record, data_dir, images_positive, count, class_names):
         super().__init__(template_record=template_record)
+        self.class_map = ClassMap(class_names)
         self.image_filepaths = get_negative_image_files(
             data_dir, images_positive, count
         )  # get_image_files(data_dir)
@@ -37,6 +39,7 @@ class NegativeImageParser(Parser):
         if is_new:
             record.set_img_size(get_img_size(o))
             record.set_filepath(o)
+            record.detection.set_class_map(self.class_map)
 
 
 __all__ = ["get_files", "get_image_files"]
@@ -100,7 +103,7 @@ def get_negative_image_files(path, images_positive, count, recurse=True, folders
     return images_negative[0:count]
 
 
-def parse_negative_tiles(data_dir, record_ids, positive_records, count):
+def parse_negative_tiles(data_dir, record_ids, positive_records, count, class_names):
     images_positive = []
 
     def get_image_by_record_id(record_id):
@@ -118,6 +121,7 @@ def parse_negative_tiles(data_dir, record_ids, positive_records, count):
         data_dir=data_dir,
         images_positive=images_positive,
         count=count,
+        class_names=class_names,
     )
     negative_records = negative_parser.parse(data_splitter=SingleSplitSplitter())
     return negative_records[0]  # single split comes nested so we get the actual record

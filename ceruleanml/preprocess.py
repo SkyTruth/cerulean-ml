@@ -163,7 +163,9 @@ def load_set_record_collection(
     ]
 
     if preprocess:
-
+        print(
+            "applying preprocessing steps, adding negative samples and filtering low area"
+        )
         ignore_low_area_records(positive_records, area_thresh=area_thresh)
 
         record_ids = record_collection_to_record_ids(positive_records)
@@ -173,6 +175,7 @@ def load_set_record_collection(
             record_ids=record_ids,
             positive_records=positive_records,
             count=negative_sample_count,
+            class_names=class_names_to_keep,
         )
         combined_records = positive_records + negative_records
         return combined_records
