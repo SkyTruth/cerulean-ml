@@ -63,10 +63,21 @@ def sample_stat_lists(arr):
     return np.mean(arr, axis=(0, 1)), np.std(arr, axis=(0, 1))
 
 
-def all_sample_stat_lists(train_records):
+def all_sample_stat_lists(record_collection):
+    """Gets statistics, mean and std, for a record collection.
+
+
+    Args:
+        record_collection (icevision.data.record_collection.RecordCollection): The
+        collection of label data and metadata.
+
+    Returns:
+        Tuple(List[float],List[float]): A tuple with two lists of floats. first list
+        is means, second is stds for each tile of a record.
+    """
     means = []
     stds = []
-    for r in tqdm(train_records):
+    for r in tqdm(record_collection):
         p = r.as_dict()["common"]["filepath"]
         arr = skio.imread(p)
         mean_lst, std_lst = sample_stat_lists(arr)
@@ -79,10 +90,10 @@ def minor_axis_length_bbox(bbox):
     """Calculates the minor axis length of the bbox using skimage bbox coordinate order.
 
     Args:
-        bbox (_type_): _description_
+        bbox (List): bbox in skimage bbox coordinate order.
 
     Returns:
-        _type_: _description_
+        float: The minor axis length.
     """
     ml1 = bbox[2] - bbox[0]
     ml2 = bbox[3] - bbox[1]

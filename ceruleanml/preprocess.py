@@ -11,6 +11,7 @@ from ceruleanml.coco_stats import (
     ignore_low_area_records,
 )
 
+# single source of truth TODO
 class_map_coco = {
     "background": 0,
     "infra_slick": 1,
@@ -129,7 +130,7 @@ def load_set_record_collection(
         "recent_vessel",
     ],
 ):
-    """load an icevision record collection with preprocessing steps.
+    """load an icevision record collection with optional preprocessing steps controlled by a flag.
 
     This function loads a record collection from a coco json with optional preprocessing.
 

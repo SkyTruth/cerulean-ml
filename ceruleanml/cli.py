@@ -79,11 +79,13 @@ def make_coco_dataset_with_tiles(
 
     Args:
         class_folder_path (str): the path to the folder containing class
-            folders ("Infrastructure", "Coincident", etc.)
+            folders ("Infrastructure", "Coincident", etc.). Assuming structure in cv2-training gcp bucket.
         aux_data_path (str): the path to the folder containing the aux
-            files (currently only infra_locations.json)
-        coco_outdir (str): the path to save the coco json and the folder
+            files (currently only infra_locations.json). This is located on ceruleanml bucket under aux_datasets.
+        coco_outdir (str): the folder path to save the coco json and the folder
             of tiled images.
+        name (str): the output name of the coco json file. also stored in the coco json metadata to tag the dataset.
+        tile_length (str): square length size of the tiles in the tile grid. this can be set to any value. Default is 512.
     """
     start = time.time()
     os.makedirs(coco_outdir, exist_ok=True)
@@ -157,6 +159,7 @@ def make_coco_dataset_no_tiles(
             folders ("Infrastructure", "Coincident", etc.)
         coco_outdir (str): the path to save the coco json and the folder
             of tiled images.
+        name (str): the output name of the coco json file. also stored in the coco json metadata to tag the dataset.
     """
     os.makedirs(coco_outdir, exist_ok=True)
     os.makedirs(os.path.join(coco_outdir, "untiled_images"), exist_ok=True)
@@ -223,6 +226,8 @@ def make_coco_dataset_no_context(
             folders ("Infrastructure", "Coincident", etc.)
         coco_outdir (str): the path to save the coco json and the folder
             of tiled images.
+        name (str): the output name of the coco json file. also stored in the coco json metadata to tag the dataset.
+        tile_length (str): square length size of the tiles. this can be set to any value. Default is 512.
     """
     start = time.time()
     with Client() as client:  # this needs to be commented out to use single threaded for profiling

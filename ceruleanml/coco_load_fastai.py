@@ -6,13 +6,37 @@ import numpy as np
 def record_collection_to_record_ids(
     record_collection: icevision.data.record_collection.RecordCollection,
 ):
+    """Extracts record ids from an icevision record collection.
+
+    Useful for setting up the list of sources for a fastai dataloader.
+    As opposed to a more traditional source like a folder path.
+
+    Args:
+        record_collection (icevision.data.record_collection.RecordCollection): The collection of
+        label data and metadata.
+
+    Returns:
+        List[int]: A list of unique record ids in the same order as elements in the record collection.
+    """
     record_ids = []
     for r in record_collection:
         record_ids.append(r.common.record_id)
     return record_ids
 
 
-def get_image_path(record_collection, record_id):
+def get_image_path(
+    record_collection: icevision.data.record_collection.RecordCollection, record_id: int
+):
+    """Gets img_path for a record_id from the record_collection
+
+    Args:
+        record_collection (icevision.data.record_collection.RecordCollection): The collection of
+        label data and metadata.
+        record_id (int): The unique record id.
+
+    Returns:
+        str: Path to the image tile of the record.
+    """
     d = record_collection.get_by_record_id(record_id).as_dict()
     return d["common"]["filepath"]
 
