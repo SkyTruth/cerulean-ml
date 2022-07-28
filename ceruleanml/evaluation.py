@@ -58,7 +58,7 @@ def cm_f1(
     im = ax.imshow(cm, interpolation="nearest", cmap=plt.cm.Blues)
     ax.figure.colorbar(im, ax=ax)
     # We want to show all ticks...
-    if class_names == None:
+    if class_names is None:
         xticklabels = list(range(OUTPUT_CHANNELS))
         yticklabels = list(range(OUTPUT_CHANNELS))
     else:
@@ -94,11 +94,17 @@ def cm_f1(
             )
     fig.tight_layout(pad=2.0, h_pad=2.0, w_pad=2.0)
     ax.set_ylim(len(classes) - 0.5, -0.5)
-    cm_name = (
-        os.path.join(f"{save_dir}", "cm_normed.png")
-        if normalize is not None
-        else os.path.join(f"{save_dir}", "cm_count.png")
-    )
+    if normalize == "true":
+        cm_name = os.path.join(f"{save_dir}", "cm_normed_true.png")
+    elif normalize == "pred":
+        cm_name = os.path.join(f"{save_dir}", "cm_normed_pred.png")
+    elif normalize is None:
+        cm_name = os.path.join(f"{save_dir}", "cm_count.png")
+    else:
+        raise ValueError(
+            "normalize is not pred, true or None, check cm docs for sklearn."
+        )
+
     plt.savefig(cm_name)
     print(f"Confusion matrix saved at {cm_name}")
     # compute f1 score

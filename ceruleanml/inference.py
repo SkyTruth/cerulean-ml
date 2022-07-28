@@ -62,8 +62,8 @@ def logits_to_classes(out_batch_logits):
     """returns the confidence scores of the max confident classes
     and an array of max confident class ids.
     """
-    probs = torch.nn.functional.softmax(out_batch_logits, dim=1)
-    conf, classes = torch.max(probs, 1)
+    probs = torch.nn.functional.softmax(out_batch_logits.squeeze(), dim=0)
+    conf, classes = torch.max(probs, 0)
     return conf, classes
 
 

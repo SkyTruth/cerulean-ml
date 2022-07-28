@@ -85,15 +85,21 @@ install-icevision-deps:
 	./.ice-env/bin/pip install "git+https://github.com/waspinator/pycococreator.git@0.2.0"
 	./.ice-env/bin/pip install jupyterlab
 	python -m ipykernel install --user --name=icevision
-	# ./.ice-env/bin/pip install -e .[dev] # run this in terminal after cd to icevision
+	#pip install -e .[dev] # run this in terminal after cd to icevision with env active
 
-install-pl: ## install the package to the pl env on the terraform gcp vm
-	rm -rf .pl
-	python -m venv .pl
-	chmod +x ./.pl/bin/activate
-	./.pl/bin/activate # outside of a script, source needs to be used when activiating
-	./.pl/bin/pip install pytorch-lightning lightning-flash torch torchvision torchaudio icevision --extra-index-url https://download.pytorch.org/whl/cu113
-	./.pl/bin/pip install -e . # install local ceruleanml package after deps installed with conda
-	./.pl/bin/pip install "git+https://github.com/waspinator/pycococreator.git@0.2.0"
-	./.pl/bin/pip install jupyterlab
-	./.pl/bin/python -m ipykernel install --user --name=pl
+setup-icevision-inf-env: ## install the package to the icevision env on the terraform gcp vm
+	# cd ..
+	# git clone https://github.com/airctic/icevision --depth 1
+	# cd work
+	# requires activating env outside of makefile after this step
+	rm -rf .ice-env-inf
+	python -m venv .ice-env-inf
+	chmod +x ./.ice-env-inf/bin/activate
+	source ./.ice-env-inf/bin/activate # outside of a script, source needs to be used when activating
+
+install-icevision-inf-deps:
+	./.ice-env-inf/bin/pip install -e . # install local ceruleanml package after deps installed with conda
+	./.ice-env-inf/bin/pip install "git+https://github.com/waspinator/pycococreator.git@0.2.0"
+	./.ice-env-inf/bin/pip install jupyterlab
+	python -m ipykernel install --user --name=icevision-inf
+	#pip install -e .[dev] # run this in terminal after cd to icevision with env active
