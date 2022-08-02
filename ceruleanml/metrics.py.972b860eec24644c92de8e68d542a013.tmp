@@ -9,8 +9,6 @@ from icevision.utils import CaptureStdout
 __all__ = ["IoUMetric", "IoUMetricType"]
 # TODO IOU metric causes cuda kernel errors with negative samples?
 # TODO remove and replace with simpleconfusionmatrix
-
-
 class IoUMetricType(Enum):
     """Available options for `COCOMetric`."""
 

@@ -11,6 +11,7 @@ from tqdm import tqdm
 
 from ceruleanml import data
 
+# TODO single source of class map truth
 class_map_coco = {
     "background": 0,
     "infra_slick": 1,
@@ -130,6 +131,8 @@ def extract_masks_and_compute_tables(
     return tables
 
 
+# TODO label has to be present in record collection
+# todo highlight ellipse maps to rotated bounding box
 def region_props_for_instance_type(
     record_collection: icevision.data.record_collection.RecordCollection,
     instance_label_type: str,
@@ -145,7 +148,8 @@ def region_props_for_instance_type(
     """
 
     img_names = [d.as_dict()["common"]["filepath"] for d in record_collection]
-
+    # add statistics here TODO properties should be an argument. for ellipse stats and other metrics
+    # https://scikit-image.org/docs/stable/api/skimage.measure.html?highlight=region%20props#skimage.measure.regionprops
     properties = ["area", "bbox_area", "major_axis_length", "bbox"]
 
     tables = extract_masks_and_compute_tables(
@@ -197,6 +201,7 @@ def get_table_whole_image(path, properties, instance_type):
     return table
 
 
+# TODO docstring referencing required previous step of making whole image coco dataset
 def extract_masks_and_compute_tables_whole_image(
     record_collection,
     instance_label_type: str,
@@ -308,6 +313,7 @@ def get_all_record_area_lists_for_class(record_area_label_lists: List, class_nam
     return rs
 
 
+# TODO move to preprocess.py
 def ignore_record_by_area(
     record: icevision.data.record_collection.BaseRecord, area_thresh: int
 ):
@@ -331,6 +337,7 @@ def ignore_low_area_records(
         ignore_record_by_area(record, area_thresh)
 
 
+# TODO remove since not used when parsing datasets with CeruleanCOCOMaskParser
 def remap_records_class(
     record_collection: icevision.data.record_collection.RecordCollection,
     remap_dict: dict,

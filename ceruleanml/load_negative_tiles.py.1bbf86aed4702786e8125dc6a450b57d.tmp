@@ -93,9 +93,9 @@ def get_files(
 image_extensions = set(
     k for k, v in mimetypes.types_map.items() if v.startswith("image/")
 )
+
+
 # TODO docstring
-
-
 def get_negative_image_files(path, images_positive, count, recurse=True, folders=None):
     "Get image files in `path` recursively, only in `folders`, if specified. From fastai"
     images_initial = get_files(
