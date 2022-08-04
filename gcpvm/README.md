@@ -8,14 +8,14 @@ Install the [terraform CLI](https://learn.hashicorp.com/tutorials/terraform/inst
 
 ## Import the base image
 
-In case your project doesn't have a the `ubuntu-2004-cuda113-fastai-cerulean` you can create it from the `ubuntu-os-cloud/ubuntu-2004-focal-v20220110` image using a vm deployed with this image. `instance.tf` will need to use the `ubuntu-os-cloud/ubuntu-2004-focal-v20220110` image (see the comments in that file) and then the `ubuntu-2004-cuda113-fastai-cerulean` image can be created from the stopped instance with:
+In case your project doesn't have the `ubuntu-2004-cuda113-fastai-cerulean` you can create it from the `ubuntu-os-cloud/ubuntu-2004-focal-v20220110` image using a vm deployed with this image. `instance.tf` will need to use the `ubuntu-os-cloud/ubuntu-2004-focal-v20220110` image (see the comments in that file) and then the `ubuntu-2004-cuda113-fastai-cerulean` image can be created from the stopped instance with:
 
 ```
 gcloud compute images create ubuntu-2004-cuda113-fastai-cerulean --project=cerulean-338116 --description=An\ image\ created\ from\ the\ cerulean-ml\ startup-script.sh\ in\ gcpvm/$'\n'$'\n'This\ creates\ an\ image\ with\ conda,\ mamba,\ docker,\ environments\ with\ fastai,\ icevision,\ git,\ jupyter,\ dynamic\ mounting\ of\ gcp\ buckets\ and\ other\ commonly\ used\ dev\ tools --family=ubuntu-2004-cuda113-fastai-cerulean --source-disk=ml-jupyter-ad7ada77-2be7-d3a3-62a8-abe8015e64f6-jupyter-disk --source-disk-zone=europe-west1-b --storage-location=europe-west1
 ```
 
 ## Adapt `variables.tf` file
-
+TODO change what user adapts here. add short overviews for other files
 Navigate to the folder containing `main.tf`. Adapt the `variables.tf` file as needed, specifically the `project`, the `instance-type` and the `location`. Currently we are using european regions since the Sentinel-1 data source is in Frankfurt.
 
 ## Deploy
@@ -26,7 +26,7 @@ Check your deployment with `terraform plan`.
 
 If you get a credentials error, you might need to run `gcloud auth application-default login`.
 
-You can create your instance with `terraform apply`.
+You can create your instance with `terraform apply`. Hit `y` if you want to create the VM.
 
 This will create a GCP Compute instance, and save in your local machine a private ssh key (in `.ssh/`), and a series of `.vm-X` files containing identity information for your instance. **Do not delete or modify this files!**
 

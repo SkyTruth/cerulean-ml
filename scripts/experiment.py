@@ -2,11 +2,11 @@ import os
 from datetime import datetime
 from pathlib import Path
 
+import hydra
 from icevision import models, parsers, tfms
 from icevision.data import Dataset, SingleSplitSplitter
 from omegaconf import DictConfig
 
-import hydra
 from ceruleanml.metrics import IoUMetric, IoUMetricType
 
 
@@ -35,11 +35,7 @@ def train(cfg: DictConfig):
     icevision_model = models.torchvision.mask_rcnn
     backbone = icevision_model.backbones.resnet34_fpn
     # TRAINER
-    train_tfms = tfms.A.Adapter(
-        [
-            tfms.A.Normalize(),
-        ]
-    )
+    train_tfms = tfms.A.Adapter([*tfms.A.resize_and_pad(size=cfg.trainer.resize)])
 
     # valid_tfms = tfms.A.Adapter(
     #     [*tfms.A.resize_and_pad(size=cfg.datamodule.chip_sz), tfms.A.Normalize()]

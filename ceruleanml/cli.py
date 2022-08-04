@@ -17,18 +17,12 @@ def main():
     """CeruleanML CLI scripts for data processing."""
 
 
+# TODO class list associated with single source of truth
 def make_coco_metadata(
     name="Cerulean Dataset V2",
     description: str = "Cerulean Dataset V2",
     version: str = "1.0",
-    class_list: List[str] = [
-        "infra_slick",
-        "natural_seep",
-        "coincident_vessel",
-        "recent_vessel",
-        "old_vessel",
-        "ambiguous",
-    ],
+    class_list: List[str] = [],
 ):
     """Creates COCO Metadata
 
@@ -50,6 +44,7 @@ def make_coco_metadata(
         "date_created": str(date.today()),
     }
     licenses = [{"url": "none", "id": 1, "name": name}]
+    assert len(class_list) > 0
     categories = [
         {"supercategory": "slick", "id": i + 1, "name": cname}
         for i, cname in enumerate(class_list)
@@ -79,11 +74,13 @@ def make_coco_dataset_with_tiles(
 
     Args:
         class_folder_path (str): the path to the folder containing class
-            folders ("Infrastructure", "Coincident", etc.)
+            folders ("Infrastructure", "Coincident", etc.). Assuming structure in cv2-training gcp bucket.
         aux_data_path (str): the path to the folder containing the aux
-            files (currently only infra_locations.json)
-        coco_outdir (str): the path to save the coco json and the folder
+            files TODO update (currently only infra_locations.json). This is located on ceruleanml bucket under aux_datasets.
+        coco_outdir (str): the folder path to save the coco json and the folder
             of tiled images.
+        name (str): the output name of the coco json file. also stored in the coco json metadata to tag the dataset.
+        tile_length (str): square length size of the tiles in the tile grid. this can be set to any value. Default is 512.
     """
     start = time.time()
     os.makedirs(coco_outdir, exist_ok=True)
@@ -105,6 +102,7 @@ def make_coco_dataset_with_tiles(
                 assert "S1" in str(scene_folder)
                 scene_id = os.path.basename(scene_folder)
                 layer_pths = [str(i) for i in list(scene_folder.glob("*png"))]
+                # TODO call out if this is the one place to change resample ratio for all three bands or not
                 scene_data_tuple = dask.delayed(coco_tiler.save_background_img_tiles)(
                     scene_id,
                     layer_pths,
@@ -157,6 +155,7 @@ def make_coco_dataset_no_tiles(
             folders ("Infrastructure", "Coincident", etc.)
         coco_outdir (str): the path to save the coco json and the folder
             of tiled images.
+        name (str): the output name of the coco json file. also stored in the coco json metadata to tag the dataset.
     """
     os.makedirs(coco_outdir, exist_ok=True)
     os.makedirs(os.path.join(coco_outdir, "untiled_images"), exist_ok=True)
@@ -223,6 +222,8 @@ def make_coco_dataset_no_context(
             folders ("Infrastructure", "Coincident", etc.)
         coco_outdir (str): the path to save the coco json and the folder
             of tiled images.
+        name (str): the output name of the coco json file. also stored in the coco json metadata to tag the dataset.
+        tile_length (str): square length size of the tiles. this can be set to any value. Default is 512.
     """
     start = time.time()
     with Client() as client:  # this needs to be commented out to use single threaded for profiling

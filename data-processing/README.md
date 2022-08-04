@@ -1,5 +1,7 @@
 # Script to proceess data for labeling
 
+This section contains tools to develop the training dataset. 
+
 ## Vector to raster
 
 Script to convert vector data into raster - COG(cloud optimized geotiff)
@@ -12,6 +14,9 @@ Script to convert vector data into raster - COG(cloud optimized geotiff)
 ```
 
 ## Generate Links to open Photopea
+
+This creates links to a photopea interface populated with the matching Sentinel-1 scene for each link. The interface is customized for the 6 class annotation task.
+
 
 ```sh
 
@@ -26,3 +31,6 @@ Script to convert vector data into raster - COG(cloud optimized geotiff)
 surge public/ skytruth.surge.sh
 
 ```
+
+## TODO confirm where this interface lives add notes/guide on deploying in skytruth aws environment add callout
+

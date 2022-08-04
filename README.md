@@ -52,17 +52,40 @@ Options:
   --help  Show this message and exit.
 ```
 
+## Environments
+TODO description of what environments are used where. 
+
+The fastai2 environment is a conda environment created with `make install`. activate it with
+```
+conda activate fastai2
+```
+
+The icevision environment is a venv created with `make install-icevision`. activate it with 
+
+```
+source ./.ice-env/bin/activate
+```
+
 ## Run the Hydra Model Training CLI
+TODO move to another section with description on not in sync with notebook.
 Hydra is a robust configuration and experiment management tool. It is composed of a python module, `hydra`, and a `config` directory, with a hierarchy of yaml config files to define hyperparameters and settings for training your model.
+
+First, install and activate the icevision environment (see above).
+
+Then, run the script to move datasets to the gpu vm
+
+```
+bash scripts/move_datasets_to_ssd.sh
+```
 
 A set of experiments can be started by using Hydra's command line interface:
 
-`python experiment.py`
+`python experiment.py --help`
 
 and configs can be adapted on the fly like so:
 
 ```
-python experiment.py model.pretrained=True
+python experiment.py model.pretrained=True datamodule.img_dir=/root/partitions/train-with-context-512/tiled_images/ datamodule.annotations_filepath=/root/partitions/train-with-context-512/instances_TiledCeruleanDatasetV2.json
 ```
 
 or by editing the config file directly. Configs should specify good defaults (once you know what they are) and/or the set of configs necessary to reproduce an important experiment.
@@ -79,7 +102,7 @@ terraform apply
 make syncup
 make ssh
 ```
-
+TODO more description about where cdata command comes from and how to edit
 Mount the gcp bucket, install custom dependencies in the fastai2 environment, and start a jupyter server.
 ```
 cdata
@@ -88,7 +111,9 @@ make install
 cd ..
 jserve
 ```
+TODO document full initial vm data setup and environment setup workflow
 
+TODO this step is for dataset creation, should move to section that follows VM creation
 Add the AWS CLI with authentication to be able to reach out to the Sentinel-1 PDS S3 bucket, to generate tiles:
 ```
 apt install snapd
@@ -104,8 +129,10 @@ If there are new dependencies you find we need, you can add them in the environm
 Make sure you have copied the dataset to the local SSD of the VM at /root. This will result in IO speed improvements. For example, parsing/loading the data with icevision from a GCP bucket takes a full 2 minutes compared to 17 seconds when data is already on the VM SSD.
 
 You can run the following for example to copy a dataset from the bucket to the vm quickly.
-
+TODO
 ```
 mkdir tile-cerulean-v2-partial-with-context
 gsutil -m rsync -ravzp gs://ceruleanml/tile-cerulean-v2-partial-with-context tile-cerulean-v2-partial-with-context
 ```
+
+

@@ -24,6 +24,7 @@ from rasterio.plot import reshape_as_image, reshape_as_raster
 from rasterio.vrt import WarpedVRT
 from rio_tiler.io import COGReader
 
+# TODO single sourc eof class map truth
 # Hard Neg is overloaded with overlays but they shouldn't be exported during annotation
 # Hard Neg is just a class that we will use to measure performance gains metrics
 class_mapping_photopea = {
@@ -254,6 +255,10 @@ class COCOtiler:
         self.s1_gcps: Optional[List[Any]] = None
         self.s1_crs: Optional[Any] = None
 
+    # missing arg for resample update docstring
+    # resample can exist, needs to be based on 70 meter source imagery
+    # same resampling factor would need to be used on cerulean cloud but
+    # converted to be relative to original sentinel-1 resoloution
     def save_background_img_tiles(
         self,
         scene_id: str,
@@ -283,11 +288,13 @@ class COCOtiler:
             s1_image_shape,
             s1_gcps,
             s1_crs,
-        ) = fetch_sentinel1_reprojection_parameters(scene_id)
+        ) = fetch_sentinel1_reprojection_parameters(
+            scene_id
+        )  # TODO s1_image_shape can be divided by a resample factor to resample with vrt_dst.read
 
         # saving vv image tiles (Background layer)
         img_path = layer_paths[0]
-
+        # opening Background.png and assigning native res projection info
         with rasterio.open(img_path) as src:
             profile = src.profile.copy()
             profile["driver"] = "GTiff"
@@ -303,7 +310,9 @@ class COCOtiler:
                         new_ar[0, ar[0] == k] = v[0]
                     m.write(new_ar)
                     m.colorinterp = [ColorInterp.gray]
-                    gcps_transform = transform.from_gcps(s1_gcps)
+                    gcps_transform = transform.from_gcps(
+                        s1_gcps
+                    )  # agnostic to resample resolution of Background.png
                     with WarpedVRT(
                         m,
                         src_crs=s1_crs,
@@ -311,6 +320,7 @@ class COCOtiler:
                         add_alpha=False,
                     ) as vrt_dst:
                         # arr is (c, h, w)
+                        # this step does the actual resampling after projection with the gcps, so changing image shape changes resample
                         arr = vrt_dst.read(
                             out_shape=(vrt_dst.count, *s1_image_shape),
                             out_dtype="uint8",
@@ -355,6 +365,7 @@ class COCOtiler:
             fnames_vv.extend(list(Path(f).glob("**/Background.png")))  # type: ignore
         copy_whole_images(fnames_vv, self.img_dir)
 
+    # TODO update docstring top line with actual result, generates single coco record
     def create_coco_from_photopea_layers(
         self,
         scene_index: int,
@@ -362,7 +373,7 @@ class COCOtiler:
         layer_pths: List[str],
         tile_length: int,
     ):
-        """Saves a COCO JSON with annotations compressed in RLE format and also saves corresponding image tiles.
+        """Creates a COCO JSON with annotations compressed in RLE format.
 
         The COCO JSON is amended to add two keys for the full scene, referring to the folder name containing the
         photopea layers. This should correspond to the original Sentinel-1 VV geotiff filename so that the
@@ -386,8 +397,10 @@ class COCOtiler:
             s1_gcps,
             s1_crs,
         ) = scene_data_tuple
+        # zoom factor changes this needs to be updated TODO Hack
         # 200 used because no scene has more than 200 tiles, guarantees global tile ids unique
         global_tile_ids = [200 * scene_index + i for i in list(range(n_tiles))]
+        # TODO handle strings and specifically iterate over instance tiff files in a more explicit way
         for instance_path in layer_pths[1:]:
             # each label is of form class_instanceid.png
             if "_" not in str(instance_path):
@@ -582,9 +595,14 @@ class COCOtiler:
         return aux_dataset_channels
 
 
+# annotated pngs in the bucket are not warped/georeferenced,
+# so we need this func to fetch reprojection parameters for whole scene in native resolution
+
+
 def fetch_sentinel1_reprojection_parameters(
-    scene_id: str, rescale: int = 8
+    scene_id: str,
 ) -> Tuple[List[float], Tuple[int, int], List[Any], Any]:
+    # this source is already resampled to 70 meter resolution
     src_path = f"s3://skytruth-cerulean-sa-east-1/outputs/rasters/{scene_id}.tiff"
 
     with rasterio.Env(AWS_REQUEST_PAYER="requester"):
@@ -627,12 +645,24 @@ def get_scene_date_month(scene_id: str) -> str:
     return date_time_obj.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+# TODO docstring we are using this
 def get_dist_array(
     bounds: Tuple[float, float, float, float],
     img_shape: Tuple[int, int, int],
     raster_ds: str,
     max_distance: int = 60000,
 ):
+    """we get array for bounds of sentinel scene from dist array saved on gcp.
+
+    Args:
+        bounds (Tuple[float, float, float, float]): _description_
+        img_shape (Tuple[int, int, int]): _description_
+        raster_ds (str): _description_
+        max_distance (int, optional): _description_. Defaults to 60000.
+
+    Returns:
+        _type_: _description_
+    """
     with COGReader(raster_ds) as image:
         img = image.part(bounds)
         data = img.data_as_image()
@@ -643,11 +673,12 @@ def get_dist_array(
         data[data >= 255] = 255
     upsampled = skimage.transform.resize(
         data, (*img_shape[0:2], 1), preserve_range=True
-    )
+    )  # resampling happens here with img_shape
     upsampled = np.squeeze(upsampled)
     return upsampled.astype(np.uint8)
 
 
+# TODO remove UNUSED function since we fetch dist array from api
 def get_dist_array_from_vector(
     bounds: Tuple[float, float, float, float],
     img_shape: Tuple[int, int, int],
@@ -738,7 +769,7 @@ def get_ship_density(
         cont = list(zipfile_ob.namelist())
         with rasterio.open(BytesIO(zipfile_ob.read(cont[0]))) as dataset:
             ar = dataset.read(
-                out_shape=img_shape[0:2],
+                out_shape=img_shape[0:2],  # resampling could happen here TODO
                 out_dtype="uint8",
                 resampling=Resampling.nearest,
             )

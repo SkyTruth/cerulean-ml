@@ -1,6 +1,0 @@
-
-   
-_target_: icevision.loggers.CSVLogger
-
-name: ${name}
-save_dir: logs

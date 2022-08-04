@@ -1,6 +1,0 @@
-model_name: models.torchvision.mask_rcnn
-num_classes: 12
-pretrained: false
-thresh: 0.5
-label_smooth: 0.2
-

@@ -22,6 +22,8 @@ requirements = [
     "geopandas",
     "rio-tiler-pds",
     "rio-cogeo",
+    "hydra-core",
+    "ipywidgets",
 ]
 
 setup(

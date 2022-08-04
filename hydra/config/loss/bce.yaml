@@ -1,3 +1,0 @@
-name: bce
-weighted: true
-pos_weight: ${datamodule.pos_weight}

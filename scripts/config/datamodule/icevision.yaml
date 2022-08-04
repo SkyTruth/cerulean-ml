@@ -1,6 +1,6 @@
 data_dir: ${data_dir}
 num_workers: 8
-bs: 32
+bs: 4
 chip_sz: 512
 im_type: png
 mount_path: "/root/data/"

@@ -11,6 +11,17 @@ from tqdm import tqdm
 
 from ceruleanml import data
 
+# TODO single source of class map truth
+class_map_coco = {
+    "background": 0,
+    "infra_slick": 1,
+    "natural_seep": 2,
+    "coincident_vessel": 3,
+    "recent_vessel": 4,
+    "old_vessel": 5,
+    "ambiguous": 6,
+}
+
 class_map = {
     "Infrastructure": 1,
     "Natural Seep": 2,
@@ -53,10 +64,21 @@ def sample_stat_lists(arr):
     return np.mean(arr, axis=(0, 1)), np.std(arr, axis=(0, 1))
 
 
-def all_sample_stat_lists(train_records):
+def all_sample_stat_lists(record_collection):
+    """Gets statistics, mean and std, for a record collection.
+
+
+    Args:
+        record_collection (icevision.data.record_collection.RecordCollection): The
+        collection of label data and metadata.
+
+    Returns:
+        Tuple(List[float],List[float]): A tuple with two lists of floats. first list
+        is means, second is stds for each tile of a record.
+    """
     means = []
     stds = []
-    for r in tqdm(train_records):
+    for r in tqdm(record_collection):
         p = r.as_dict()["common"]["filepath"]
         arr = skio.imread(p)
         mean_lst, std_lst = sample_stat_lists(arr)
@@ -69,10 +91,10 @@ def minor_axis_length_bbox(bbox):
     """Calculates the minor axis length of the bbox using skimage bbox coordinate order.
 
     Args:
-        bbox (_type_): _description_
+        bbox (List): bbox in skimage bbox coordinate order.
 
     Returns:
-        _type_: _description_
+        float: The minor axis length.
     """
     ml1 = bbox[2] - bbox[0]
     ml2 = bbox[3] - bbox[1]
@@ -109,6 +131,8 @@ def extract_masks_and_compute_tables(
     return tables
 
 
+# TODO label has to be present in record collection
+# todo highlight ellipse maps to rotated bounding box
 def region_props_for_instance_type(
     record_collection: icevision.data.record_collection.RecordCollection,
     instance_label_type: str,
@@ -124,7 +148,8 @@ def region_props_for_instance_type(
     """
 
     img_names = [d.as_dict()["common"]["filepath"] for d in record_collection]
-
+    # add statistics here TODO properties should be an argument. for ellipse stats and other metrics
+    # https://scikit-image.org/docs/stable/api/skimage.measure.html?highlight=region%20props#skimage.measure.regionprops
     properties = ["area", "bbox_area", "major_axis_length", "bbox"]
 
     tables = extract_masks_and_compute_tables(
@@ -176,6 +201,7 @@ def get_table_whole_image(path, properties, instance_type):
     return table
 
 
+# TODO docstring referencing required previous step of making whole image coco dataset
 def extract_masks_and_compute_tables_whole_image(
     record_collection,
     instance_label_type: str,
@@ -287,6 +313,7 @@ def get_all_record_area_lists_for_class(record_area_label_lists: List, class_nam
     return rs
 
 
+# TODO move to preprocess.py
 def ignore_record_by_area(
     record: icevision.data.record_collection.BaseRecord, area_thresh: int
 ):
@@ -308,3 +335,29 @@ def ignore_low_area_records(
 ):
     for record in tqdm(record_collection):
         ignore_record_by_area(record, area_thresh)
+
+
+# TODO remove since not used when parsing datasets with CeruleanCOCOMaskParser
+def remap_records_class(
+    record_collection: icevision.data.record_collection.RecordCollection,
+    remap_dict: dict,
+):
+    """
+    remap_dict keys/values: "infra_slick", "natural_seep", "coincident_vessel", "recent_vessel", "old_vessel", "ambiguous", None
+    Deletes class if key in dict has value = None
+    """
+    for record in tqdm(record_collection):
+        record_d = record.as_dict()
+        for i, label in enumerate(record_d["detection"]["labels"]):
+            if label in remap_dict:
+                if remap_dict[label] is None:
+                    [
+                        record_d["detection"][key].pop(i)
+                        for key, value in record_d["detection"].items()
+                        if value is not None
+                    ]
+                else:
+                    record_d["detection"]["labels"][i] = remap_dict[label]
+                    record_d["detection"]["label_ids"][i] = class_map_coco[
+                        remap_dict[label]
+                    ]
