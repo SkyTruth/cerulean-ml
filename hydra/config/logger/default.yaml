@@ -1,4 +1,0 @@
-defaults:
-    - wandb.yaml
-    - csv.yaml
-

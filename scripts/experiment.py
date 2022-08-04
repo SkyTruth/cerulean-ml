@@ -2,11 +2,11 @@ import os
 from datetime import datetime
 from pathlib import Path
 
+import hydra
 from icevision import models, parsers, tfms
 from icevision.data import Dataset, SingleSplitSplitter
 from omegaconf import DictConfig
 
-import hydra
 from ceruleanml.metrics import IoUMetric, IoUMetricType
 
 

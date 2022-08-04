@@ -156,3 +156,4 @@ notebooks/instances_slicks_test*
 task_graph.svg
 test-dask-*
 .ice-env
+.ice-env-inf

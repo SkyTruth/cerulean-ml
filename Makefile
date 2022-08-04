@@ -72,9 +72,10 @@ install: clean ## install the package to the fastai2 env on the terraform gcp vm
 
 setup-icevision-env: ## install the package to the icevision env on the terraform gcp vm
 	# cd ..
-	# git clone https://github.com/airctic/icevision --depth 1
+	# git clone https://github.com/rbavery/icevision --depth 1
 	# cd work
 	# requires activating env outside of makefile after this step
+	git clone https://github.com/rbavery/icevision --depth 1 /root/icevision
 	rm -rf .ice-env
 	python -m venv .ice-env
 	chmod +x ./.ice-env/bin/activate
@@ -84,7 +85,7 @@ install-icevision-deps:
 	./.ice-env/bin/pip install -e . # install local ceruleanml package after deps installed with conda
 	./.ice-env/bin/pip install "git+https://github.com/waspinator/pycococreator.git@0.2.0"
 	./.ice-env/bin/pip install jupyterlab
-	python -m ipykernel install --user --name=icevision
+	./.ice-env/bin/python -m ipykernel install --user --name=icevision
 	#pip install -e .[dev] # run this in terminal after cd to icevision with env active
 
 setup-icevision-inf-env: ## install the package to the icevision env on the terraform gcp vm
@@ -101,5 +102,6 @@ install-icevision-inf-deps:
 	./.ice-env-inf/bin/pip install -e . # install local ceruleanml package after deps installed with conda
 	./.ice-env-inf/bin/pip install "git+https://github.com/waspinator/pycococreator.git@0.2.0"
 	./.ice-env-inf/bin/pip install jupyterlab
-	python -m ipykernel install --user --name=icevision-inf
+	./.ice-env-inf/bin/python -m ipykernel install --user --name=icevision-inf
+	pip install mmcv-full=="1.3.17" -f https://download.openmmlab.com/mmcv/dist/cpu/torch1.10.0/index.html --upgrade -q #necessary for instance confmatrix
 	#pip install -e .[dev] # run this in terminal after cd to icevision with env active

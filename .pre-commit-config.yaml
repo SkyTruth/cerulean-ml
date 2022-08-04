@@ -12,6 +12,7 @@ repos:
             - id: black
               args: ['--safe']
               language_version: python3.8
+              exclude: ^scripts/
     -
         repo: https://gitlab.com/PyCQA/flake8
         rev: 3.9.2
@@ -23,6 +24,7 @@ repos:
                   # W503 black conflicts with "line break before operator" rule
                   # E203 black conflicts with "whitespace before ':'" rule
                   '--ignore=E501,W503,E203']
+              exclude: ^scripts/
 
     -   
         repo: https://github.com/pre-commit/mirrors-mypy
@@ -31,6 +33,7 @@ repos:
             - id: mypy
               args: ['--no-strict-optional', '--ignore-missing-imports']
               additional_dependencies: [types-requests, types-click]
+              exclude: ^scripts/
 
 # Comment out docstring tool for now
 #    - 

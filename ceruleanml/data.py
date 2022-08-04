@@ -290,7 +290,7 @@ class COCOtiler:
             s1_crs,
         ) = fetch_sentinel1_reprojection_parameters(
             scene_id
-        )  # s1_image_shape can be devided by a factor to resample with vrt_dst.read
+        )  # TODO s1_image_shape can be divided by a resample factor to resample with vrt_dst.read
 
         # saving vv image tiles (Background layer)
         img_path = layer_paths[0]
@@ -320,10 +320,11 @@ class COCOtiler:
                         add_alpha=False,
                     ) as vrt_dst:
                         # arr is (c, h, w)
+                        # this step does the actual resampling after projection with the gcps, so changing image shape changes resample
                         arr = vrt_dst.read(
                             out_shape=(vrt_dst.count, *s1_image_shape),
                             out_dtype="uint8",
-                        )  # this step does the actual resampling after projection with the gcps, so changing image shape changes resample
+                        )
                         assert arr.shape[1:] == s1_image_shape
 
         # Make sure there are channels

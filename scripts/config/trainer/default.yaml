@@ -5,8 +5,8 @@ gpus: 1
 precision: 16
 min_epochs: 1
 max_epochs: 30
-num_epochs: 20
+num_epochs: 1
 lr: 0.001
 log_every_n_steps: 2
 reload_dataloaders_every_n_epochs: 1
-resize: 224
+resize: 64

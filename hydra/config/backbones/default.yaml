@@ -1,5 +1,0 @@
-backbone_name: model_type.backbones.resnet34_fpn
-num_classes: 6
-pretrained: false
-thresh: 0.5
-label_smooth: 0.2
