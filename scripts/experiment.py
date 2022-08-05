@@ -3,9 +3,19 @@ from datetime import datetime
 from pathlib import Path
 
 import hydra
-from icevision import models, parsers, tfms
-from icevision.data import Dataset, SingleSplitSplitter
+from fastai.callback.tracker import SaveModelCallback
+from icevision import Dataset, models, tfms
+from icevision.data import *
+from icevision.data import Dataset
+from icevision.imports import *
+from icevision.metrics import (  # make sure you have the rbavery fork of icevision installed
+    SimpleConfusionMatrix,
+)
+from icevision.metrics.metric import *
+from icevision.utils import *
 from omegaconf import DictConfig
+
+from ceruleanml import preprocess
 
 
 @hydra.main(config_path="config", config_name="config")
@@ -20,14 +30,32 @@ def train(cfg: DictConfig):
     # Create logs/ - wandb logs to an already existing directory only
     cwd = os.getcwd()
     (Path(cwd) / "logs").mkdir(exist_ok=True)
+    negative_sample_count = 0
+    area_thresh = 0
+    remove_list = ["ambiguous", "natural_seep"]
+    class_names_to_keep = [
+        "background",
+        "infra_slick",
+        "recent_vessel",
+    ]
+    remap_dict = {  # only remaps coincident and old to recent
+        3: 4,
+        5: 4,
+    }
 
-    # DATAMODULE
-    parser = parsers.COCOMaskParser(
-        annotations_filepath=cfg.datamodule.annotations_filepath,
-        img_dir=cfg.datamodule.img_dir,
+    # since we remove ambiguous and natural seep and remap all vessels to 1 and include background
+    num_classes = 3
+
+    train_records = preprocess.load_set_record_collection(
+        cfg.datamodule.annotations_filepath,
+        cfg.datamodule.img_dir,
+        area_thresh,
+        negative_sample_count,
+        preprocess=False,
+        class_names_to_keep=class_names_to_keep,
+        remap_dict=remap_dict,
+        remove_list=remove_list,
     )
-
-    train_records = parser.parse(data_splitter=SingleSplitSplitter(), autofix=False)
 
     # MODEL
     icevision_model = models.torchvision.mask_rcnn
@@ -39,7 +67,7 @@ def train(cfg: DictConfig):
     #     [*tfms.A.resize_and_pad(size=cfg.datamodule.chip_sz), tfms.A.Normalize()]
     # )
 
-    train_ds = Dataset(train_records[0], train_tfms)
+    train_ds = Dataset(train_records, train_tfms)
 
     train_dl = icevision_model.train_dl(
         train_ds,
@@ -50,11 +78,14 @@ def train(cfg: DictConfig):
 
     model = icevision_model.model(
         backbone=backbone(pretrained=cfg.model.pretrained),
-        num_classes=len(parser.class_map),
+        num_classes=num_classes,
     )
-
+    metrics = [SimpleConfusionMatrix(print_summary=True)]
     learn = icevision_model.fastai.learner(
-        dls=[train_dl, train_dl], model=model
+        dls=[train_dl, train_dl],
+        model=model,
+        cbs=SaveModelCallback(min_delta=0.01),
+        metrics=metrics,
     )
 
     # FIT

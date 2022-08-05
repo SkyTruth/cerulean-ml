@@ -1,4 +1,4 @@
-# ### Icevision Inference and Evalutation
+# ### Icevision Inference and Evalutation and Comparison to FastAI
 
 import torch
 import torchvision  # noqa
@@ -31,16 +31,10 @@ from ceruleanml.evaluation import (
 # fastai_unet_cm_title="Fastai Unet Confusion Matrix: 29_Jun_2022_06_36_38"
 # 3 class model
 fastai_unet_experiment_dir = "/root/experiments/cv2/26_Jul_2022_21_57_24_fastai_unet"
-tracing_model_cpu_pth = (
-    f"{fastai_unet_experiment_dir}/tracing_cpu_test_32_34_224_0.824_30.pt"
-)
+tracing_model_cpu_pth = f"{fastai_unet_experiment_dir}/tracing_cpu_test_32_34_224_0.824_30.pt"
 fastai_unet_cm_title = "Fastai Unet Confusion Matrix: 26_Jul_2022_21_57_24"
-icevision_experiment_dir = (
-    "/root/data/experiments/cv2/20_Jul_2022_00_14_15_icevision_maskrcnn"
-)
-scripted_model = torch.jit.load(
-    f"{icevision_experiment_dir}/scripting_cpu_test_28_34_224_58.pt"
-)
+icevision_experiment_dir = "/root/data/experiments/cv2/20_Jul_2022_00_14_15_icevision_maskrcnn"
+scripted_model = torch.jit.load(f"{icevision_experiment_dir}/scripting_cpu_test_28_34_224_58.pt")
 icevision_mrcnn_cm_title = "Icevision MRCNN Confusion Matrix: 20_Jul_2022_00_14_15"
 checkpoint_path = "/root/data/experiments/cv2/20_Jul_2022_00_14_15_icevision_maskrcnn/state_dict_test_28_34_224_58.pt"
 class_names = [
@@ -80,21 +74,17 @@ num_classes_fastai = 3
 class_map = {v: k for k, v in data.class_mapping_coco_inv.items()}
 class_ints = list(range(1, len(list(class_map.keys())[:-1]) + 1))
 
-record_collection_with_negative_small_filtered_val = (
-    preprocess.load_set_record_collection(
-        coco_json_path_val,
-        tiled_images_folder_val,
-        area_thresh,
-        negative_sample_count_val,
-        preprocess=True,
-        class_names_to_keep=class_names_to_keep,
-        remap_dict=remap_dict,
-        remove_list=remove_list,
-    )
+record_collection_with_negative_small_filtered_val = preprocess.load_set_record_collection(
+    coco_json_path_val,
+    tiled_images_folder_val,
+    area_thresh,
+    negative_sample_count_val,
+    preprocess=True,
+    class_names_to_keep=class_names_to_keep,
+    remap_dict=remap_dict,
+    remove_list=remove_list,
 )
-record_ids_val = record_collection_to_record_ids(
-    record_collection_with_negative_small_filtered_val
-)
+record_ids_val = record_collection_to_record_ids(record_collection_with_negative_small_filtered_val)
 
 valid_tfms = tfms.A.Adapter([*tfms.A.resize_and_pad(size=size)])
 valid_ds = Dataset(record_collection_with_negative_small_filtered_val, valid_tfms)
@@ -265,9 +255,7 @@ model_type, backbone, class_map, img_size
 
 infer_dl = model_type.infer_dl(valid_ds, batch_size=1, shuffle=False)
 
-preds = model_type.predict_from_dl(
-    model, infer_dl, keep_images=True, detection_threshold=0.5
-)
+preds = model_type.predict_from_dl(model, infer_dl, keep_images=True, detection_threshold=0.5)
 
 cm = SimpleConfusionMatrix()
 cm.accumulate(preds)
