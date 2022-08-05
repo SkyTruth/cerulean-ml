@@ -1,7 +1,8 @@
-# cerulean-ml
-Repo for Training ML assets for Cerulean
+# Cerulean-ML Overview
+This repo contains all of the assets needed to train, evaluate, and test  models befor ethey are put into staging or production on [cerulean-cloud](https://github.com/SkyTruth/cerulean-cloud).
 
-# Setup `pre-commit`
+
+# Local Setup, setting up `pre-commit`
 This runs `black` (code formatter), `flake8` (linting), `isort` (import sorting) and `mypy` (type checks) every time you commit.
 
 ```
@@ -9,130 +10,174 @@ pip install pre-commit
 pre-commit install
 ```
 
-# Install dependencies
+# TOC, folders
 
 ```
-pip install -e .
-# For testing
-pip install -r requirements_dev.txt
+📦work
+ ┣ 📂ceruleanml- the python module that contains a cli for dataset creation 
+                and modules for dataset statistics, model training, model 
+                evaluation, model output post processing and inference
+ ┃ ┣ 📜README.md
+ ┣ 📂data-processing- scripts for setting up the data annotation task and 
+                      Photopea annotation UI
+ ┃ ┣ 📂grd_list - lists of annotated grds used to load into the photopea UI
+ ┃ ┣ 📂public- the location if the index.html with the annotation app. 
+                  can be run as a static site on https://surge.sh or github 
+                  pages or AWS. It's still live at https://skytruth.surge.
+                  sh/ (a free devseed account).
+ ┃ ┃ ┗ 📜index.html
+ ┃ ┣ 📜README.md
+ ┣ 📂gcpvm- terraform definition files that define the infra to deploy on 
+            GCP. this includes a VM created from a base GCP VM image, an 
+            attached SSD disk, and setup script to install custom 
+            dependencies. Also includes a Makefile that defines workflow 
+            commands for ssh and syncing files between local (for git 
+            commiting) and remote VM (for work on files that need the 
+            ceruleanml environments and/or a GPU)
+ ┃ ┣ 📜README.md
+ ┣ 📂notebooks- interactive notebooks for experimenting with the icevision 
+            and fastai trainers, examining dataset statistics, querying 
+            Sentinel-1 characteristics with eodag, exploring model results
+ ┃ ┣ 📜README.md
+ ┣ 📂scripts- contains scripts for VM setup, and convinience scripts for 
+            icevision training and evaluation if you don't want to use the 
+            notebooks. Also contains an example of using hydra to configure 
+            an experiment.
+ ┃ ┣ 📂config- the config folder for the hydra experiment.py
+ ┃ ┣ 📜evaluation.py - runs evaluation to generate confusion matricies and 
+                        metrics, saves plots.
+ ┃ ┣ 📜experiment.py - example running simple icevision trainer with hydra. 
+                        Not up to date with the notebook or ice_trianer.py
+ ┃ ┣ 📜fastai2_unet_trainer_cv2-1channel-baseline.py - the fastai baseline 
+                                that has good performance in terms of Dice, 
+                                but issues with class mixing
+ ┃ ┣ 📜fastaiunet_debug.py - fastai trainer, no hydra, for debugging in 
+                            vscode
+ ┃ ┣ 📜ice_trainer.py - icevision trainer, no hydra, for debugging in 
+                            vscode
+ ┃ ┣ 📜make_datasets.sh - run this when making datasets from scratch, 
+                            uncomment which datasets you want to make
+ ┃ ┗ 📜move_datasets_to_ssd.sh - move already created datasets from GCP to 
+                                VM SSD with gsutil rsync
+ ┣ 📂tests- tests for the dataset creation cli (most complex piece of the 
+            ceruleanml package in terms of lines and code complexity)
+ ┃ ┣ 📂fixtures- example data for the pytests
+ ┃ ┣ 📜__init__.py
+ ┃ ┗ 📜test_ceruleanml.py
+ ┣ 📜.editorconfig
+ ┣ 📜.gitignore
+ ┣ 📜.isort.cfg
+ ┣ 📜.pre-commit-config.yaml - no checks on files in scripts/, this is for  
+                                checking the ceruleanml module
+ ┣ 📜LICENSE
+ ┣ 📜Makefile
+ ┣ 📜README.md
+ ┣ 📜environment.yml
+ ┣ 📜requirements-test.txt
+ ┣ 📜setup.cfg
+ ┣ 📜setup.py
+ ┗ 📜tox.ini
+```
+# VM Setup
+
+After following the instructions in the [gcpvm README](gcpvm/README.md) to setup the VM and syncup the ceruleanml repo to the VM, we need to setup some python environments. our datasets, and start our development environment (Jupyter or VSCode).
+
+We created three different python enviornments to handle different pieces of the Cerulean ML code base. As the project progressed fastai2 became used for less when we switched to focusing on developing tooling around the icevision mrcnn model.
+
+### fastai2
+This env is updated after vm creation with the root Makefile (not the Makefile in gcpvm). It's used for the fastai trainer. `make install` adds packages to the conda environment. See the Makefile for details.
+
+### .ice-env
+This environment is created with virtualenv. It's used to run the icevision trainer and do everything that requires icevision except for confusion matrix evaluation. It takes a few steps to create since we need to install a custom fork of icevision and activate the environment to run a step, which the Makefile can't handle.
+
+```
+make setup-icevision-env
+source ./.ice-env/bin/activate # .ice-env is a hidden folder created in work/
+make install-icevision-deps
+cd ../icevision #this is cloned in the previous step from rbavery's fork
+pip install -e .[dev]
 ```
 
-# Run the CLIs
-ceruleanml is both a python module and CLI for running data preprocessing dataset creation scripts. You can invoke it like so:
+### .ice-env-inf
+This environment is created with virtualenv. It can likely be used for anything icevision related in this repo, but was created separately to test and develop evaluation with the icevision confusion matrix. It takes a few steps to create since we need to install a custom fork of icevision and activate the environment to run a step, which the Makefile can't handle.
 
 ```
-(fastai2) root@ml-jupyter:~/work# ceruleanml --help
-Usage: ceruleanml [OPTIONS] COMMAND [ARGS]...
-
-  CeruleanML CLI scripts for data processing.
-
-Options:
-  --help  Show this message and exit.
-
-Commands:
-  make-coco-dataset-no-context  Create the dataset with tiles but without...
-  make-coco-dataset-no-tiles    Create the dataset without tiling and...
-  make-coco-dataset-with-tiles  Create the dataset with tiles and context...
+make setup-icevision-inf-env
+source ./.ice-env-inf/bin/activate # .ice-env is a hidden folder created in work/
+make install-icevision-inf-deps
+cd ../icevision #this is cloned in the previous step from rbavery's fork
+pip install -e .[dev]
 ```
 
-and to get more detailed help for a specific command (improving formatting of the help message is a TODO):
-
-```
-(fastai2) root@ml-jupyter:~/work# ceruleanml make-coco-dataset-no-context --help
-Usage: ceruleanml make-coco-dataset-no-context [OPTIONS]
-
-  Create the dataset with tiles but without context files (ship density and
-  infra distance).
-
-  Args:     class_folder_path (str): the path to the folder containing class
-  folders ("Infrastructure", "Coincident", etc.)     coco_outdir (str): the
-  path to save the coco json and the folder         of tiled images.
-
-Options:
-  --help  Show this message and exit.
-```
-
-## Environments
-TODO description of what environments are used where. 
-
-The fastai2 environment is a conda environment created with `make install`. activate it with
-```
-conda activate fastai2
-```
-
-The icevision environment is a venv created with `make install-icevision`. activate it with 
+Whenever you need to activate the icevision environments, run 
 
 ```
 source ./.ice-env/bin/activate
+or
+source ./.ice-env-inf/bin/activate
 ```
 
-## Run the Hydra Model Training CLI
-TODO move to another section with description on not in sync with notebook.
-Hydra is a robust configuration and experiment management tool. It is composed of a python module, `hydra`, and a `config` directory, with a hierarchy of yaml config files to define hyperparameters and settings for training your model.
+And these are available to the jupyter server.
 
-First, install and activate the icevision environment (see above).
+# Other Setup
 
-Then, run the script to move datasets to the gpu vm
+## Dataset Creation/Copying
 
-```
-bash scripts/move_datasets_to_ssd.sh
-```
+To mount the buckets to the source imagery/labels exported from Photopea, `/root/data-cv2`, and the ceruleanml-biggpuregion bucket, `/root/data`, do
 
-A set of experiments can be started by using Hydra's command line interface:
-
-`python experiment.py --help`
-
-and configs can be adapted on the fly like so:
-
-```
-python experiment.py model.pretrained=True datamodule.img_dir=/root/partitions/train-with-context-512/tiled_images/ datamodule.annotations_filepath=/root/partitions/train-with-context-512/instances_TiledCeruleanDatasetV2.json
-```
-
-or by editing the config file directly. Configs should specify good defaults (once you know what they are) and/or the set of configs necessary to reproduce an important experiment.
-
-TODO instructions for viewing wandb logging and switching between fastai and icevision.
-
-# VM Setup
-
-Deploy the VM, sync the git directory, and ssh with port forwarding
-```
-cd gcpvm
-terraform init
-terraform apply
-make syncup
-make ssh
-```
-TODO more description about where cdata command comes from and how to edit
-Mount the gcp bucket, install custom dependencies in the fastai2 environment, and start a jupyter server.
 ```
 cdata
-cd work
-make install
-cd ..
-jserve
+cdata2
 ```
-TODO document full initial vm data setup and environment setup workflow
 
-TODO this step is for dataset creation, should move to section that follows VM creation
+If a dataset has been created already and copied to GCP, the next step is to run `python scripts/move_datasets_to_ssd.sh`. This takes more than 8 minutes so its best to run it in `screen`. If you're not creating a fresh dataset, run move_datasets_to_ssd.sh after mounting since the premade CV2 dataset is already there. Make sure you have copied the dataset to the local SSD of the VM at /root. This will result in IO speed improvements. For example, parsing/loading the data with icevision from a GCP bucket takes a full 2 minutes compared to 17 seconds when data is already on the VM SSD.
+
+
+If you want to make a new dataset with different parameters, you'll first need to authenticate with AWS on the VM. We use S1 tiles on AWS to georeference the Background.png images used to generate the Photopea labels.
+
 Add the AWS CLI with authentication to be able to reach out to the Sentinel-1 PDS S3 bucket, to generate tiles:
+
 ```
 apt install snapd
 snap install aws-cli --classic
 aws configure 
-# Add AWS Access Key ID and AWS Secret Access Key from AWS account
+```
+Add AWS Access Key ID and AWS Secret Access Key from AWS account, found locally at ~/.aws/credentials you only need to enter these fields leave the others blank.
+
+
+`scripts/make_datasets.sh` is a good reference for what commands to run for different dataset creation options. This is best run on a 32 core machine to make the train dataset in under 30 minutes, so see [gcpvm/terraform.tfvars](gcpvm/terraform.tfvars) for how to change the instance type. This requires having run the previous environment setup step for fastai, since we used that environment for dataset creation.
+
+## Testing Dataset CLI
+To install testing dependencies to run pytests for the dataset creation script, run this in the fastai environment
+
+```
+# For testing
+pip install -r requirements_test.txt
 ```
 
-If there are new dependencies you find we need, you can add them in the environment.yaml and install with make install (the top level makefile not the terraform makefile).
-
-### Experiment Setup
-
-Make sure you have copied the dataset to the local SSD of the VM at /root. This will result in IO speed improvements. For example, parsing/loading the data with icevision from a GCP bucket takes a full 2 minutes compared to 17 seconds when data is already on the VM SSD.
-
-You can run the following for example to copy a dataset from the bucket to the vm quickly.
-TODO
+## IDE Tips
+To start a jupyter server, run
 ```
-mkdir tile-cerulean-v2-partial-with-context
-gsutil -m rsync -ravzp gs://ceruleanml/tile-cerulean-v2-partial-with-context tile-cerulean-v2-partial-with-context
+jserve
 ```
+alternatively you can connect to the VM with VSCode remote explorer
+
+```
+Host icevision-Trainer
+	HostName you-host-name-from-make-ssh
+	IdentityFile /home/rave/cerulean-ml/gcpvm/.ssh/private_instance_gcp.pem
+	User root
+	LocalForward 8888 localhost:8888
+	LocalForward 6006 localhost:6006
+	IdentitiesOnly yes
+```
+
+A good way to get an understanding of how the dataset creation works is to use the VSCode debugger by setting breakpoints when running the tests in VSCode. You can pause and inspect variables, advance executions in a different ways, and traverse how the program runs, which can help to adapt the dataset creation to make it more flexible for different data types and image channel sources.
+
+When using VSCode for debugging, it is recommende to set `justMyCode: False` if debugging other libraries (like icevision) and to also uncheck `Raised Exceptions` so that only errors stop the debugging process. Otherwise debugging can't progress.
+
+You also need to set your interpreter to fastai2 when running the data.py pytests. To do so: CNTRL+SHFT+P to open the VSCode command palette, then select interpreter. You also need to install VSCode's python extension. 
+
+autoDocstring is another good extension to have, which will create a formatted docstring templat eunder funcs whenever creating three quotes """.
 
 

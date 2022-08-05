@@ -14,9 +14,8 @@ In case your project doesn't have the `ubuntu-2004-cuda113-fastai-cerulean` you 
 gcloud compute images create ubuntu-2004-cuda113-fastai-cerulean --project=cerulean-338116 --description=An\ image\ created\ from\ the\ cerulean-ml\ startup-script.sh\ in\ gcpvm/$'\n'$'\n'This\ creates\ an\ image\ with\ conda,\ mamba,\ docker,\ environments\ with\ fastai,\ icevision,\ git,\ jupyter,\ dynamic\ mounting\ of\ gcp\ buckets\ and\ other\ commonly\ used\ dev\ tools --family=ubuntu-2004-cuda113-fastai-cerulean --source-disk=ml-jupyter-ad7ada77-2be7-d3a3-62a8-abe8015e64f6-jupyter-disk --source-disk-zone=europe-west1-b --storage-location=europe-west1
 ```
 
-## Adapt `variables.tf` file
-TODO change what user adapts here. add short overviews for other files
-Navigate to the folder containing `main.tf`. Adapt the `variables.tf` file as needed, specifically the `project`, the `instance-type` and the `location`. Currently we are using european regions since the Sentinel-1 data source is in Frankfurt.
+## Adapt `terraform.tfvars` file
+Navigate to the folder containing `main.tf`. Adapt the `terraform.tfvars` file as needed. Currently we are using europe-west-4 since the Sentinel-1 data source is in Frankfurt and europe-west-4 has a variety of gpus.
 
 ## Deploy
 
@@ -50,7 +49,23 @@ When you finish all work associated with this instance make sure to run `terrafo
 
 **Important: when you destroy your instance, all files and instance state are deleted with it so make sure to back them up to GCS or locally if needed!**
 
+## The Workflow
+In short, do the following to deploy the VM, sync the git directory, and ssh with port forwarding
+
+```
+cd gcpvm
+terraform init
+terraform apply
+make syncup
+make ssh
+```
+
+If you need to, edit the `minimal-start-up-script.sh` to change what is installe donto the terraform VM during `terraform apply`. the use of this script is defined in `instance.tf`. This script does not support setting up permanent and persistent mounting, hence the bash aliases for bucket mounting `cdata` and `cdata2`. It also doesn't support activating python environments to install things into them, so we need to do that after make syncup and make ssh manually.
+
 
 ## Notes on the Instance
 
-The instance will have access to all buckets in the project. These buckets will be mounted under the directory `/root/data`. They can only be accessed by specifying paths to the contents of their subdirs. See the [gcsfuse mounting instructions](https://github.com/GoogleCloudPlatform/gcsfuse/blob/master/docs/mounting.md) for more details.
+The instance will have access to all buckets in the project. These buckets will be mounted under the directories `/root/data`. And `/root/data-cv2` after calling `cdata` and `cdata2`. They can only be accessed by specifying paths to the contents of their subdirs. See the [gcsfuse mounting instructions](https://github.com/GoogleCloudPlatform/gcsfuse/blob/master/docs/mounting.md) for more details.
+
+
+

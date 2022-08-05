@@ -1,7 +1,9 @@
 SHELL = bash
 # Settings
 REMOTE_DIR=~/work
+REMOTE_DIR_ICE=~/icevision/
 LOCAL_DIR=../
+LOCAL_DIR_ICE=../../icevision/
 
 ##### You should not have to touch stuff below this line
 SHELL=bash
@@ -25,6 +27,13 @@ syncup:
 	rsync -e "ssh -i ${PATH_SSH_KEY} -o IdentitiesOnly=yes" -avz --exclude=".git/" --exclude-from=${LOCAL_DIR}.gitignore ${LOCAL_DIR} $(shell echo ${VM_CONN}:${REMOTE_DIR}/ | tr -d '[:space:]')
 syncdown:
 	rsync -e "ssh -i ${PATH_SSH_KEY} -o IdentitiesOnly=yes" -avz --exclude=".git/" --exclude-from=${LOCAL_DIR}.gitignore $(shell echo ${VM_CONN}:${REMOTE_DIR}/ | tr -d '[:space:]') ${LOCAL_DIR}
+clone-ice:
+	git clone https://github.com/rbavery/icevision --depth 1 ../../icevision
+syncup-ice:
+	ssh -i ${PATH_SSH_KEY} -o IdentitiesOnly=yes ${VM_CONN} "mkdir -p ${REMOTE_DIR}/"
+	rsync -e "ssh -i ${PATH_SSH_KEY} -o IdentitiesOnly=yes" -avz --exclude=".git/" --exclude-from=${LOCAL_DIR_ICE}.gitignore ${LOCAL_DIR_ICE} $(shell echo ${VM_CONN}:${REMOTE_DIR_ICE}/ | tr -d '[:space:]')
+syncdown-ice:
+	rsync -e "ssh -i ${PATH_SSH_KEY} -o IdentitiesOnly=yes" -avz --exclude=".git/" --exclude-from=${LOCAL_DIR_ICE}.gitignore $(shell echo ${VM_CONN}:${REMOTE_DIR_ICE}/ | tr -d '[:space:]') ${LOCAL_DIR_ICE}
 
 # start/stop instance. the --filter step saves us from needing to provide the specific zone to the gcloud commands but requires
 # different names for instances in different zones.
