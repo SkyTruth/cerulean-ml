@@ -90,6 +90,13 @@ This env is updated after vm creation with the root Makefile (not the Makefile i
 ### .ice-env
 This environment is created with virtualenv. It's used to run the icevision trainer and do everything that requires icevision except for confusion matrix evaluation. It takes a few steps to create since we need to install a custom fork of icevision and activate the environment to run a step, which the Makefile can't handle.
 
+Make sure to run on local prior to setting up the icevision env on vm.
+
+```
+make clone-ice
+make syncup-ice
+```
+
 ```
 make setup-icevision-env
 source ./.ice-env/bin/activate # .ice-env is a hidden folder created in work/
