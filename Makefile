@@ -75,7 +75,7 @@ setup-icevision-env: ## install the package to the icevision env on the terrafor
 	# git clone https://github.com/rbavery/icevision --depth 1
 	# cd work
 	# requires activating env outside of makefile after this step
-	git clone https://github.com/rbavery/icevision --depth 1 /root/icevision
+	# git clone https://github.com/rbavery/icevision --depth 1 /root/icevision if you aren't using gcpvm makefile to manage it when making changes to icevision
 	rm -rf .ice-env
 	python -m venv .ice-env
 	chmod +x ./.ice-env/bin/activate

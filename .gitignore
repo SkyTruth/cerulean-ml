@@ -157,3 +157,4 @@ task_graph.svg
 test-dask-*
 .ice-env
 .ice-env-inf
+logs/

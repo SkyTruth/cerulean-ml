@@ -117,18 +117,23 @@ or
 source ./.ice-env-inf/bin/activate
 ```
 
-And these are available to the jupyter server.
+And these are available to the jupyter server as kernels.
+
+Note: the gcpvm Makefile manages cloning the icevision repo locally, syncing it up, and syncing it down from the VM. this is because the icevision fork is another repo that may require the GPU and the icevision environments and it may be edited on the VM to provide new functionaility, like evaluating 6 class models with the SimpleConfusionMatrix.
+
+You will also need to deactivate the icevision environments with `source deactivate` prior to activating the conda environments. 
 
 # Other Setup
 
 ## Dataset Creation/Copying
 
-To mount the buckets to the source imagery/labels exported from Photopea, `/root/data-cv2`, and the ceruleanml-biggpuregion bucket, `/root/data`, do
+To mount the buckets to the source imagery/labels exported from Photopea, `/root/data-cv2`, and the ceruleanml-biggpuregion bucket, `/root/data`, run
 
 ```
 cdata
 cdata2
 ```
+From anywhere, but from `/root/work` is fine.
 
 If a dataset has been created already and copied to GCP, the next step is to run `python scripts/move_datasets_to_ssd.sh`. This takes more than 8 minutes so its best to run it in `screen`. If you're not creating a fresh dataset, run move_datasets_to_ssd.sh after mounting since the premade CV2 dataset is already there. Make sure you have copied the dataset to the local SSD of the VM at /root. This will result in IO speed improvements. For example, parsing/loading the data with icevision from a GCP bucket takes a full 2 minutes compared to 17 seconds when data is already on the VM SSD.
 
@@ -145,7 +150,11 @@ aws configure
 Add AWS Access Key ID and AWS Secret Access Key from AWS account, found locally at ~/.aws/credentials you only need to enter these fields leave the others blank.
 
 
-`scripts/make_datasets.sh` is a good reference for what commands to run for different dataset creation options. This is best run on a 32 core machine to make the train dataset in under 30 minutes, so see [gcpvm/terraform.tfvars](gcpvm/terraform.tfvars) for how to change the instance type. This requires having run the previous environment setup step for fastai, since we used that environment for dataset creation.
+`scripts/make_datasets.sh` is a good reference for what commands to run for different dataset creation options. Check it out to make sure you are creating the dataset you want. It is currently set up to transfer the dataset to gcp and delete the contents on the VM, since you would typically start a new GPU machine with less CPU cores for development and recopy the data back. 
+
+Dataset creation is best run on a 32 core machine to make the train dataset in under 20 minutes, so see [gcpvm/terraform.tfvars](gcpvm/terraform.tfvars) for how to change the instance type. This requires having run the previous environment setup step for fastai, since we used that environment for dataset creation. Recommended to use a `screen` window for this.
+
+After running `scripts/make_datasets.sh`, run `scripts/move_datasets_to_ssd.sh`
 
 ## Testing Dataset CLI
 To install testing dependencies to run pytests for the dataset creation script, run this in the fastai environment

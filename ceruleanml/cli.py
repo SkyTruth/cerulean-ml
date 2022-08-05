@@ -18,11 +18,19 @@ def main():
 
 
 # TODO class list associated with single source of truth
+# set empty list as default for class_list and make an arg to cli funcs
 def make_coco_metadata(
     name="Cerulean Dataset V2",
     description: str = "Cerulean Dataset V2",
     version: str = "1.0",
-    class_list: List[str] = [],
+    class_list: List[str] = [
+        "infra_slick",
+        "natural_seep",
+        "coincident_vessel",
+        "recent_vessel",
+        "old_vessel",
+        "ambiguous",
+    ],
 ):
     """Creates COCO Metadata
 
