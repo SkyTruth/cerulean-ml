@@ -45,7 +45,7 @@ class_names = [
 ## loading icevision validation set
 size = 224
 negative_sample_count = 0
-negative_sample_count_val = 100
+negative_sample_count_val = 0
 area_thresh = 0
 
 data_path = "/root/"
