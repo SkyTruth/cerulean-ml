@@ -194,17 +194,17 @@ valid_ds = Dataset(record_collection_with_negative_small_filtered_val, valid_tfm
 # )
 
 
-# cm_mrcnn, f1_mrcnn = get_cm_for_torchscript_model_mrcnn(
-#     valid_ds,
-#     scripted_model,
-#     save_path=icevision_experiment_dir,
-#     mask_conf_threshold=0.01,
-#     bbox_conf_threshold=0.7,
-#     num_classes=num_classes_mrcnn,
-#     normalize=None,
-#     class_names=class_names,
-#     title=icevision_mrcnn_cm_title,
-# )
+cm_mrcnn, f1_mrcnn = get_cm_for_torchscript_model_mrcnn(
+    valid_ds,
+    scripted_model,
+    save_path=icevision_experiment_dir,
+    mask_conf_threshold=0.01,
+    bbox_conf_threshold=0.7,
+    num_classes=num_classes_mrcnn,
+    normalize=None,
+    class_names=class_names,
+    title=icevision_mrcnn_cm_title,
+)
 
 
 # cm_mrcnn, f1_mrcnn = get_cm_for_torchscript_model_mrcnn(
