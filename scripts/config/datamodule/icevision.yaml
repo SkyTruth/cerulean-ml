@@ -4,7 +4,7 @@ bs: 4
 chip_sz: 512
 im_type: png
 mount_path: "/root/data/"
-img_dir: "/root/tile-cerulean-v2-partial-with-context/tiled_images"
-annotations_filepath: "/root/tile-cerulean-v2-partial-with-context/instances_Tiled Cerulean Dataset V2.json"
+img_dir: "/root/partitions/train-with-context-512/tiled_images"
+annotations_filepath: "/root/partitions/train-with-context-512/instances_TiledCeruleanDatasetV2.json"
 class_map: {"Infrastructure": 1,"Natural Seep": 2,"Coincident Vessel": 3,"Recent Vessel": 4,"Old Vessel": 5,"Ambiguous": 6,"Hard Negatives": 0,}
 

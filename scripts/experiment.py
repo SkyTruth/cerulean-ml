@@ -7,8 +7,6 @@ from icevision import models, parsers, tfms
 from icevision.data import Dataset, SingleSplitSplitter
 from omegaconf import DictConfig
 
-from ceruleanml.metrics import IoUMetric, IoUMetricType
-
 
 @hydra.main(config_path="config", config_name="config")
 def train(cfg: DictConfig):
@@ -54,10 +52,9 @@ def train(cfg: DictConfig):
         backbone=backbone(pretrained=cfg.model.pretrained),
         num_classes=len(parser.class_map),
     )
-    metrics = [IoUMetric(metric_type=IoUMetricType.mask)]
 
     learn = icevision_model.fastai.learner(
-        dls=[train_dl, train_dl], model=model, metrics=metrics
+        dls=[train_dl, train_dl], model=model
     )
 
     # FIT
