@@ -45,7 +45,7 @@ conda install -n base -c conda-forge jupyterlab_widgets -y
 jupyter lab
 ```
 
-## icevision environment setup
+## icevision environment setup OBSOLETE -- USE .ice-env INSTEAD
 
 Set up the conda env for the gpu
 ```bash

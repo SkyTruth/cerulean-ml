@@ -93,11 +93,13 @@ This environment is created with virtualenv. It's used to run the icevision trai
 Make sure to run on local prior to setting up the icevision env on vm.
 
 ```
+# in local GCPVM directory:
 make clone-ice
 make syncup-ice
 ```
 
 ```
+# in VM's work directory on:
 make setup-icevision-env
 source ./.ice-env/bin/activate # .ice-env is a hidden folder created in work/
 make install-icevision-deps
