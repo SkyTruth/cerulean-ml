@@ -24,38 +24,22 @@ from rasterio.plot import reshape_as_image, reshape_as_raster
 from rasterio.vrt import WarpedVRT
 from rio_tiler.io import COGReader
 
-# TODO single sourc eof class map truth
-# Hard Neg is overloaded with overlays but they shouldn't be exported during annotation
-# Hard Neg is just a class that we will use to measure performance gains metrics
-class_mapping_photopea = {
-    "Infrastructure": (0, 0, 255),
-    "Natural Seep": (0, 255, 0),
-    "Coincident Vessel": (255, 0, 0),
-    "Recent Vessel": (255, 255, 0),
-    "Old Vessel": (255, 0, 255),
-    "Ambiguous": (255, 255, 255),
-    "Hard Negatives": (0, 255, 255),
+# Single Source of Truth for categorical classes
+# and their respective Human Readable (hr) text and Color Codes (cc) photopea designations
+class_dict = {
+    "background": {"hr": "Background", "cc": (0, 255, 255)},
+    "infra_slick": {"hr": "Infrastructure", "cc": (0, 0, 255)},
+    "natural_seep": {"hr": "Natural Seep", "cc": (0, 255, 0)},
+    "coincident_vessel": {"hr": "Coincident Vessel", "cc": (255, 0, 0)},
+    "recent_vessel": {"hr": "Recent Vessel", "cc": (255, 255, 0)},
+    "old_vessel": {"hr": "Old Vessel", "cc": (255, 0, 255)},
+    "ambiguous": {"hr": "Ambiguous", "cc": (255, 255, 255)},
 }
+class_list = list(class_dict.keys())
+class_idx_dict = dict(zip(class_list, range(len(class_list))))
 
-class_mapping_coco = {
-    "Infrastructure": 1,
-    "Natural Seep": 2,
-    "Coincident Vessel": 3,
-    "Recent Vessel": 4,
-    "Old Vessel": 5,
-    "Ambiguous": 6,
-    "Hard Negatives": 0,
-}
-
-class_mapping_coco_inv = {
-    1: "Infrastructure",
-    2: "Natural Seep",
-    3: "Coincident Vessel",
-    4: "Recent Vessel",
-    5: "Old Vessel",
-    6: "Ambiguous",
-    0: "Hard Negatives",
-}
+# TODO Hard Neg is overloaded with overlays but they shouldn't be exported during annotation
+# TODO Hard Neg is just a class that we will use to measure performance gains metrics
 
 
 def pad_l_total(chip_l: int, img_l: int):
@@ -184,9 +168,9 @@ def rgbalpha_to_binary(arr: np.ndarray, r: int, g: int, b: int):
 
     Args:
         arr (np.ndarray): The 3D numpy ndarray
-        r (int): red integer id from class_mapping_photopea
-        g (int): green integer id from class_mapping_photopea
-        b (int): blue integer id from class_mapping_photopea
+        r (int): red integer id from the photopea Color Codes in class_dict
+        g (int): green integer id from the photopea Color Codes in class_dict
+        b (int): blue integer id from the photopea Color Codes in class_dict
 
     Returns:
         np.ndarray: the binary array
@@ -196,45 +180,39 @@ def rgbalpha_to_binary(arr: np.ndarray, r: int, g: int, b: int):
     )
 
 
-def is_layer_of_class(arr, r, g, b):
+def is_layer_of_class(arr, category):
     """Checks class of a label layer from photopea
 
     Args:
         arr (np.ndarray): The 3D numpy ndarray
-        r (int): red integer id from class_mapping_photopea
-        g (int): green integer id from class_mapping_photopea
-        b (int): blue integer id from class_mapping_photopea
+        category (str): item from class_dict
 
     Returns:
         bool: True if any of the class is in the layer.
     """
-    return rgbalpha_to_binary(arr, r, g, b).any()
+    return rgbalpha_to_binary(arr, *class_dict[category]["cc"]).any()
 
 
 def get_layer_cls(
     arr: np.ndarray,
-    class_mapping_photopea: dict = class_mapping_photopea,
-    class_mapping_coco: dict = class_mapping_coco,
 ):
-    """Returns the integer class id of the instance layer.
+    """Returns the str class of the instance layer.
 
     Args:
         arr (np.ndarray): A 3D array with 4 channels
-        class_mapping_photopea (dict): The class mapping from RGB values to
-        class_mapping_coco (dict): _description_
 
     Raises:
         ValueError: raises an error if the array isn't formatted as it should
             be from photopea label export.
 
     Returns:
-        _type_: integer id for the class as defined by the class_mapping_coco dict.
+        _type_: str keyword for for the class as defined by the class_dict.
     """
     if len(arr.shape) == 3 and arr.shape[-1] == 4:
-        for category in class_mapping_photopea.keys():
-            if is_layer_of_class(arr, *class_mapping_photopea[category]):
-                return class_mapping_coco[category]
-        return 0  # no category matches, all background label
+        for category in class_dict:
+            if is_layer_of_class(arr, category):
+                return category
+        return "background"  # no category matches, all background label
     else:
         raise ValueError(
             "Check the array to make sure it is a label array with 4 channels for rgb alpha."
@@ -812,26 +790,27 @@ def get_annotation_and_image_info(
     )
     if arr.shape[-1] == 1 and "ambiguous" in instance_path:
         if 1 in np.unique(arr):
-            class_id = 6
+            category = "ambiguous"
             category_info = {
-                "id": class_id,
+                "id": class_idx_dict[category],
                 "is_crowd": True,
             }  # forces compressed RLE format
         else:
-            class_id = 0
-            category_info = {"id": class_id, "is_crowd": False}
+            category = "background"
+            category_info = {"id": class_idx_dict[category], "is_crowd": False}
         binary_mask = arr[:, :, -1]
     else:
-        class_id = get_layer_cls(arr, class_mapping_photopea, class_mapping_coco)
-        if class_id != 0:
+        category = get_layer_cls(arr)
+        if category == "background":
+            category_info = {"id": class_idx_dict[category], "is_crowd": False}
+        else:
             category_info = {
-                "id": class_id,
+                "id": class_idx_dict[category],
                 "is_crowd": True,
             }  # forces compressed RLE format
-        else:
-            category_info = {"id": class_id, "is_crowd": False}
-        r, g, b = class_mapping_photopea[class_mapping_coco_inv[class_id]]
-        binary_mask = rgbalpha_to_binary(arr, r, g, b).astype(np.uint8)
+        binary_mask = rgbalpha_to_binary(arr, *class_dict[category]["cc"]).astype(
+            np.uint8
+        )
     annotation_info = pycococreatortools.create_annotation_info(
         instance_id,
         global_tile_id,
