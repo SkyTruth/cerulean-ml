@@ -45,6 +45,7 @@ def coco_output():
 
     licenses = [{"url": "none", "id": 1, "name": "CeruleanDataset V2"}]
     categories = [
+        {"supercategory": "slick", "id": 0, "name": "background"},
         {"supercategory": "slick", "id": 1, "name": "infra_slick"},
         {"supercategory": "slick", "id": 2, "name": "natural_seep"},
         {"supercategory": "slick", "id": 3, "name": "coincident_vessel"},

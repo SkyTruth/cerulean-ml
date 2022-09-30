@@ -93,7 +93,7 @@ def region_props_for_instance_type(
 
     Args:
         record_collection (icevision.data.record_collection.RecordCollection): A record collection containing instance masks.
-        instance_label_type (str): Can be "infra_slick", "natural_seep", "coincident_vessel", "recent_vessel", "old_vessel", "ambiguous"
+        instance_label_type (str): Can be any of data.class_list
 
     Returns:
         _type_: A pandas dataframe of statistics for the instance type.
@@ -202,7 +202,7 @@ def region_props_for_instance_type_whole_image(
 
     Args:
         record_collection (icevision.data.record_collection.RecordCollection): A record collection containing instance masks.
-        instance_label_type (str): Can be "infra_slick", "natural_seep", "coincident_vessel", "recent_vessel", "old_vessel", "ambiguous"
+        instance_label_type (str): Can be any of data.class_list
 
     Returns:
         _type_: A pandas dataframe of statistics for the instance type.

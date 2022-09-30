@@ -9,7 +9,7 @@ import click
 import dask
 from dask.distributed import Client, progress
 
-import ceruleanml.data as data
+from ceruleanml import data
 
 
 @click.group()
@@ -31,7 +31,7 @@ def make_coco_metadata(
         dname (str, optional): The name of the dataset. Defaults to "Cerulean Dataset V2".
         description (str, optional): A string description fo the coco dataset. Defaults to "Cerulean Dataset V2".
         version (str, optional): Defaults to "1.0".
-        class_list (List, optional): The lsit of classes. Ordering of list must match integer ids used during annotation. Defaults to [ "infra_slick", "natural_seep", "coincident_vessel", "recent_vessel", "old_vessel", "ambiguous", ].
+        class_list (List, optional): The lsit of classes. Ordering of list must match integer ids used during annotation.
 
     Returns:
         dict : A COCO metadata dictionary.

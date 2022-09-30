@@ -3,14 +3,13 @@ from icevision.core.class_map import ClassMap
 from icevision.data import SingleSplitSplitter
 from icevision.parsers import COCOMaskParser
 
-from ceruleanml import load_negative_tiles
+from ceruleanml import data, load_negative_tiles
 from ceruleanml.coco_load_fastai import record_collection_to_record_ids
 from ceruleanml.coco_stats import (
     assemble_record_label_lists,
     get_all_record_area_lists_for_class,
     ignore_low_area_records,
 )
-from ceruleanml.data import class_idx_dict, class_list
 
 
 class CeruleanCOCOMaskParser(COCOMaskParser):
@@ -21,17 +20,17 @@ class CeruleanCOCOMaskParser(COCOMaskParser):
         self.classes_to_remove = classes_to_remove
         self.classes_to_remap = classes_to_remap
         self.held_scenes = held_scenes
-        # Assert that the coco json class list is fully within the data.py class_list
+        # Assert that the coco json class list is fully within the data.class_list
         assert all(
             [
-                class_list[coco_dict["id"]] == coco_dict["name"]
+                data.class_list[coco_dict["id"]] == coco_dict["name"]
                 for coco_dict in self.annotations_dict["categories"]
             ]
         )
-        # Assert that all the supplied classes are within the data.py class_list
+        # Assert that all the supplied classes are within the data.class_list
         assert all(
             [
-                target_class in class_list
+                target_class in data.class_list
                 for target_class in classes_to_remove
                 + list(classes_to_remap.keys())
                 + list(classes_to_remap.values())
@@ -45,10 +44,10 @@ class CeruleanCOCOMaskParser(COCOMaskParser):
             ]
         )
 
-        classes_to_keep = class_list.copy()
+        classes_to_keep = data.class_list.copy()
         for category in classes_to_remove + list(classes_to_remap.keys()):
             classes_to_keep.remove(category)
-        self.class_map = ClassMap(class_list)
+        self.class_map = ClassMap(data.class_list)
 
         print(
             f"Annotations before filtering classes: {len(self.annotations_dict['annotations'])}"
@@ -65,7 +64,7 @@ class CeruleanCOCOMaskParser(COCOMaskParser):
         filtered_anns = []
         img_ids_to_remove = []
         for ann in self.annotations_dict["annotations"]:
-            ann_class = class_list[ann["category_id"]]
+            ann_class = data.class_list[ann["category_id"]]
             if (ann_class in classes_to_remove) or (
                 ann["big_image_original_fname"].split(".")[0] in held_scenes
             ):
@@ -73,7 +72,9 @@ class CeruleanCOCOMaskParser(COCOMaskParser):
                 img_ids_to_remove.append(ann["image_id"])
             else:
                 if ann_class in classes_to_remap:
-                    ann["category_id"] = class_idx_dict[classes_to_remap[ann_class]]
+                    ann["category_id"] = data.class_idx_dict[
+                        classes_to_remap[ann_class]
+                    ]
                 filtered_anns.append(ann)
 
         filtered_imgs = [
@@ -140,7 +141,7 @@ def load_set_record_collection(
         negative_sample_count (int, optional): How many negative samples to randomly add. Defaults to 0.
         preprocess (bool, optional): Boolean flag to allow area thresholding and adding negative samples. Defaults to False.
         classes_to_remove (list[str], optional): List of class name sto remove. Empty list will not remove any. Defaults to ["ambiguous", "natural_seep"].
-        classes_to_remap (dict[int:int], optional): Dict mapping class ids to class ids as identified in class_list. Useful for aggregating classes. Defaults to {  # only remaps coincident and old to recent 3: 4, 5: 4, }.
+        classes_to_remap (dict[int:int], optional): Dict mapping class ids to class ids as identified in data.class_list. Useful for aggregating classes. Defaults to {  # only remaps coincident and old to recent 3: 4, 5: 4, }.
 
     Returns:
         icevision.data.record_collection.RecordCollection: A record collection.
@@ -169,7 +170,7 @@ def load_set_record_collection(
             record_ids=record_ids,
             positive_records=positive_records,
             count=negative_sample_count,
-            class_names=class_list,
+            class_names=data.class_list,
         )
         combined_records = positive_records + negative_records
         return combined_records
