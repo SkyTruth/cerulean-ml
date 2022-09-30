@@ -32,19 +32,21 @@ def train(cfg: DictConfig):
     (Path(cwd) / "logs").mkdir(exist_ok=True)
     negative_sample_count = 0
     area_thresh = 0
-    remove_list = ["ambiguous", "natural_seep"]
-    class_names_to_keep = [
-        "background",
-        "infra_slick",
-        "recent_vessel",
-    ]
-    remap_dict = {  # only remaps coincident and old to recent
-        3: 4,
-        5: 4,
+    classes_to_remove=[
+        "ambiguous",
+        ]
+    classes_to_remap ={
+        # "old_vessel": "recent_vessel",
+        # "coincident_vessel": "recent_vessel",
     }
 
-    # since we remove ambiguous and natural seep and remap all vessels to 1 and include background
-    num_classes = 3
+    held_scenes = []
+    test_scenes = f"/root/data/partitions/test_scenes.txt"
+    val_scenes = f"/root/data/partitions/val_scenes.txt"
+    for f_path in [test_scenes, val_scenes]:
+        with open(f_path) as f:
+            data = f.read().split("\n")
+            held_scenes += [line.split("/")[-1] for line in data]
 
     train_records = preprocess.load_set_record_collection(
         cfg.datamodule.annotations_filepath,
@@ -52,9 +54,9 @@ def train(cfg: DictConfig):
         area_thresh,
         negative_sample_count,
         preprocess=False,
-        class_names_to_keep=class_names_to_keep,
-        remap_dict=remap_dict,
-        remove_list=remove_list,
+        classes_to_remap=classes_to_remap, 
+        classes_to_remove=classes_to_remove, 
+        held_scenes=held_scenes
     )
 
     # MODEL
@@ -78,7 +80,7 @@ def train(cfg: DictConfig):
 
     model = icevision_model.model(
         backbone=backbone(pretrained=cfg.model.pretrained),
-        num_classes=num_classes,
+        num_classes=len(data.class_list),
     )
     metrics = [SimpleConfusionMatrix(print_summary=True)]
     learn = icevision_model.fastai.learner(

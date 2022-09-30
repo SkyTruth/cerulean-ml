@@ -30,21 +30,13 @@ tiled_images_folder_val = "tiled_images"
 json_name_val = "instances_TiledCeruleanDatasetV2.json"
 coco_json_path_val = f"{mount_path}/partitions/{val_set}/{json_name_val}"
 tiled_images_folder_val = f"{mount_path}/partitions/{val_set}/{tiled_images_folder_val}"
-remove_list = ["ambiguous", "natural_seep"]
-class_names_to_keep = [
-    "background",
-    "infra_slick",
-    "recent_vessel",
-]
-remap_dict = {  # only remaps coincident and old to recent
-    3: 4,
-    5: 4,
+classes_to_remove=[
+    "ambiguous",
+    ]
+classes_to_remap ={
+    # "old_vessel": "recent_vessel",
+    # "coincident_vessel": "recent_vessel",
 }
-
-# since we remove ambiguous and natural seep and remap all vessels to 1 and include background
-num_classes = 3
-class_map = {v: k for k, v in data.class_mapping_coco_inv.items()}
-class_ints = list(range(1, len(list(class_map.keys())[:-1]) + 1))
 
 record_collection_with_negative_small_filtered_val = (
     preprocess.load_set_record_collection(
@@ -53,9 +45,8 @@ record_collection_with_negative_small_filtered_val = (
         area_thresh,
         negative_sample_count_val,
         preprocess=True,
-        class_names_to_keep=class_names_to_keep,
-        remap_dict=remap_dict,
-        remove_list=remove_list,
+        classes_to_remap=classes_to_remap,
+        classes_to_remove=classes_to_remove,
     )
 )
 record_ids_val = record_collection_to_record_ids(
@@ -76,18 +67,12 @@ from icevision.models.checkpoint import model_from_checkpoint
 
 checkpoint_path = "/root/data/experiments/cv2/20_Jul_2022_00_14_15_icevision_maskrcnn/state_dict_test_28_34_224_58.pt"
 
-class_names = ["Background", "Infrastructure", "Recent Vessel"]
-
 checkpoint_and_model = model_from_checkpoint(
     checkpoint_path,
     model_name="torchvision.mask_rcnn",
     backbone_name="resnet34_fpn",
     img_size=224,
-    classes=[
-        "background",
-        "infra_slick",
-        "recent_vessel",
-    ],
+    classes=data.class_list,
     is_coco=False,
 )
 

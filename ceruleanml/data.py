@@ -209,7 +209,7 @@ def get_layer_cls(
         _type_: str keyword for for the class as defined by the class_dict.
     """
     if len(arr.shape) == 3 and arr.shape[-1] == 4:
-        for category in class_dict:
+        for category in class_list:
             if is_layer_of_class(arr, category):
                 return category
         return "background"  # no category matches, all background label

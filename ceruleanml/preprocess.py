@@ -10,7 +10,7 @@ from ceruleanml.coco_stats import (
     get_all_record_area_lists_for_class,
     ignore_low_area_records,
 )
-from ceruleanml.data import class_dict, class_idx_dict, class_list
+from ceruleanml.data import class_idx_dict, class_list
 
 
 class CeruleanCOCOMaskParser(COCOMaskParser):
@@ -31,7 +31,7 @@ class CeruleanCOCOMaskParser(COCOMaskParser):
         # Assert that all the supplied classes are within the data.py class_list
         assert all(
             [
-                target_class in class_dict
+                target_class in class_list
                 for target_class in classes_to_remove
                 + list(classes_to_remap.keys())
                 + list(classes_to_remap.values())
@@ -140,10 +140,10 @@ def load_set_record_collection(
         negative_sample_count (int, optional): How many negative samples to randomly add. Defaults to 0.
         preprocess (bool, optional): Boolean flag to allow area thresholding and adding negative samples. Defaults to False.
         classes_to_remove (list[str], optional): List of class name sto remove. Empty list will not remove any. Defaults to ["ambiguous", "natural_seep"].
-        classes_to_remap (dict[int:int], optional): Dict mapping class ids to class ids as identified in class_mapping_coco. Useful for aggregating classes. Defaults to {  # only remaps coincident and old to recent 3: 4, 5: 4, }.
+        classes_to_remap (dict[int:int], optional): Dict mapping class ids to class ids as identified in class_list. Useful for aggregating classes. Defaults to {  # only remaps coincident and old to recent 3: 4, 5: 4, }.
 
     Returns:
-        icevision.data.record_collection.RecordCollection: A record collection with potentially remapped class ids that differ from class_mapping_coco since they need to be ascending starting from 1.
+        icevision.data.record_collection.RecordCollection: A record collection.
     """
     parser = CeruleanCOCOMaskParser(
         annotations_filepath=coco_json_path,

@@ -21,9 +21,6 @@ from ceruleanml.inference import save_fastai_model_state_dict_and_tracing
 
 # Parsing COCO Dataset with Icevision
 
-class_map = {v: k for k, v in data.class_mapping_coco_inv.items()}
-class_ints = list(range(1, len(list(class_map.keys())[:-1]) + 1))
-
 with_context = False
 mount_path = "/root/"
 train_set = "train-no-context-512"
@@ -46,8 +43,6 @@ n = "all"
 arch = 34
 epochs = 100
 
-class_map = {v: k for k, v in data.class_mapping_coco_inv.items()}
-class_ints = list(range(1, len(list(class_map.keys())[:-1]) + 1))
 negative_sample_count = 0
 negative_sample_count_val = 0
 area_thresh = 10
@@ -110,7 +105,7 @@ batch_transfms = [*aug_transforms(flip_vert=True, max_warp=0.1, size=size)]
 coco_seg_dblock = DataBlock(
     blocks=(
         ImageBlock,
-        MaskBlock(codes=class_ints),
+        MaskBlock(codes=data.class_list),
     ),  # ImageBlock is RGB by default, uses PIL
     get_x=get_image_by_record_id,
     splitter=IndexSplitter(val_indices),

@@ -23,14 +23,7 @@ def make_coco_metadata(
     name="Cerulean Dataset V2",
     description: str = "Cerulean Dataset V2",
     version: str = "1.0",
-    class_list: List[str] = [
-        "infra_slick",
-        "natural_seep",
-        "coincident_vessel",
-        "recent_vessel",
-        "old_vessel",
-        "ambiguous",
-    ],
+    class_list: List[str] = data.class_list,
 ):
     """Creates COCO Metadata
 
@@ -54,7 +47,7 @@ def make_coco_metadata(
     licenses = [{"url": "none", "id": 1, "name": name}]
     assert len(class_list) > 0
     categories = [
-        {"supercategory": "slick", "id": i + 1, "name": cname}
+        {"supercategory": "slick", "id": i, "name": cname}
         for i, cname in enumerate(class_list)
     ]  # order matters, check that this matches the ids used when annotating if you get a data loading error
     return {

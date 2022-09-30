@@ -21,10 +21,9 @@ mpl.rcParams["figure.figsize"] = (12, 12)
 def cm_f1(
     arrays_gt,
     arrays_pred,
-    num_classes,
     save_dir,
     normalize=None,
-    class_names=None,
+    class_names=[],
     title="Confusion Matrix",
 ):
     """Takes paired arrays for ground truth and predicition masks, as well
@@ -37,7 +36,6 @@ def cm_f1(
         arrays_pred (np.ndarray): The prediction mask array from a validation tile
             having undergone inference.
             Can have 1 channel shaped like (H, W, Channels).
-        num_classes (integer): The number of target classes.
         save_dir (string): The output directory to write the normalized confusion matrix plot to.
     Returns:
         F1 score (float): Evaluation metric. Harmonic mean of precision and recall.
@@ -46,19 +44,17 @@ def cm_f1(
     # flatten our mask arrays and use scikit-learn to create a confusion matrix
     flat_preds = np.concatenate(arrays_pred).flatten()
     flat_truth = np.concatenate(arrays_gt).flatten()
-    OUTPUT_CHANNELS = num_classes
+    OUTPUT_CHANNELS = len(class_names)
     cm = confusion_matrix(
         flat_truth, flat_preds, labels=list(range(OUTPUT_CHANNELS)), normalize=normalize
     )
-
-    classes = list(range(0, num_classes))
 
     # cm = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis]
     fig, ax = plt.subplots(figsize=(10, 10))
     im = ax.imshow(cm, interpolation="nearest", cmap=plt.cm.Blues)
     ax.figure.colorbar(im, ax=ax)
     # We want to show all ticks...
-    if class_names is None:
+    if not class_names:
         xticklabels = list(range(OUTPUT_CHANNELS))
         yticklabels = list(range(OUTPUT_CHANNELS))
     else:
@@ -93,7 +89,7 @@ def cm_f1(
                 color="white" if cm[i, j] > thresh else "black",
             )
     fig.tight_layout(pad=2.0, h_pad=2.0, w_pad=2.0)
-    ax.set_ylim(len(classes) - 0.5, -0.5)
+    ax.set_ylim(len(class_names) - 0.5, -0.5)
     if normalize == "true":
         cm_name = os.path.join(f"{save_dir}", "cm_normed_true.png")
     elif normalize == "pred":
@@ -119,9 +115,8 @@ def get_cm_for_torchscript_model_unet(
     model,
     save_path,
     semantic_mask_conf_thresh,
-    num_classes,
     normalize=None,
-    class_names=None,
+    class_names=[],
     title="Confusion Matrix",
 ):
     """
@@ -144,7 +139,6 @@ def get_cm_for_torchscript_model_unet(
     return cm_f1(
         val_arrs,
         class_preds,
-        num_classes,
         save_path,
         normalize,
         class_names,
@@ -158,9 +152,8 @@ def get_cm_for_torchscript_model_mrcnn(
     save_path,
     mask_conf_threshold,
     bbox_conf_threshold,
-    num_classes,
     normalize=None,
-    class_names=None,
+    class_names=[],
     title="Confusion Matrix",
 ):
     """
@@ -192,6 +185,4 @@ def get_cm_for_torchscript_model_mrcnn(
         classes = classes.cpu().detach().numpy()
         val_arrs.append(semantic_masks_gt)
         class_preds.append(classes)
-    return cm_f1(
-        val_arrs, class_preds, num_classes, save_path, normalize, class_names, title
-    )
+    return cm_f1(val_arrs, class_preds, save_path, normalize, class_names, title)

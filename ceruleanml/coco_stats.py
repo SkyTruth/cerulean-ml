@@ -11,54 +11,6 @@ from tqdm import tqdm
 
 from ceruleanml import data
 
-# TODO single source of class map truth
-class_map_coco = {
-    "background": 0,
-    "infra_slick": 1,
-    "natural_seep": 2,
-    "coincident_vessel": 3,
-    "recent_vessel": 4,
-    "old_vessel": 5,
-    "ambiguous": 6,
-}
-
-class_map = {
-    "Infrastructure": 1,
-    "Natural Seep": 2,
-    "Coincident Vessel": 3,
-    "Recent Vessel": 4,
-    "Old Vessel": 5,
-    "Ambiguous": 6,
-    "Hard Negatives": 0,
-}
-class_list = [1, 2, 3, 4, 5, 6]
-class_list_string = [
-    "Infrastructure",
-    "Natural Seep",
-    "Coincident Vessel",
-    "Recent Vessel",
-    "Old Vessel",
-    "Ambiguous",
-]
-
-class_dict_coco = {
-    "infrastructure": "infra_slick",
-    "natural": "natural_seep",
-    "coincident": "coincident_vessel",
-    "recent": "recent_vessel",
-    "old": "old_vessel",
-    "ambiguous": "ambiguous",
-}
-
-class_dict_coco_rgb = {
-    "infra_slick": (0, 0, 255),
-    "natural_seep": (0, 255, 0),
-    "coincident_vessel": (255, 0, 0),
-    "recent_vessel": (255, 255, 0),
-    "old_vessel": (255, 0, 255),
-    "ambiguous": (255, 255, 255),
-}
-
 
 def sample_stat_lists(arr):
     return np.mean(arr, axis=(0, 1)), np.std(arr, axis=(0, 1))
@@ -180,7 +132,7 @@ def region_props_for_instance_type(
 
 def get_table_whole_image(path, properties, instance_type):
     image = skio.imread(path)
-    r, g, b = class_dict_coco_rgb[instance_type]
+    r, g, b = data.class_dict[instance_type]["cc"]
     if len(image.shape) == 2 and instance_type == "ambiguous":
         pass
     elif len(image.shape) == 2 and instance_type != "ambiguous":
@@ -230,8 +182,9 @@ def extract_masks_and_compute_tables_whole_image(
             label_type_and_extra_lst = os.path.basename(str(pth)).split("_")
             label_type = []
             for lstr in label_type_and_extra_lst:
-                if lstr in class_dict_coco.keys():
-                    label_type.append(class_dict_coco[lstr])
+                for category, details in data.class_dict.items():
+                    if lstr in (details["hr"]).lower():  # type: ignore[attr-defined]
+                        label_type.append(category)
             if len(label_type) != 1:
                 print("unexpected path, no keywords", label_type_and_extra_lst)
                 raise ValueError(f"{label_type}")
@@ -297,15 +250,7 @@ def assemble_record_label_lists(
 
 
 def get_all_record_area_lists_for_class(record_area_label_lists: List, class_name: str):
-    class_names = [
-        "infra_slick",
-        "natural_seep",
-        "coincident_vessel",
-        "recent_vessel",
-        "old_vessel",
-        "ambiguous",
-    ]
-    assert class_name in class_names
+    assert class_name in data.class_list
     rs = []
     for r in record_area_label_lists:
         if r[1] == class_name:
@@ -337,27 +282,27 @@ def ignore_low_area_records(
         ignore_record_by_area(record, area_thresh)
 
 
-# TODO remove since not used when parsing datasets with CeruleanCOCOMaskParser
-def remap_records_class(
-    record_collection: icevision.data.record_collection.RecordCollection,
-    remap_dict: dict,
-):
-    """
-    remap_dict keys/values: "infra_slick", "natural_seep", "coincident_vessel", "recent_vessel", "old_vessel", "ambiguous", None
-    Deletes class if key in dict has value = None
-    """
-    for record in tqdm(record_collection):
-        record_d = record.as_dict()
-        for i, label in enumerate(record_d["detection"]["labels"]):
-            if label in remap_dict:
-                if remap_dict[label] is None:
-                    [
-                        record_d["detection"][key].pop(i)
-                        for key, value in record_d["detection"].items()
-                        if value is not None
-                    ]
-                else:
-                    record_d["detection"]["labels"][i] = remap_dict[label]
-                    record_d["detection"]["label_ids"][i] = class_map_coco[
-                        remap_dict[label]
-                    ]
+# # TODO remove since not used when parsing datasets with CeruleanCOCOMaskParser
+# def remap_records_class(
+#     record_collection: icevision.data.record_collection.RecordCollection,
+#     remap_dict: dict,
+# ):
+#     """
+#     remap_dict keys/values: "infra_slick", "natural_seep", "coincident_vessel", "recent_vessel", "old_vessel", "ambiguous", None
+#     Deletes class if key in dict has value = None
+#     """
+#     for record in tqdm(record_collection):
+#         record_d = record.as_dict()
+#         for i, label in enumerate(record_d["detection"]["labels"]):
+#             if label in remap_dict:
+#                 if remap_dict[label] is None:
+#                     [
+#                         record_d["detection"][key].pop(i)
+#                         for key, value in record_d["detection"].items()
+#                         if value is not None
+#                     ]
+#                 else:
+#                     record_d["detection"]["labels"][i] = remap_dict[label]
+#                     record_d["detection"]["label_ids"][i] = class_map_coco[
+#                         remap_dict[label]
+#                     ]

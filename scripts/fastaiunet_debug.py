@@ -62,8 +62,6 @@ tiled_images_folder_val = f"{mount_path}/partitions/{val_set}/{tiled_images_fold
 # coco_json_path_val= f"{mount_path}/partitions/{val_set}/{json_name_val}"
 # tiled_images_folder_val = f"{mount_path}/partitions/{val_set}/{tiled_images_folder_val}"
 
-class_map = {v: k for k, v in data.class_mapping_coco_inv.items()}
-class_ints = list(range(1, len(list(class_map.keys())[:-1]) + 1))
 negative_sample_count = 0
 negative_sample_count_val = 40
 area_thresh = 10
@@ -116,7 +114,7 @@ def create_data_block(size, with_context=True):
     coco_seg_dblock = DataBlock(
         blocks=(
             imblock,
-            MaskBlock(codes=class_ints),
+            MaskBlock(codes=data.class_list),
         ),  # ImageBlock is RGB by default, uses PIL
         get_x=get_image_by_record_id,
         splitter=IndexSplitter(val_indices),
@@ -142,7 +140,7 @@ db_custom = DataBlock(
         ),
         TransformBlock(
             type_tfms=partial(MSTensorMask.create, record_collection=combined_record_collection),
-            item_tfms=AddMaskCodes(codes=class_ints),
+            item_tfms=AddMaskCodes(codes=data.class_list),
         ),
     ),
     get_items=record_collection_to_record_ids,
