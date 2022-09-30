@@ -36,7 +36,7 @@ class_dict = {
     "ambiguous": {"hr": "Ambiguous", "cc": (255, 255, 255)},
 }
 class_list = list(class_dict.keys())
-class_idx_dict = dict(zip(class_list, range(len(class_list))))
+class_idx_dict = {c: class_list.index(c) for c in class_list}
 
 # TODO Hard Neg is overloaded with overlays but they shouldn't be exported during annotation
 # TODO Hard Neg is just a class that we will use to measure performance gains metrics
