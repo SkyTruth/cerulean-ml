@@ -6,33 +6,31 @@ import subprocess
 source_path = "./data-cv2/"
 dest_path = "./data/partitions/"
 
-val_scenes = 10
-test_scenes = 3
-
-train_scenes = []
-val_scenes_select = []
-test_scenes_select = []
-
 classes = ["Coincident", "Infrastructure", "Old", "Recent", "Natural_Seep", "Ambiguous"]
 
 
-def getRandomDir(path):
-    """Takes a path where annotations are written to. Randomly selects scene folders within that path.
+def get_scenes(path):
+    """Takes a path where annotations are written to. Returns scene folders within that path.
     Args:
         path (str): the path where annotations are written to.
     Returns:
-        randomly selected scene (str): an annotated S1 scene.
+        scenes (list): list of annotated S1 scenes.
     """
-    randomDir = random.choice([(x) for x in list(os.scandir(path)) if x.is_dir()]).name
-    return randomDir
+    scenes = [(x) for x in list(os.scandir(path)) if x.is_dir()]
+    scenes = [(x.name) for x in scenes]
+    return scenes
 
-
-def partition_scenes(c):
-    """Applies random selection of scenes for mutually exclusive partitions.
+def partition_scenes(c, train_frac, test_frac):
+    """Applies random selection of scenes for mutually exclusive partitions (train, validation, test). 
+    Partition fractions must range from 0.0 to 1.0.
     Args:
         c (str): a target class.
+        train_frac (float): Percent of items to allocate to training.
+        test_frac (float): Percent of items to allocate to test. 
     Returns:
-        n/a.
+        train_scenes (list): List of train items.
+        val_scenes_select (list): List of validation items.
+        test_scenes_select (list): List of test items.
     """
     print("Selecting from class: ", c)
     if os.path.isdir(f"{source_path}/{c}"):
@@ -44,46 +42,22 @@ def partition_scenes(c):
             os.makedirs(f"{dest_path}train/{c}")
             os.makedirs(f"{dest_path}val/{c}")
             os.makedirs(f"{dest_path}test/{c}")
-        for i in range(val_scenes):
-            val_scene = getRandomDir(f"{source_path}/{c}")
-            val_scene = f"{c}/{val_scene}"
-            if val_scene not in val_scenes_select:
-                val_scenes_select.append(val_scene)
-            else:
-                val_scene = getRandomDir(f"{source_path}/{c}")
-                val_scene = f"{c}/{val_scene}"
-                val_scenes_select.append(val_scene)
-            print("Validation scene selected: ", val_scene)
-        for i in range(test_scenes):
-            test_scene = getRandomDir(f"{source_path}/{c}")
-            test_scene = f"{c}/{test_scene}"
-            if (
-                test_scene not in val_scenes_select
-                and test_scene not in test_scenes_select
-            ):
-                test_scenes_select.append(test_scene)
-            else:
-                test_scene = getRandomDir(f"{source_path}/{c}")
-                test_scene = f"{c}/{test_scene}"
-                test_scenes_select.append(test_scene)
-            print("Test scene selected: ", test_scene)
-        scenes = glob.glob(f"{source_path}/{c}/*")
-        for train_scene in scenes:
-            train_scene = train_scene.split("/")[
-                -1
-            ]  # os.path.splitext(train_scene)[-1]
-            if (
-                train_scene not in val_scenes_select
-                and train_scene not in test_scenes_select
-            ):
-                train_scene = f"{c}/{train_scene}"
-                train_scenes.append(train_scene)
-                print("Train scene: ", train_scene)
-    return
+
+        scenes = get_scenes(f"{source_path}/{c}/*")
+        len_train = int(len(scenes)*train_frac)
+        len_test = int(len(scenes)*(test_frac))
+
+        train_scenes = random.sample(scenes, len_train)
+        scenes = [item for item in scenes if item not in train_scenes]
+        test_scenes_select = random.sample(scenes, len_test)
+        val_scenes_select = [item for item in scenes if item not in test_scenes_select]
+
+    return train_scenes, val_scenes_select, test_scenes_select
+
 
 
 for c in classes:
-    partition_scenes(c)
+    train_scenes, val_scenes_select, test_scenes_select = partition_scenes(c)
 
 with open(os.path.join(dest_path, "train_scenes.txt"), "w") as f:
     for item in train_scenes:
