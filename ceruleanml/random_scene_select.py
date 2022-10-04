@@ -10,7 +10,7 @@ classes = ["Coincident", "Infrastructure", "Old", "Recent", "Natural_Seep", "Amb
 
 
 def get_scenes(path):
-    """Takes a path where annotations are written to. Returns scene folders within that path.
+    """Takes a path where annotations are written to. Returns the scene folders within that path.
     Args:
         path (str): the path where annotations are written to.
     Returns:
