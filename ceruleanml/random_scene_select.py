@@ -1,7 +1,5 @@
-import glob
 import os
 import random
-import subprocess
 
 source_path = "./data-cv2/"
 dest_path = "./data/partitions/"
@@ -20,14 +18,13 @@ def get_scenes(path):
     scenes = [(x.name) for x in scenes]
     return scenes
 
-def partition_scenes(c, train_frac, val_frac, test_frac):
+def partition_scenes(c, train_frac, val_frac):
     """Applies random selection of scenes for mutually exclusive partitions (train, validation, test). 
     Partition fractions must range from 0.0 to 1.0.
     Args:
         c (str): a target class.
         train_frac (float): Percent of items to allocate to training.
         val_frac (float): Percent of items to allocate to validation. 
-        test_frac (float): Percent of items to allocate to test. 
     Returns:
         train_scenes (list): List of train items.
         val_scenes_select (list): List of validation items.
@@ -40,7 +37,6 @@ def partition_scenes(c, train_frac, val_frac, test_frac):
     len_train = int(len(scenes)*train_frac)
     len_val = int(len(scenes)*(val_frac))
     len_test = len(scenes)-(len_train+len_val)
-    # assert test_frac == (len_test/len(scenes))
 
     train_scenes = scenes[0:len_train]
     val_scenes = scenes[len_train:len_train+len_val]
