@@ -28,8 +28,8 @@ def partition_scenes(c, train_frac, val_frac):
         val_frac (float): Percent of items to allocate to validation. 
     Returns:
         train_scenes (list): List of train items.
-        val_scenes_select (list): List of validation items.
-        test_scenes_select (list): List of test items.
+        val_scenes (list): List of validation items.
+        test_scenes (list): List of test items.
     """
     print("Selecting from class: ", c)
     scenes = get_scenes(f"{source_path}/{c}/*")
@@ -37,11 +37,19 @@ def partition_scenes(c, train_frac, val_frac):
     random.shuffle(scenes)
     len_train = int(len(scenes)*train_frac)
     len_val = int(len(scenes)*(val_frac))
-    # len_test = len(scenes)-(len_train+len_val)
+    len_test = len(scenes)-(len_train+len_val)
 
     train_scenes = scenes[0:len_train]
     val_scenes = scenes[len_train:len_train+len_val]
     test_scenes = scenes[len_train+len_val:]
+    
+    # Check that test scenes is not empty
+    assert len(test_scenes) > 0
+    
+    # Check for mutual exclusivity
+    assert len(list(set(train_scenes) ^ set(val_scenes)))  == len_train + len_val
+    assert len(list(set(val_scenes) ^ set(test_scenes)))  == len_val + len_test
+    assert len(list(set(train_scenes) ^ set(test_scenes)))  == len_train + len_test
 
     return train_scenes, val_scenes, test_scenes
 
