@@ -4,7 +4,7 @@ import random
 source_path = "./data-cv2/"
 dest_path = "./data/partitions/"
 
-classes = ["Coincident", "Infrastructure", "Old", "Recent", "Natural_Seep", "Ambiguous"]
+classes = ["Coincident", "Infrastructure", "Old", "Recent", "Natural"]
 
 train_frac, val_frac = 0.7, 0.2
 
