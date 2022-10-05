@@ -32,7 +32,7 @@ def partition_scenes(c, train_frac, val_frac):
         test_scenes (list): List of test items.
     """
     print("Selecting from class: ", c)
-    scenes = get_scenes(f"{source_path}/{c}/*")
+    scenes = get_scenes(os.path.join(source_path, c))
     random.seed(4)
     random.shuffle(scenes)
     len_train = int(len(scenes)*train_frac)
@@ -45,7 +45,7 @@ def partition_scenes(c, train_frac, val_frac):
     
     # Check that test scenes is not empty
     assert len(test_scenes) > 0
-    
+
     # Check for mutual exclusivity
     assert len(list(set(train_scenes) ^ set(val_scenes)))  == len_train + len_val
     assert len(list(set(val_scenes) ^ set(test_scenes)))  == len_val + len_test
