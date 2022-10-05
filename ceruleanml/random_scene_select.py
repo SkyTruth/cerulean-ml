@@ -6,6 +6,7 @@ dest_path = "./data/partitions/"
 
 classes = ["Coincident", "Infrastructure", "Old", "Recent", "Natural_Seep", "Ambiguous"]
 
+train_frac, val_frac = 0.7, 0.2
 
 def get_scenes(path):
     """Takes a path where annotations are written to. Returns the scene folders within that path.
@@ -46,7 +47,7 @@ def partition_scenes(c, train_frac, val_frac):
 
 
 for c in classes:
-    train_scenes, val_scenes, test_scenes = partition_scenes(c)
+    train_scenes, val_scenes, test_scenes = partition_scenes(c, train_frac, val_frac)
 
 with open(os.path.join(dest_path, "train_scenes.txt"), "w") as f:
     for item in train_scenes:
