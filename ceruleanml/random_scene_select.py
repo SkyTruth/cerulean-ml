@@ -20,12 +20,13 @@ def get_scenes(path):
     scenes = [(x.name) for x in scenes]
     return scenes
 
-def partition_scenes(c, train_frac, test_frac):
+def partition_scenes(c, train_frac, val_frac, test_frac):
     """Applies random selection of scenes for mutually exclusive partitions (train, validation, test). 
     Partition fractions must range from 0.0 to 1.0.
     Args:
         c (str): a target class.
         train_frac (float): Percent of items to allocate to training.
+        val_frac (float): Percent of items to allocate to validation. 
         test_frac (float): Percent of items to allocate to test. 
     Returns:
         train_scenes (list): List of train items.
@@ -33,68 +34,32 @@ def partition_scenes(c, train_frac, test_frac):
         test_scenes_select (list): List of test items.
     """
     print("Selecting from class: ", c)
-    if os.path.isdir(f"{source_path}/{c}"):
-        if (
-            not os.path.exists(f"{dest_path}train/{c}")
-            and os.path.exists(f"{dest_path}val/{c}")
-            and os.path.exists(f"{dest_path}test/{c}/")
-        ):
-            os.makedirs(f"{dest_path}train/{c}")
-            os.makedirs(f"{dest_path}val/{c}")
-            os.makedirs(f"{dest_path}test/{c}")
+    scenes = get_scenes(f"{source_path}/{c}/*")
+    random.seed(4)
+    random.shuffle(scenes)
+    len_train = int(len(scenes)*train_frac)
+    len_val = int(len(scenes)*(val_frac))
+    len_test = len(scenes)-(len_train+len_val)
+    # assert test_frac == (len_test/len(scenes))
 
-        scenes = get_scenes(f"{source_path}/{c}/*")
-        len_train = int(len(scenes)*train_frac)
-        len_test = int(len(scenes)*(test_frac))
+    train_scenes = scenes[0:len_train]
+    val_scenes = scenes[len_train:len_train+len_val]
+    test_scenes = scenes[len_train+len_val:]
 
-        train_scenes = random.sample(scenes, len_train)
-        scenes = [item for item in scenes if item not in train_scenes]
-        test_scenes_select = random.sample(scenes, len_test)
-        val_scenes_select = [item for item in scenes if item not in test_scenes_select]
-
-    return train_scenes, val_scenes_select, test_scenes_select
-
+    return train_scenes, val_scenes, test_scenes
 
 
 for c in classes:
-    train_scenes, val_scenes_select, test_scenes_select = partition_scenes(c)
+    train_scenes, val_scenes, test_scenes = partition_scenes(c)
 
 with open(os.path.join(dest_path, "train_scenes.txt"), "w") as f:
     for item in train_scenes:
         f.write("%s\n" % item)
 
 with open(os.path.join(dest_path, "val_scenes.txt"), "w") as f:
-    for item in val_scenes_select:
+    for item in val_scenes:
         f.write("%s\n" % item)
 
 with open(os.path.join(dest_path, "test_scenes.txt"), "w") as f:
-    for item in test_scenes_select:
+    for item in test_scenes:
         f.write("%s\n" % item)
-
-subprocess.run(
-    [
-        "rsync",
-        "-r",
-        "--files-from=./data/partitions/val_scenes.txt",
-        "data-cv2/",
-        "data/partitions/val/",
-    ]
-)
-subprocess.run(
-    [
-        "rsync",
-        "-r",
-        "--files-from=./data/partitions/test_scenes.txt",
-        "data-cv2/",
-        "data/partitions/test/",
-    ]
-)
-subprocess.run(
-    [
-        "rsync",
-        "-r",
-        "--files-from=./data/partitions/train_scenes.txt",
-        "data-cv2/",
-        "data/partitions/train/",
-    ]
-)
