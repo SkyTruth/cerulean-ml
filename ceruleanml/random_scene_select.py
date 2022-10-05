@@ -37,7 +37,7 @@ def partition_scenes(c, train_frac, val_frac):
     random.shuffle(scenes)
     len_train = int(len(scenes)*train_frac)
     len_val = int(len(scenes)*(val_frac))
-    len_test = len(scenes)-(len_train+len_val)
+    # len_test = len(scenes)-(len_train+len_val)
 
     train_scenes = scenes[0:len_train]
     val_scenes = scenes[len_train:len_train+len_val]
