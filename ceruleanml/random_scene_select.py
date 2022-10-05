@@ -1,8 +1,8 @@
 import os
 import random
 
-source_path = "./data-cv2/"
-dest_path = "./data/partitions/"
+source_path = "/root/data-cv2/"
+dest_path = "/root/data/partitions/"
 
 classes = ["Coincident", "Infrastructure", "Old", "Recent", "Natural"]
 
