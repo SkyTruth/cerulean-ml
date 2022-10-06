@@ -18,10 +18,7 @@ def record_collection_to_record_ids(
     Returns:
         List[int]: A list of unique record ids in the same order as elements in the record collection.
     """
-    record_ids = []
-    for r in record_collection:
-        record_ids.append(r.common.record_id)
-    return record_ids
+    return [r.common.record_id for r in record_collection]
 
 
 def get_image_path(
