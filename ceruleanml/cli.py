@@ -93,7 +93,7 @@ def make_coco_dataset_with_tiles(
     make_coco_dataset_with_tiles(
         partition_list ="/root/data/partitions/test_scenes.txt",
         aux_data_path ="/root/data/aux_datasets",
-        coco_outdir ="/root/data/partitions/test_tiles_context_512",
+        coco_outdir ="/root/partitions/test_tiles_context_512",
         tile_length = 512)
     """
     start = time.time()
