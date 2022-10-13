@@ -13,13 +13,10 @@ from ceruleanml.coco_stats import (
 
 
 class CeruleanCOCOMaskParser(COCOMaskParser):
-    def __init__(
-        self, classes_to_remove, classes_to_remap, held_scenes, *args, **kwargs
-    ):
+    def __init__(self, classes_to_remove, classes_to_remap, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.classes_to_remove = classes_to_remove
         self.classes_to_remap = classes_to_remap
-        self.held_scenes = held_scenes
         # Assert that the coco json class list is fully within the data.class_list
         assert all(
             [
@@ -65,10 +62,7 @@ class CeruleanCOCOMaskParser(COCOMaskParser):
         img_ids_to_remove = []
         for ann in self.annotations_dict["annotations"]:
             ann_class = data.class_list[ann["category_id"]]
-            if (ann_class in classes_to_remove) or (
-                ann["big_image_original_fname"].split(".")[0] in held_scenes
-            ):
-                # TODO the held_scenes should not be used here--just a temporary hack because the code to split the Datasets did not hold out the test or valid sets from the training list
+            if ann_class in classes_to_remove:
                 img_ids_to_remove.append(ann["image_id"])
             else:
                 if ann_class in classes_to_remap:
@@ -128,7 +122,6 @@ def load_set_record_collection(
     preprocess=False,
     classes_to_remove=[],
     classes_to_remap={},
-    held_scenes=[],
 ):
     """load an icevision record collection with optional preprocessing steps controlled by a flag.
 
@@ -151,7 +144,6 @@ def load_set_record_collection(
         img_dir=tiled_images_folder,
         classes_to_remove=classes_to_remove,
         classes_to_remap=classes_to_remap,
-        held_scenes=held_scenes,
     )
     positive_records = parser.parse(autofix=False, data_splitter=SingleSplitSplitter())[
         0

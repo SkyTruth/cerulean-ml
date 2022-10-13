@@ -40,14 +40,6 @@ def train(cfg: DictConfig):
         # "coincident_vessel": "recent_vessel",
     }
 
-    held_scenes = []
-    test_scenes = f"/root/data/partitions/test_scenes.txt"
-    val_scenes = f"/root/data/partitions/val_scenes.txt"
-    for f_path in [test_scenes, val_scenes]:
-        with open(f_path) as f:
-            data = f.read().split("\n")
-            held_scenes += [line.split("/")[-1] for line in data]
-
     train_records = preprocess.load_set_record_collection(
         cfg.datamodule.annotations_filepath,
         cfg.datamodule.img_dir,
@@ -55,8 +47,7 @@ def train(cfg: DictConfig):
         negative_sample_count,
         preprocess=False,
         classes_to_remap=classes_to_remap, 
-        classes_to_remove=classes_to_remove, 
-        held_scenes=held_scenes
+        classes_to_remove=classes_to_remove,
     )
 
     # MODEL
