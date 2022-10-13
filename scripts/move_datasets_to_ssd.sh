@@ -1,25 +1,11 @@
-cd ~/work
-# mkdir ../train-no-context-512/
-# gsutil -m rsync -r  gs://ceruleanml/partitions/train-no-context-512/ ../train-no-context-512/
+TILE_SIZE=1024
+mkdir -p /root/experiments/cv2
 
-# mkdir ../train-with-context-512/
-# gsutil -m rsync -r  gs://ceruleanml/partitions/train-with-context-512/ ../train-with-context-512/
+mkdir -p /root/partitions/test_tiles_context_$TILE_SIZE/
+gsutil -m rsync -r gs://ceruleanml/partitions/test_tiles_context_$TILE_SIZE/ /root/partitions/test_tiles_context_$TILE_SIZE/
 
-mkdir ../train-with-context-1024/
-gsutil -m rsync -r  gs://ceruleanml/partitions/train-with-context-1024/ ../train-with-context-1024/
+mkdir -p /root/partitions/val_tiles_context_$TILE_SIZE/
+gsutil -m rsync -r gs://ceruleanml/partitions/val_tiles_context_$TILE_SIZE/ /root/partitions/val_tiles_context_$TILE_SIZE/
 
-# mkdir ../val-no-context-512/
-# gsutil -m rsync -r  gs://ceruleanml/partitions/val-no-context-512/ ../val-no-context-512/
-
-# mkdir ../val-with-context-512/
-# gsutil -m rsync -r  gs://ceruleanml/partitions/val-with-context-512/ ../val-with-context-512/
-
-mkdir ../val-with-context-1024/
-gsutil -m rsync -r  gs://ceruleanml/partitions/val-with-context-1024/ ../val-with-context-1024/
-
-cd ~
-mkdir partitions
-mv train* partitions/
-mv val* partitions/
-
-mkdir -p experiments/cv2
+mkdir -p /root/partitions/train_tiles_context_$TILE_SIZE/
+gsutil -m rsync -r gs://ceruleanml/partitions/train_tiles_context_$TILE_SIZE/ /root/partitions/train_tiles_context_$TILE_SIZE/
