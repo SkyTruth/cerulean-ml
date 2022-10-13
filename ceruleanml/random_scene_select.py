@@ -1,13 +1,11 @@
 import os
 import random
-import subprocess
 
 source_path = "/root/data-cv2/"
 dest_path = "/root/data/partitions/"
-copy_to_dest = True
 
 val_frac = 0.2
-test_frac = 0.01
+test_frac = 0.1
 
 
 def partition_scenes(source_path, val_frac, test_frac):
@@ -35,9 +33,9 @@ def partition_scenes(source_path, val_frac, test_frac):
         num_val = int(len(class_scenes) * val_frac)
         num_test = int(len(class_scenes) * test_frac)
 
-        val_scenes.append(class_scenes[0:num_val])
-        test_scenes.append(class_scenes[num_val : num_val + num_test])
-        train_scenes.append(class_scenes[num_val + num_test :])
+        val_scenes += class_scenes[0:num_val]
+        test_scenes += class_scenes[num_val : num_val + num_test]
+        train_scenes += class_scenes[num_val + num_test :]
 
     # Check for mutual exclusivity
     assert len(train_scenes + val_scenes + test_scenes) > 0
@@ -52,24 +50,12 @@ train_scenes, val_scenes, test_scenes = partition_scenes(
 )
 
 partitions = (
-    ["train", "train_scenes.txt", train_scenes],
-    ["val", "val_scenes.txt", val_scenes],
-    ["test", "test_scenes.txt", test_scenes],
+    ["train_scenes.txt", train_scenes],
+    ["val_scenes.txt", val_scenes],
+    ["test_scenes.txt", test_scenes],
 )
 
-for partition, fname, scenes in partitions:
+for fname, scenes in partitions:
     with open(os.path.join(dest_path, fname), "w") as f:
         for item in scenes:
             f.write("%s\n" % item)
-    if copy_to_dest:
-        print(fname)
-        subprocess.run(
-            [
-                "rsync",
-                "-r",
-                "--no-relative",
-                f"--files-from=/root/data/partitions/{fname}",
-                "/",
-                f"{dest_path}/{partition}",
-            ]
-        )
