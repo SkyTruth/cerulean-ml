@@ -13,10 +13,14 @@ from ceruleanml.coco_stats import (
 
 
 class CeruleanCOCOMaskParser(COCOMaskParser):
-    def __init__(self, classes_to_remove, classes_to_remap, *args, **kwargs):
+    def __init__(
+        self, classes_to_remove, classes_to_remap, classes_to_keep, *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
         self.classes_to_remove = classes_to_remove
         self.classes_to_remap = classes_to_remap
+        self.classes_to_keep = classes_to_keep
+        self.class_map = ClassMap(classes_to_keep)
         # Assert that the coco json class list is fully within the data.class_list
         assert all(
             [
@@ -41,11 +45,6 @@ class CeruleanCOCOMaskParser(COCOMaskParser):
             ]
         )
 
-        classes_to_keep = data.class_list.copy()
-        for category in classes_to_remove + list(classes_to_remap.keys()):
-            classes_to_keep.remove(category)
-        self.class_map = ClassMap(data.class_list)
-
         print(
             f"Annotations before filtering classes: {len(self.annotations_dict['annotations'])}"
         )
@@ -66,9 +65,12 @@ class CeruleanCOCOMaskParser(COCOMaskParser):
                 img_ids_to_remove.append(ann["image_id"])
             else:
                 if ann_class in classes_to_remap:
-                    ann["category_id"] = data.class_idx_dict[
+                    ann["category_id"] = classes_to_keep.index(
                         classes_to_remap[ann_class]
-                    ]
+                    )
+                else:
+                    ann["category_id"] = classes_to_keep.index(ann_class)
+
                 filtered_anns.append(ann)
 
         filtered_imgs = [
@@ -117,11 +119,12 @@ def get_area_df(
 def load_set_record_collection(
     coco_json_path,  # This is where the annotations_dict lives
     tiled_images_folder,
-    area_thresh=10,
+    area_thresh=0,
     negative_sample_count=0,
     preprocess=False,
     classes_to_remove=[],
     classes_to_remap={},
+    classes_to_keep=[],
 ):
     """load an icevision record collection with optional preprocessing steps controlled by a flag.
 
@@ -144,6 +147,7 @@ def load_set_record_collection(
         img_dir=tiled_images_folder,
         classes_to_remove=classes_to_remove,
         classes_to_remap=classes_to_remap,
+        classes_to_keep=classes_to_keep,
     )
     positive_records = parser.parse(autofix=False, data_splitter=SingleSplitSplitter())[
         0
@@ -162,7 +166,7 @@ def load_set_record_collection(
             record_ids=record_ids,
             positive_records=positive_records,
             count=negative_sample_count,
-            class_names=data.class_list,
+            class_names=classes_to_keep,
         )
         combined_records = positive_records + negative_records
         return combined_records

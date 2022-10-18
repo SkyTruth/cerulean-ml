@@ -48,6 +48,7 @@ def train(cfg: DictConfig):
         preprocess=False,
         classes_to_remap=classes_to_remap, 
         classes_to_remove=classes_to_remove,
+        classes_to_keep=classes_to_keep,
     )
 
     # MODEL

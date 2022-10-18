@@ -36,7 +36,6 @@ class_dict = {
     "ambiguous": {"hr": "Ambiguous", "cc": (255, 255, 255)},
 }
 class_list = list(class_dict.keys())
-class_idx_dict = {c: class_list.index(c) for c in class_list}
 
 # TODO Hard Neg is overloaded with overlays but they shouldn't be exported during annotation
 # TODO Hard Neg is just a class that we will use to measure performance gains metrics
@@ -792,20 +791,20 @@ def get_annotation_and_image_info(
         if 1 in np.unique(arr):
             category = "ambiguous"
             category_info = {
-                "id": class_idx_dict[category],
+                "id": class_list.index(category),
                 "is_crowd": True,
             }  # forces compressed RLE format
         else:
             category = "background"
-            category_info = {"id": class_idx_dict[category], "is_crowd": False}
+            category_info = {"id": class_list.index(category), "is_crowd": False}
         binary_mask = arr[:, :, -1]
     else:
         category = get_layer_cls(arr)
         if category == "background":
-            category_info = {"id": class_idx_dict[category], "is_crowd": False}
+            category_info = {"id": class_list.index(category), "is_crowd": False}
         else:
             category_info = {
-                "id": class_idx_dict[category],
+                "id": class_list.index(category),
                 "is_crowd": True,
             }  # forces compressed RLE format
         binary_mask = rgbalpha_to_binary(arr, *class_dict[category]["cc"]).astype(
