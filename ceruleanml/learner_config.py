@@ -3,7 +3,7 @@ from icevision import models, tfms
 from ceruleanml import coco_load_fastai, data, preprocess
 
 run_list = [
-    [224, 2 * 60],
+    [512, 7 * 60],
 ]  # List of tuples, where the tuples are [px size, training time in minutes]
 
 negative_sample_count_train = 0
@@ -14,7 +14,7 @@ area_thresh = 0  # XXX maybe run a histogram on this to confirm that we have muc
 
 classes_to_remove = [
     "ambiguous",
-    "natural_seep",
+    # "natural_seep",
 ]
 classes_to_remap = {
     "old_vessel": "recent_vessel",
@@ -42,6 +42,9 @@ wd = 0.1
 
 def get_tfms(
     size=run_list[0][0],
+    p_ssr=1,
+    p_rgb=1,
+    p_rbc=1,
     scale_limit=0.05,
     rotate_limit=180,
     border_mode=0,  # cv2.BORDER_CONSTANT, use pad_fill_value
@@ -51,9 +54,6 @@ def get_tfms(
     r_shift_limit=10,
     g_shift_limit=0,
     b_shift_limit=0,
-    p_ssr=1,
-    p_rgb=1,
-    p_rbc=1,
     crop_fn=None,
     blur=None,
 ):
