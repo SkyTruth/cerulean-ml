@@ -72,10 +72,10 @@ install: clean ## install the package to the fastai2 env on the terraform gcp vm
 
 setup-icevision-env: ## install the package to the icevision env on the terraform gcp vm
 	# cd ..
-	# git clone https://github.com/rbavery/icevision --depth 1
+	# git clone https://github.com/SkyTruth/icevision --depth 1
 	# cd work
 	# requires activating env outside of makefile after this step
-	# git clone https://github.com/rbavery/icevision --depth 1 /root/icevision if you aren't using gcpvm makefile to manage it when making changes to icevision
+	# git clone https://github.com/SkyTruth/icevision --depth 1 /root/icevision if you aren't using gcpvm makefile to manage it when making changes to icevision
 	rm -rf .ice-env
 	python -m venv .ice-env
 	chmod +x ./.ice-env/bin/activate

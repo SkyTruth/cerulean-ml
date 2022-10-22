@@ -103,7 +103,7 @@ make syncup-ice
 make setup-icevision-env
 source ./.ice-env/bin/activate # .ice-env is a hidden folder created in work/
 make install-icevision-deps
-cd ../icevision #this is cloned in the previous step from rbavery's fork
+cd ../icevision #this is cloned in the previous step from SkyTruth's fork
 pip install -e .[dev]
 cd ../work
 pip install -e . # installing ceruleanml package and deps like pycocotools
@@ -116,7 +116,7 @@ This environment is created with virtualenv. It can likely be used for anything 
 make setup-icevision-inf-env
 source ./.ice-env-inf/bin/activate # .ice-env is a hidden folder created in work/
 make install-icevision-inf-deps
-cd ../icevision #this is cloned in the previous step from rbavery's fork
+cd ../icevision #this is cloned in the previous step from SkyTruth's fork
 pip install -e .[dev]
 cd ../work
 pip install -e . # installing ceruleanml package and deps like pycocotools

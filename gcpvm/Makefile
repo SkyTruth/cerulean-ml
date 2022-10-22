@@ -28,7 +28,7 @@ syncup:
 syncdown:
 	rsync -e "ssh -i ${PATH_SSH_KEY} -o IdentitiesOnly=yes" -avz --exclude=".git/" --exclude-from=${LOCAL_DIR}.gitignore $(shell echo ${VM_CONN}:${REMOTE_DIR}/ | tr -d '[:space:]') ${LOCAL_DIR}
 clone-ice:
-	git clone https://github.com/rbavery/icevision --depth 1 ../../icevision
+	git clone https://github.com/SkyTruth/icevision --depth 1 ../../icevision
 syncup-ice:
 	ssh -i ${PATH_SSH_KEY} -o IdentitiesOnly=yes ${VM_CONN} "mkdir -p ${REMOTE_DIR}/"
 	rsync -e "ssh -i ${PATH_SSH_KEY} -o IdentitiesOnly=yes" -avz --exclude=".git/" --exclude-from=${LOCAL_DIR_ICE}.gitignore ${LOCAL_DIR_ICE} $(shell echo ${VM_CONN}:${REMOTE_DIR_ICE}/ | tr -d '[:space:]')

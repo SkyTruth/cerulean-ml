@@ -8,7 +8,7 @@ from icevision import Dataset, models, tfms
 from icevision.data import *
 from icevision.data import Dataset
 from icevision.imports import *
-from icevision.metrics import (  # make sure you have the rbavery fork of icevision installed
+from icevision.metrics import (  # make sure you have the SkyTruth fork of icevision installed
     SimpleConfusionMatrix,
 )
 from icevision.metrics.metric import *

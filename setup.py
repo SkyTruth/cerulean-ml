@@ -54,7 +54,7 @@ setup(
     name="ceruleanml",
     packages=find_packages(include=["ceruleanml", "ceruleanml.*"]),
     test_suite="tests",
-    url="https://github.com/rbavery/ceruleanml",
+    url="https://github.com/SkyTruth/cerulean-ml",
     version="0.1.0",
     zip_safe=False,
 )
