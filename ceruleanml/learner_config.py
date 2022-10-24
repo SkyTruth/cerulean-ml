@@ -2,8 +2,10 @@ from icevision import models, tfms
 
 from ceruleanml import coco_load_fastai, data, preprocess
 
+super_tile_size = 2048
+target_tile_size = 1024  #
 run_list = [
-    [512, 7 * 60],
+    [512, 1 * 60],
 ]  # List of tuples, where the tuples are [px size, training time in minutes]
 
 negative_sample_count_train = 0
@@ -32,58 +34,79 @@ num_workers = 8  # based on processor, but I don't know how to calculate...
 model_type = models.torchvision.mask_rcnn
 backbone = model_type.backbones.resnet50_fpn
 model = model_type.model(
-    backbone=backbone(pretrained=True), num_classes=len(classes_to_keep)
+    backbone=backbone(pretrained=True),
+    num_classes=len(classes_to_keep),
+    box_nms_thresh=0.5,
 )
 
 # Regularization
-
 wd = 0.1
 
 
 def get_tfms(
-    size=run_list[0][0],
-    p_ssr=1,
-    p_rgb=1,
-    p_rbc=1,
+    super_tile_size=super_tile_size,
+    target_tile_size=target_tile_size,
+    reduced_resolution_tile_size=run_list[-1][0],
     scale_limit=0.05,
     rotate_limit=180,
     border_mode=0,  # cv2.BORDER_CONSTANT, use pad_fill_value
-    pad_fill_value=[124, 116, 104],  # default gray
+    pad_fill_value=[0, 0, 0],  # no_value
     mask_value=0,
     interpolation=0,  # cv2.INTER_NEAREST
-    r_shift_limit=10,
-    g_shift_limit=0,
-    b_shift_limit=0,
-    crop_fn=None,
-    blur=None,
+    r_shift_limit=10,  # SAR Imagery
+    g_shift_limit=0,  # Infrastructure Vicinity
+    b_shift_limit=0,  # Vessel Density
 ):
     train_tfms = tfms.A.Adapter(
         [
-            *tfms.A.aug_tfms(
-                size=size,
-                shift_scale_rotate=tfms.A.ShiftScaleRotate(
-                    p=p_ssr,
-                    scale_limit=scale_limit,
-                    rotate_limit=rotate_limit,
-                    border_mode=border_mode,
-                    value=pad_fill_value,
-                    mask_value=mask_value,
-                    interpolation=interpolation,
+            tfms.A.Flip(
+                p=0.5,
+            ),
+            tfms.A.Affine(
+                p=1,
+                scale=(
+                    1 - scale_limit,
+                    1 + scale_limit,
+                ),  # Note cannot enforce keep_ratio=True, so x and y will be scaled independently!
+                rotate=[-rotate_limit, rotate_limit],
+                interpolation=interpolation,
+                mode=border_mode,
+                cval=pad_fill_value,
+                cval_mask=mask_value,
+                fit_output=True,
+            ),
+            tfms.A.RandomResizedCrop(
+                p=1,
+                height=reduced_resolution_tile_size,
+                width=reduced_resolution_tile_size,
+                scale=(
+                    (target_tile_size / super_tile_size) ** 2,
+                    (target_tile_size / super_tile_size) ** 2,
                 ),
-                rgb_shift=tfms.A.RGBShift(
-                    p=p_rgb,
-                    r_shift_limit=r_shift_limit,
-                    g_shift_limit=g_shift_limit,
-                    b_shift_limit=b_shift_limit,
-                ),
-                lighting=tfms.A.RandomBrightnessContrast(p=p_rbc),
-                crop_fn=crop_fn,
-                blur=blur,
-            )
+                ratio=(1, 1),  # Never change perspective ratio
+                interpolation=interpolation,
+            ),
+            tfms.A.RGBShift(
+                p=1,
+                r_shift_limit=r_shift_limit,
+                g_shift_limit=g_shift_limit,
+                b_shift_limit=b_shift_limit,
+            ),
         ]
     )
     valid_tfms = tfms.A.Adapter(
-        [*tfms.A.resize_and_pad(size=size, interpolation=interpolation)]
+        [
+            tfms.A.RandomResizedCrop(
+                height=reduced_resolution_tile_size,
+                width=reduced_resolution_tile_size,
+                scale=(
+                    (target_tile_size / super_tile_size) ** 2,
+                    (target_tile_size / super_tile_size) ** 2,
+                ),
+                ratio=(1, 1),  # Never change perspective ratio
+                interpolation=interpolation,
+            ),
+        ]
     )
 
     return [train_tfms, valid_tfms]
@@ -93,7 +116,7 @@ def get_tfms(
 mount_path = "/root"
 
 # Parsing COCO Dataset with Icevision
-tile_size = "1024"
+tile_size = f"{super_tile_size}"
 tiled_images_folder = "tiled_images"
 json_name = "instances_TiledCeruleanDatasetV2.json"
 
