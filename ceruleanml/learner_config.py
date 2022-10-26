@@ -64,10 +64,7 @@ def get_tfms(
             ),
             tfms.A.Affine(
                 p=1,
-                scale=(
-                    1 - scale_limit,
-                    1 + scale_limit,
-                ),  # Note cannot enforce keep_ratio=True, so x and y will be scaled independently!
+                scale=(1 - scale_limit, 1 + scale_limit),
                 rotate=[-rotate_limit, rotate_limit],
                 interpolation=interpolation,
                 mode=border_mode,
