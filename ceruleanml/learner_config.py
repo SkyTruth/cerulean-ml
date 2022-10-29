@@ -2,7 +2,7 @@ from icevision import models, tfms
 
 from ceruleanml import coco_load_fastai, data, preprocess
 
-super_tile_size = 2048
+super_tile_size = 0  # setting super_tile_size=0 means use full scenes instead of tiling
 target_tile_size = 1024  #
 run_list = [
     [512, 1 * 60],
@@ -72,15 +72,12 @@ def get_tfms(
                 cval_mask=mask_value,
                 fit_output=True,
             ),
-            tfms.A.RandomResizedCrop(
+            tfms.A.RandomSizedCrop(
                 p=1,
+                min_max_height=[target_tile_size, target_tile_size],
                 height=reduced_resolution_tile_size,
                 width=reduced_resolution_tile_size,
-                scale=(
-                    (target_tile_size / super_tile_size) ** 2,
-                    (target_tile_size / super_tile_size) ** 2,
-                ),
-                ratio=(1, 1),  # Never change perspective ratio
+                w2h_ratio=1,
                 interpolation=interpolation,
             ),
             tfms.A.RGBShift(
@@ -93,14 +90,12 @@ def get_tfms(
     )
     valid_tfms = tfms.A.Adapter(
         [
-            tfms.A.RandomResizedCrop(
+            tfms.A.RandomSizedCrop(
+                p=1,
+                min_max_height=[target_tile_size, target_tile_size],
                 height=reduced_resolution_tile_size,
                 width=reduced_resolution_tile_size,
-                scale=(
-                    (target_tile_size / super_tile_size) ** 2,
-                    (target_tile_size / super_tile_size) ** 2,
-                ),
-                ratio=(1, 1),  # Never change perspective ratio
+                w2h_ratio=1,
                 interpolation=interpolation,
             ),
         ]
@@ -115,7 +110,7 @@ mount_path = "/root"
 # Parsing COCO Dataset with Icevision
 tile_size = f"{super_tile_size}"
 tiled_images_folder = "tiled_images"
-json_name = "instances_TiledCeruleanDatasetV2.json"
+json_name = "instances_CeruleanCOCO.json"
 
 train_set = f"train_tiles_context_{tile_size}"
 coco_json_path_train = f"{mount_path}/partitions/{train_set}/{json_name}"
