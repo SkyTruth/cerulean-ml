@@ -2,10 +2,13 @@ from icevision import models, tfms
 
 from ceruleanml import coco_load_fastai, data, preprocess
 
-super_tile_size = 0  # setting super_tile_size=0 means use full scenes instead of tiling
-target_tile_size = 1024  #
+# Note: Scenes are cut into memory-friendly tiles at memtile_size, so that the training loop doesn't need to load a whole GRD when you are just going to RRC it
+# The RRC is then executed to reduce the actual training data to rrctile_size
+# Finally, the val, test, and serverside datasets are precut to rrctile_size, so that 100% of the data can be evaluated
+memtile_size = 1024  # setting memtile_size=0 means use full scenes instead of tiling
+rrctile_size = 512  #
 run_list = [
-    [512, 1 * 60],
+    [512, 8 * 60],
 ]  # List of tuples, where the tuples are [px size, training time in minutes]
 
 negative_sample_count_train = 0
@@ -32,7 +35,7 @@ classes_to_keep = [
 
 num_workers = 8  # based on processor, but I don't know how to calculate...
 model_type = models.torchvision.mask_rcnn
-backbone = model_type.backbones.resnet50_fpn
+backbone = model_type.backbones.resnet18_fpn
 model = model_type.model(
     backbone=backbone(pretrained=True),
     num_classes=len(classes_to_keep),
@@ -44,11 +47,11 @@ wd = 0.1
 
 
 def get_tfms(
-    super_tile_size=super_tile_size,
-    target_tile_size=target_tile_size,
+    memtile_size=memtile_size,
+    rrctile_size=rrctile_size,
     reduced_resolution_tile_size=run_list[-1][0],
     scale_limit=0.05,
-    rotate_limit=180,
+    rotate_limit=10,
     border_mode=0,  # cv2.BORDER_CONSTANT, use pad_fill_value
     pad_fill_value=[0, 0, 0],  # no_value
     mask_value=0,
@@ -74,7 +77,7 @@ def get_tfms(
             ),
             tfms.A.RandomSizedCrop(
                 p=1,
-                min_max_height=[target_tile_size, target_tile_size],
+                min_max_height=[rrctile_size, rrctile_size],
                 height=reduced_resolution_tile_size,
                 width=reduced_resolution_tile_size,
                 w2h_ratio=1,
@@ -88,18 +91,7 @@ def get_tfms(
             ),
         ]
     )
-    valid_tfms = tfms.A.Adapter(
-        [
-            tfms.A.RandomSizedCrop(
-                p=1,
-                min_max_height=[target_tile_size, target_tile_size],
-                height=reduced_resolution_tile_size,
-                width=reduced_resolution_tile_size,
-                w2h_ratio=1,
-                interpolation=interpolation,
-            ),
-        ]
-    )
+    valid_tfms = tfms.A.Adapter([])
 
     return [train_tfms, valid_tfms]
 
@@ -108,21 +100,19 @@ def get_tfms(
 mount_path = "/root"
 
 # Parsing COCO Dataset with Icevision
-tile_size = f"{super_tile_size}"
-tiled_images_folder = "tiled_images"
-json_name = "instances_CeruleanCOCO.json"
+json_name = "instances_TiledCeruleanDatasetV2.json"
 
-train_set = f"train_tiles_context_{tile_size}"
+train_set = f"train_tiles_context_{memtile_size}"
 coco_json_path_train = f"{mount_path}/partitions/{train_set}/{json_name}"
-tiled_images_folder_train = f"{mount_path}/partitions/{train_set}/{tiled_images_folder}"
+tiled_images_folder_train = f"{mount_path}/partitions/{train_set}/tiled_images"
 
-val_set = f"val_tiles_context_{tile_size}"
+val_set = f"val_tiles_context_{rrctile_size}"
 coco_json_path_val = f"{mount_path}/partitions/{val_set}/{json_name}"
-tiled_images_folder_val = f"{mount_path}/partitions/{val_set}/{tiled_images_folder}"
+tiled_images_folder_val = f"{mount_path}/partitions/{val_set}/tiled_images"
 
-test_set = f"test_tiles_context_{tile_size}"
+test_set = f"test_tiles_context_{rrctile_size}"
 coco_json_path_test = f"{mount_path}/partitions/{test_set}/{json_name}"
-tiled_images_folder_test = f"{mount_path}/partitions/{test_set}/{tiled_images_folder}"
+tiled_images_folder_test = f"{mount_path}/partitions/{test_set}/tiled_images"
 
 record_collection_train = preprocess.load_set_record_collection(
     coco_json_path_train,
@@ -165,10 +155,6 @@ record_ids_val = coco_load_fastai.record_collection_to_record_ids(record_collect
 record_ids_test = coco_load_fastai.record_collection_to_record_ids(
     record_collection_test
 )
-print(
-    f"{len(set(record_ids_train + record_ids_val + record_ids_test))} =? {len(record_ids_train + record_ids_val + record_ids_test)}"
-)
-# assert len(set(record_ids_train + record_ids_val + record_ids_test)) == len(record_ids_train + record_ids_val + record_ids_test)
 
 # Create name for model based on parameters above
-model_name = f"{len(classes_to_keep)}cls_rn50_pr{run_list[-1][0]}_px{tile_size}_{sum([r[1] for r in run_list])}min"
+model_name = f"{len(classes_to_keep)}cls_rn18_pr{run_list[-1][0]}_px{memtile_size}_{sum([r[1] for r in run_list])}min"

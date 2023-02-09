@@ -1,22 +1,27 @@
+cd gcpvm
 terraform apply
 make syncup
 make syncup-ice
 
 > ssh into VM
-cd ../icevision
-pip install -e .[dev]
+cd 
+cdata
+cdata2
 cd /root/work
 make setup-icevision-env
 source /root/work/.ice-env/bin/activate
 make install-icevision-deps
+cd /root/icevision
+pip install -e .[dev]
+cd /root/work
 pip install -e .
-cdata
-cdata2
 # make install ??? Not sure if this works/is needed?
 /root/work/scripts/./move_datasets_to_ssd.sh # <<< maybe run this earlier and in a screen or tmux (takes 10 minutes)
 apt install snapd
 snap install aws-cli --classic
-aws configure
+aws configure # vim ~/.aws/credentials
+pip install dask[complete]
+
     
 > install extensions: python, jupyter (if giving an error about cannot install on a remote server, run "rm -r /root/.vscode-server", and restart your ssh connection)
 

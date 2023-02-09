@@ -333,7 +333,7 @@ class COCOtiler:
         scene_index: int,
         scene_data_tuple: tuple,
         layer_pths: List[str],
-        tile_length: int,
+        tile_length: int = 0,
     ):
         """Creates a COCO JSON with annotations compressed in RLE format.
 
