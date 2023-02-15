@@ -77,7 +77,7 @@ def mask_similarity(u, v):
     return 2 * torch.sum(torch.sqrt(torch.mul(u, v))) / (torch.sum(u + v))
 
 
-def apply_interclass_nms(pred_dict, nms_threshold):
+def apply_interclass_mask_nms(pred_dict, nms_threshold):
     """Apply a nms threshold to the output of logits_to_classes for a tile.
     Args:
         pred_dict (dict): a dict with (for example):
@@ -117,7 +117,7 @@ def apply_interclass_nms(pred_dict, nms_threshold):
         dict: The confidence thresholded dict result, using the nms threshold. Values of dict are now lists instead of tensors: {'boxes':[], 'labels':[], 'scores':[], 'masks':[]}
     """
     masks = [m[0, :, :] for m in pred_dict["masks"]]
-    res = torch.tensor([True] * len(masks))
+    res = torch.tensor([True] * len(masks)).to(device="cuda")
 
     new_dict = {"boxes": [], "labels": [], "scores": [], "masks": []}
     for i, i_mask in enumerate(masks):
@@ -126,7 +126,7 @@ def apply_interclass_nms(pred_dict, nms_threshold):
                 mask_similarity(i_mask, j_mask) <= nms_threshold
                 for j_mask in masks[i + 1 :]
             ]
-            res = torch.logical_and(res, torch.stack(downstream))
+            res = torch.logical_and(res, torch.stack(downstream).to(device="cuda"))
 
             new_dict["boxes"].append(pred_dict["boxes"][i])
             new_dict["labels"].append(pred_dict["labels"][i])

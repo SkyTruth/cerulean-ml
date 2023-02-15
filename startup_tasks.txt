@@ -4,6 +4,8 @@ make syncup
 make syncup-ice
 
 > ssh into VM
+/root/work/scripts/./move_datasets_to_ssd.sh # <<< maybe run this in a screen or tmux (takes 10 minutes)
+
 cd 
 cdata
 cdata2
@@ -15,15 +17,19 @@ cd /root/icevision
 pip install -e .[dev]
 cd /root/work
 pip install -e .
-# make install ??? Not sure if this works/is needed?
-/root/work/scripts/./move_datasets_to_ssd.sh # <<< maybe run this earlier and in a screen or tmux (takes 10 minutes)
+pip install dask[complete]
 apt install snapd
 snap install aws-cli --classic
 aws configure # vim ~/.aws/credentials
-pip install dask[complete]
 
-    
-> install extensions: python, jupyter (if giving an error about cannot install on a remote server, run "rm -r /root/.vscode-server", and restart your ssh connection)
+
+> install extension: python (if giving an error about cannot install on a remote server, run "rm -r /root/.vscode-server", and restart your ssh connection)
+
+nvidia-smi -l 1
+nvidia-smi | grep 'python' | awk '{ print $5 }' | xargs -n1 kill -9
+
+
+# make install ??? Not sure if this works/is needed?
 
 source /root/work/.ice-env/bin/activate
 make syncdown
