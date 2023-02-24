@@ -1,5 +1,8 @@
 cd gcpvm
+terraform destroy
+yes
 terraform apply
+yes
 make syncup
 make syncup-ice
 

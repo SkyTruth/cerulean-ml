@@ -32,6 +32,9 @@ classes_to_keep = [
     if c not in classes_to_remove + list(classes_to_remap.keys())
 ]
 
+CM_apply_mask_nms = False
+CM_use_mask_similarity = False
+CM_iou_threshold = 0.5
 
 num_workers = 8  # based on processor, but I don't know how to calculate...
 model_type = models.torchvision.mask_rcnn
@@ -91,7 +94,18 @@ def get_tfms(
             ),
         ]
     )
-    valid_tfms = tfms.A.Adapter([])
+    valid_tfms = tfms.A.Adapter(
+        [
+            tfms.A.RandomSizedCrop(
+                p=1,
+                min_max_height=[rrctile_size, rrctile_size],
+                height=reduced_resolution_tile_size,
+                width=reduced_resolution_tile_size,
+                w2h_ratio=1,
+                interpolation=interpolation,
+            ),
+        ]
+    )
 
     return [train_tfms, valid_tfms]
 

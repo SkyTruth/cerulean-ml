@@ -11,6 +11,7 @@ from ceruleanml.inference import (
     apply_conf_threshold,
     apply_conf_threshold_instances,
     apply_conf_threshold_masks,
+    apply_interclass_mask_nms,
     logits_to_classes,
 )
 
@@ -152,8 +153,8 @@ def get_cm_for_torchscript_model_mrcnn(
     save_path,
     mask_conf_threshold,
     bbox_conf_threshold,
+    interclass_nms_threshold,
     normalize=None,
-    class_names=[],
     title="Confusion Matrix",
 ):
     """
@@ -174,8 +175,12 @@ def get_cm_for_torchscript_model_mrcnn(
         semantic_masks_gt = np.max(np.stack(masks_gt), axis=0)
 
         _, pred_list = model([torch.Tensor(np.moveaxis(record.img, 2, 0)) / 255])
+        pred_dict = pred_list[0]
         pred_dict = apply_conf_threshold_instances(
-            pred_list[0], bbox_conf_threshold=bbox_conf_threshold
+            pred_dict, bbox_conf_threshold=bbox_conf_threshold
+        )
+        pred_dict = apply_interclass_mask_nms(
+            pred_dict, nms_threshold=interclass_nms_threshold
         )
         classes = apply_conf_threshold_masks(
             pred_dict,
@@ -185,4 +190,11 @@ def get_cm_for_torchscript_model_mrcnn(
         classes = classes.cpu().detach().numpy()
         val_arrs.append(semantic_masks_gt)
         class_preds.append(classes)
-    return cm_f1(val_arrs, class_preds, save_path, normalize, class_names, title)
+    return cm_f1(
+        val_arrs,
+        class_preds,
+        save_path,
+        normalize,
+        record.detection.class_map.get_classes(),
+        title,
+    )
