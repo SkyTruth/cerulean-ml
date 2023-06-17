@@ -3,10 +3,17 @@ import os
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
+import torchvision
+from icevision.core.mask import RLE
 from sklearn.metrics import confusion_matrix, f1_score
 from tqdm import tqdm
 
-from ceruleanml.inference import apply_conf_threshold_unet, logits_to_classes
+from ceruleanml.inference import (
+    apply_conf_threshold_unet,
+    calculate_dice_coefficient,
+    logits_to_classes,
+)
 
 mpl.rcParams["axes.grid"] = False
 mpl.rcParams["figure.figsize"] = (12, 12)
@@ -138,3 +145,50 @@ def get_cm_for_torchscript_model_unet(
         class_names,
         title=title,
     )
+
+
+def gt_bbox_dice(target, prediction):
+    # Convert bounding boxes to tensors
+    stacked_preds = prediction["boxes"] or torch.empty(0, 4)
+
+    stacked_targets = [bbox.to_tensor() for bbox in target.detection.bboxes]
+    stacked_targets = (
+        torch.stack(stacked_targets) if stacked_targets else torch.empty(0, 4)
+    )
+
+    # Calculate Intersection-over-Union for each pair of prediction and target
+    return torchvision.ops.box_iou(stacked_preds, stacked_targets)
+
+
+def gt_pixel_dice(target, prediction):
+    # Initialize a zero tensor for results
+    res = torch.zeros(len(prediction["masks"]), len(target.detection.masks))
+
+    # Loop through each mask in the prediction and target
+    for i, pred_mask in enumerate(prediction["masks"]):
+        for j, target_mask in enumerate(target.detection.masks):
+            # If the mask is in RLE format, convert it to a tensor mask
+            target_mask = (
+                rle_to_tensor_mask(target_mask, target.common.img_size)
+                if type(target_mask) == RLE
+                else target_mask
+            )
+
+            # Calculate the soft dice coefficient for the pair of masks
+            res[i, j] = calculate_dice_coefficient(
+                torch.squeeze(pred_mask), torch.squeeze(target_mask)
+            )
+    return res
+
+
+def rle_to_tensor_mask(rle_mask, resize=None):
+    mask_tile_size = int(np.sqrt(sum(rle_mask.counts)))
+    if mask_tile_size**2 != sum(rle_mask.counts):
+        # target tile is not square, and we're not sure of the original dimensions...
+        raise NotImplementedError
+    mask_tensor = rle_mask.to_mask(mask_tile_size, mask_tile_size).to_tensor().squeeze()
+    if resize and resize != mask_tensor.size():
+        mask_tensor = torch.nn.functional.interpolate(
+            mask_tensor[None, None, ...], size=resize, mode="nearest"
+        )[0, 0, :]
+    return mask_tensor

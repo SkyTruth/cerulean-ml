@@ -35,12 +35,11 @@ classes_to_keep = [
 ]
 
 thresholds = {
-    "pixel_nms_thresh": 0.2,
-    "bbox_score_thresh": 0.2,
-    "poly_score_thresh": 0.2,
-    "pixel_score_thresh": 0.25,
-    "bbox_dice_thresh": 0.2,
-    "polygon_dice_thresh": 0.2,
+    "pixel_nms_thresh": 0.3,  # prediction vs itself, pixels
+    "bbox_score_thresh": 0.3,  # prediction vs score, bbox
+    "poly_score_thresh": 0.2,  # prediction vs score, polygon
+    "pixel_score_thresh": 0.25,  # prediction vs score, pixels
+    "groundtruth_dice_thresh": 0.2,  # prediction vs ground truth, theshold
 }
 
 num_workers = 8  # based on processor, but I don't know how to calculate...
