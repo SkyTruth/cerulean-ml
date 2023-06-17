@@ -3,17 +3,10 @@ import os
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import torch
 from sklearn.metrics import confusion_matrix, f1_score
 from tqdm import tqdm
 
-from ceruleanml.inference import (
-    apply_conf_threshold,
-    apply_conf_threshold_instances,
-    apply_conf_threshold_masks,
-    apply_interclass_mask_nms,
-    logits_to_classes,
-)
+from ceruleanml.inference import apply_conf_threshold_unet, logits_to_classes
 
 mpl.rcParams["axes.grid"] = False
 mpl.rcParams["figure.figsize"] = (12, 12)
@@ -133,7 +126,7 @@ def get_cm_for_torchscript_model_unet(
         semantic_masks_batch = batch_tuple[1].cpu().detach().numpy()
         class_pred_batch = model(batch_tuple[0].cpu())
         probs, classes = logits_to_classes(class_pred_batch)
-        t = apply_conf_threshold(probs, classes, semantic_mask_conf_thresh)
+        t = apply_conf_threshold_unet(probs, classes, semantic_mask_conf_thresh)
         class_pred_batch = t.cpu().detach().numpy()
         val_arrs.extend(semantic_masks_batch)
         class_preds.append(class_pred_batch)
@@ -144,57 +137,4 @@ def get_cm_for_torchscript_model_unet(
         normalize,
         class_names,
         title=title,
-    )
-
-
-def get_cm_for_torchscript_model_mrcnn(
-    valid_ds,
-    model,
-    save_path,
-    mask_conf_threshold,
-    bbox_conf_threshold,
-    interclass_nms_threshold,
-    normalize=None,
-    title="Confusion Matrix",
-):
-    """
-    TODO docstring
-    the torchscript model when it is loaded operates on batches, not individual images
-    this doesn't support eval on negative samples if they are in the dls,
-    since val masks don't exist with neg samples. need to be constructed with np.zeros
-
-    returns cm and f1 score
-    """
-    val_arrs = []
-    class_preds = []
-    for record in tqdm(valid_ds):
-        masks_gt = []
-        for i, label_id in enumerate(record.detection.label_ids):
-            masks_gt.append(record.detection.mask_array.data[i] * label_id)
-        # for 6 class model this needs to be mapping process TODO
-        semantic_masks_gt = np.max(np.stack(masks_gt), axis=0)
-
-        _, pred_list = model([torch.Tensor(np.moveaxis(record.img, 2, 0)) / 255])
-        pred_dict = pred_list[0]
-        pred_dict = apply_conf_threshold_instances(
-            pred_dict, bbox_conf_threshold=bbox_conf_threshold
-        )
-        pred_dict = apply_interclass_mask_nms(
-            pred_dict, nms_threshold=interclass_nms_threshold
-        )
-        classes = apply_conf_threshold_masks(
-            pred_dict,
-            mask_conf_threshold=mask_conf_threshold,
-            size=semantic_masks_gt.shape[0],
-        )
-        classes = classes.cpu().detach().numpy()
-        val_arrs.append(semantic_masks_gt)
-        class_preds.append(classes)
-    return cm_f1(
-        val_arrs,
-        class_preds,
-        save_path,
-        normalize,
-        record.detection.class_map.get_classes(),
-        title,
     )

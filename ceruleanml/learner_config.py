@@ -8,12 +8,14 @@ from ceruleanml import coco_load_fastai, data, preprocess
 memtile_size = 1024  # setting memtile_size=0 means use full scenes instead of tiling
 rrctile_size = 512  #
 run_list = [
-    [512, 8 * 60],
+    [224, 60 * 6],
+    # [416, 60],
 ]  # List of tuples, where the tuples are [px size, training time in minutes]
 
 negative_sample_count_train = 0
 negative_sample_count_val = 0
 negative_sample_count_test = 0
+negative_sample_count_rrctrained = 0
 
 area_thresh = 0  # XXX maybe run a histogram on this to confirm that we have much more than 100 px normally!
 
@@ -32,13 +34,18 @@ classes_to_keep = [
     if c not in classes_to_remove + list(classes_to_remap.keys())
 ]
 
-CM_apply_mask_nms = False
-CM_use_mask_similarity = False
-CM_iou_threshold = 0.5
+thresholds = {
+    "pixel_nms_thresh": 0.2,
+    "bbox_score_thresh": 0.2,
+    "poly_score_thresh": 0.2,
+    "pixel_score_thresh": 0.25,
+    "bbox_dice_thresh": 0.2,
+    "polygon_dice_thresh": 0.2,
+}
 
 num_workers = 8  # based on processor, but I don't know how to calculate...
 model_type = models.torchvision.mask_rcnn
-backbone = model_type.backbones.resnet18_fpn
+backbone = model_type.backbones.resnet34_fpn
 model = model_type.model(
     backbone=backbone(pretrained=True),
     num_classes=len(classes_to_keep),
@@ -47,6 +54,32 @@ model = model_type.model(
 
 # Regularization
 wd = 0.1
+
+
+# Ablation studies for aux channels
+def triplicate(img, **params):
+    img[..., :] = img[..., 0:1]
+    return img
+
+
+def sat_mask(img, **params):
+    img[..., :] = img[..., 0:1]
+    img[..., 2] = img[..., 2] != 0
+    return img
+
+
+def vessel_traffic(img, **params):
+    img[..., 1] = img[..., 0]
+    return img
+
+
+def infra_distance(img, **params):
+    img[..., 2] = img[..., 0]
+    return img
+
+
+def no_op(img, **params):
+    return img
 
 
 def get_tfms(
@@ -92,6 +125,7 @@ def get_tfms(
                 g_shift_limit=g_shift_limit,
                 b_shift_limit=b_shift_limit,
             ),
+            tfms.A.Lambda(p=1, image=no_op),
         ]
     )
     valid_tfms = tfms.A.Adapter(
@@ -104,6 +138,7 @@ def get_tfms(
                 w2h_ratio=1,
                 interpolation=interpolation,
             ),
+            tfms.A.Lambda(p=1, image=no_op),
         ]
     )
 
@@ -127,6 +162,12 @@ tiled_images_folder_val = f"{mount_path}/partitions/{val_set}/tiled_images"
 test_set = f"test_tiles_context_{rrctile_size}"
 coco_json_path_test = f"{mount_path}/partitions/{test_set}/{json_name}"
 tiled_images_folder_test = f"{mount_path}/partitions/{test_set}/tiled_images"
+
+rrctrained_set = f"train_tiles_context_{rrctile_size}"
+coco_json_path_rrctrained = f"{mount_path}/partitions/{rrctrained_set}/{json_name}"
+tiled_images_folder_rrctrained = (
+    f"{mount_path}/partitions/{rrctrained_set}/tiled_images"
+)
 
 record_collection_train = preprocess.load_set_record_collection(
     coco_json_path_train,
@@ -161,6 +202,17 @@ record_collection_test = preprocess.load_set_record_collection(
     classes_to_keep=classes_to_keep,
 )
 
+# record_collection_rrctrained = preprocess.load_set_record_collection(
+#     coco_json_path_rrctrained,
+#     tiled_images_folder_rrctrained,
+#     area_thresh,
+#     negative_sample_count_rrctrained,
+#     preprocess=True,
+#     classes_to_remap=classes_to_remap,
+#     classes_to_remove=classes_to_remove,
+#     classes_to_keep=classes_to_keep,
+# )
+
 # Confirm that train and val are mutually exclusive collections
 record_ids_train = coco_load_fastai.record_collection_to_record_ids(
     record_collection_train
@@ -171,4 +223,4 @@ record_ids_test = coco_load_fastai.record_collection_to_record_ids(
 )
 
 # Create name for model based on parameters above
-model_name = f"{len(classes_to_keep)}cls_rn18_pr{run_list[-1][0]}_px{memtile_size}_{sum([r[1] for r in run_list])}min"
+model_name = f"{len(classes_to_keep)}cls_rn34_pr{run_list[-1][0]}_px{memtile_size}_{sum([r[1] for r in run_list])}min"
