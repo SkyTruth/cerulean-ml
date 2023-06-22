@@ -190,7 +190,7 @@ def get_layer_cls(
     Returns:
         _type_: str keyword for for the class as defined by the class_dict.
     """
-    if len(arr.shape) == 3 and arr.shape[-1] == 4:
+    if len(arr.shape) == 3 and arr.shape[-1] in [3, 4]:
         for category in class_list:
             if is_layer_of_class(arr, category):
                 return category
@@ -377,16 +377,14 @@ class COCOtiler:
             with rasterio.open(instance_path) as src:
                 profile = src.profile.copy()
                 profile["driver"] = "GTiff"
-                if org_array.shape[-1] == 1 and "ambiguous" in instance_path:
-                    profile["count"] = 1
-                else:
-                    profile["count"] = 4
                 profile["crs"] = s1_crs
                 profile["gcps"] = s1_gcps
+                profile["count"] = org_array.shape[-1]
+                idxs = [i + 1 for i in range(org_array.shape[-1])]
 
                 with MemoryFile() as mem:
                     with mem.open(**profile) as m:
-                        m.write(reshape_as_raster(org_array))
+                        m.write(reshape_as_raster(org_array), indexes=idxs)
                         gcps_transform = transform.from_gcps(s1_gcps)
                         with WarpedVRT(
                             m,
