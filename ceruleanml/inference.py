@@ -141,23 +141,23 @@ def keep_by_global_pixel_nms(pred_dict, pixel_nms_thresh):
 
 def flatten_pixel_segmentation(pred_list, poly_score_thresh, shape):
     merged_pred_masks = []
+    zeros = [torch.zeros(shape).long()]
     for pred_dict in pred_list:
-        zeros = [torch.zeros(shape).long()]
         high_conf_classes = [
-            torch.where(mask > poly_score_thresh, pred_dict["labels"][i], 0)
+            torch.where(pred_dict["masks"][i] > poly_score_thresh, label, 0)
             .squeeze()
             .long()
-            for i, mask in enumerate(pred_dict["masks"])
+            for i, label in enumerate(pred_dict["labels"])
         ]
-        stacked_arr = torch.dstack(zeros + high_conf_classes)
         merged_pred_masks.extend(
-            [torch.max(stacked_arr, axis=2)[0].numpy()]
+            [torch.max(torch.dstack(zeros + high_conf_classes), axis=2)[0].numpy()]
         )  # TODO This max() compresses overlapping inferences naively
     return merged_pred_masks
 
 
 def flatten_gt_segmentation(ds):
     merged_gt_masks = []
+    zeros = [torch.zeros(ds[0].common.img.shape[:2]).long()]
     for record in ds:
         # Create mask for each class label in the record
         masks_gt = [
@@ -165,7 +165,7 @@ def flatten_gt_segmentation(ds):
             for j, label_id in enumerate(record.detection.label_ids)
         ]
         # Merge all masks into one semantic mask with class labels (overlapping masks are compressed using max function)
-        merged_gt_masks.extend([np.max(np.stack(masks_gt), axis=0)])
+        merged_gt_masks.extend([np.max(np.stack(zeros + masks_gt), axis=0)])
     return merged_gt_masks
 
 
@@ -308,7 +308,7 @@ def reduce_preds(
     - A dictionary containing the post-processed predictions.
     """
     reduced_preds = []
-    for pred_dict in pred_list:
+    for pred_dict in tqdm(pred_list):
         # remove instances with low scoring boxes
         if bbox_score_thresh is not None:
             keep = keep_by_bbox_score(pred_dict, bbox_score_thresh)

@@ -106,7 +106,7 @@ def cm_f1(
     print(f"Confusion matrix saved at {cm_name}")
     # compute f1 score
     f1 = f1_score(flat_truth, flat_preds, average="macro")
-    print("f1_score", f1)
+    print("Pixel Macro-F1 (+background):", np.round(f1, 3))
 
     return cm, f1
 
@@ -149,7 +149,9 @@ def get_cm_for_torchscript_model_unet(
 
 def gt_bbox_dice(target, prediction):
     # Convert bounding boxes to tensors
-    stacked_preds = prediction["boxes"] or torch.empty(0, 4)
+    stacked_preds = (
+        prediction["boxes"] if len(prediction["boxes"]) else torch.empty(0, 4)
+    )
 
     stacked_targets = [bbox.to_tensor() for bbox in target.detection.bboxes]
     stacked_targets = (

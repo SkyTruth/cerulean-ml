@@ -62,7 +62,6 @@ valid_ds = Dataset(
     valid_tfms,
 )
 from icevision.metrics.confusion_matrix import SimpleConfusionMatrix
-from icevision.metrics.confusion_matrix.confusion_matrix import MatchingPolicy
 from icevision.models.checkpoint import model_from_checkpoint
 
 checkpoint_path = "/root/data/experiments/cv2/20_Jul_2022_00_14_15_icevision_maskrcnn/state_dict_test_28_34_224_58.pt"
