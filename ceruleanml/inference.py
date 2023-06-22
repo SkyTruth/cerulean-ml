@@ -283,7 +283,7 @@ def reduce_preds(
     pixel_score_thresh=None,
     pixel_nms_thresh=None,
     poly_score_thresh=None,
-    bounds=[0, -1, 1, 0],
+    bounds=[],
     **kwargs,
 ):
     """
@@ -301,14 +301,15 @@ def reduce_preds(
     - pixel_score_thresh: A float indicating the confidence threshold for pixels.
     - pixel_nms_thresh: A float indicating the threshold for pixel-based non-maximum suppression.
     - poly_score_thresh: A float indicating the confidence threshold for polygons.
-    - bounds: A list representing the geographical bounds [west, south, east, north]. Default is [0, -1, 1, 0].
+    - bounds: A 2-D Tensor representing a list of geographical bounds [west, south, east, north]. Defaults to [0, -1, 1, 0] if not provided.
     - kwargs: Additional parameters.
 
     Returns:
     - A dictionary containing the post-processed predictions.
     """
+    bounds = bounds or [[0, -1, 1, 0]] * len(pred_list)
     reduced_preds = []
-    for pred_dict in tqdm(pred_list):
+    for i, pred_dict in enumerate(tqdm(pred_list)):
         # remove instances with low scoring boxes
         if bbox_score_thresh is not None:
             keep = keep_by_bbox_score(pred_dict, bbox_score_thresh)
@@ -328,7 +329,7 @@ def reduce_preds(
         # adds "polys" to pred_dict
         if poly_score_thresh is not None:
             pred_dict, keep = polygonize_pixel_segmentations(
-                pred_dict, poly_score_thresh, bounds
+                pred_dict, poly_score_thresh, bounds[i]
             )
             pred_dict = keep_boxes_by_idx(pred_dict, keep)
 
