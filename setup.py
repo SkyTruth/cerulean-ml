@@ -24,6 +24,7 @@ requirements = [
     "rio-cogeo",
     "hydra-core",
     "ipywidgets",
+    "geojson",
 ]
 
 setup(
