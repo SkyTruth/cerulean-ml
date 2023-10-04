@@ -1,23 +1,24 @@
 from icevision import models, tfms
+from torchvision.ops import MultiScaleRoIAlign
 
 from ceruleanml import coco_load_fastai, data, preprocess
 
 # Note: Scenes are cut into memory-friendly tiles at memtile_size, so that the training loop doesn't need to load a whole GRD when you are just going to RRC it
 # The RRC is then executed to reduce the actual training data to rrctile_size
 # Finally, the val, test, and serverside datasets are precut to rrctile_size, so that 100% of the data can be evaluated
-memtile_size = 1024  # setting memtile_size=0 means use full scenes instead of tiling
-rrctile_size = 512  #
+memtile_size = 2048  # setting memtile_size=0 means use full scenes instead of tiling
+rrctile_size = 1024  #
 run_list = [
     [224, 60 * 6],
     # [416, 60],
 ]  # List of tuples, where the tuples are [px size, training time in minutes]
 
-negative_sample_count_train = 0
+negative_sample_count_train = 100
 negative_sample_count_val = 0
 negative_sample_count_test = 0
 negative_sample_count_rrctrained = 0
 
-area_thresh = 0  # XXX maybe run a histogram on this to confirm that we have much more than 100 px normally!
+area_thresh = 100  # XXX maybe run a histogram on this to confirm that we have much more than 100 px normally!
 
 classes_to_remove = [
     "ambiguous",
@@ -44,11 +45,14 @@ thresholds = {
 
 num_workers = 8  # based on processor, but I don't know how to calculate...
 model_type = models.torchvision.mask_rcnn
-backbone = model_type.backbones.resnet34_fpn
+backbone = model_type.backbones.resnext101_32x8d_fpn
 model = model_type.model(
     backbone=backbone(pretrained=True),
     num_classes=len(classes_to_keep),
     box_nms_thresh=0.5,
+    mask_roi_pool=MultiScaleRoIAlign(
+        featmap_names=["0", "1", "2", "3"], output_size=14 * 4, sampling_ratio=2
+    ),
 )
 
 # Regularization
@@ -222,4 +226,4 @@ record_ids_test = coco_load_fastai.record_collection_to_record_ids(
 )
 
 # Create name for model based on parameters above
-model_name = f"{len(classes_to_keep)}cls_rn34_pr{run_list[-1][0]}_px{memtile_size}_{sum([r[1] for r in run_list])}min"
+model_name = f"{len(classes_to_keep)}cls_rnxt101_pr{run_list[-1][0]}_px{rrctile_size}_{sum([r[1] for r in run_list])}min"

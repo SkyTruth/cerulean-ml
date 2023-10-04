@@ -3,7 +3,7 @@ terraform apply
 make syncup
 make syncup-ice
 
-> ssh into VM
+> ssh into VM (add the new IP address to your VS code config if you are using that)
 /root/work/scripts/./move_datasets_to_ssd.sh # <<< maybe run this in a screen or tmux (takes 10 minutes)
 
 cd 
@@ -23,13 +23,21 @@ snap install aws-cli --classic
 aws configure # vim ~/.aws/credentials
 
 
-> install extension: python (if giving an error about cannot install on a remote server, run "rm -r /root/.vscode-server", and restart your ssh connection)
+> install extensions: 
+ - python (if giving an error about cannot install on a remote server, run "rm -r /root/.vscode-server", and restart your ssh connection)
+ - jupyter
+
+you may need to cmd+shift+p "reload window" to get the kernel to show up
 
 nvidia-smi -l 1
 nvidia-smi | grep 'python' | awk '{ print $5 }' | xargs -n1 kill -9
 
+If nvidia can't be found, then the drivers are messed up. Run the following commands:
+sudo apt-get remove --purge '^nvidia-.*'
+sudo apt-get update
+sudo apt-get install --no-install-recommends nvidia-driver-460
+sudo reboot
 
-# make install ??? Not sure if this works/is needed?
 
 source /root/work/.ice-env/bin/activate
 make syncdown
