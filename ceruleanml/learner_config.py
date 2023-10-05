@@ -9,7 +9,7 @@ from ceruleanml import coco_load_fastai, data, preprocess
 memtile_size = 2048  # setting memtile_size=0 means use full scenes instead of tiling
 rrctile_size = 1024  #
 run_list = [
-    [224, 60 * 6],
+    [512, 80],
     # [416, 60],
 ]  # List of tuples, where the tuples are [px size, training time in minutes]
 
@@ -56,7 +56,7 @@ model = model_type.model(
 )
 
 # Regularization
-wd = 0.1
+wd = 0.01
 
 
 # Ablation studies for aux channels
