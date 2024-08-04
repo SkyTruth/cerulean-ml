@@ -42,6 +42,10 @@ resource "google_compute_instance" "jupyter" {
 
   tags = ["http", "http-server"]
 
+  labels = {
+    owner = var.owner
+  }
+
   metadata = { ssh-keys = "root:${tls_private_key.key.public_key_openssh}" }
 
   service_account { scopes = ["storage-full", "cloud-platform"] }

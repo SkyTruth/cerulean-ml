@@ -55,3 +55,9 @@ variable "gpu-type" {
   # and make sure you are in the correct region, most regions don't have all types of gpus
   # https://cloud.google.com/compute/docs/gpus/gpu-regions-zones
 }
+
+variable "owner" {
+  type        = string
+  description = "User who launched this resource"
+  default     = "jona"
+}

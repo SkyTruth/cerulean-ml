@@ -6,20 +6,11 @@ make syncup-ice
 > ssh into VM (add the new IP address to your VS code config if you are using that)
 /root/work/scripts/./move_datasets_to_ssd.sh # <<< maybe run this in a screen or tmux (takes 10 minutes)
 
-cd 
 cdata
 cdata2
 cd /root/work
-make setup-icevision-env
-source /root/work/.ice-env/bin/activate
-make install-icevision-deps
-cd /root/icevision
-pip install -e .[dev]
-cd /root/work
-pip install -e .
-pip install dask[complete]
-apt install snapd
-snap install aws-cli --classic
+setup-icevision-env
+make setup-system-tools
 aws configure # vim ~/.aws/credentials
 
 

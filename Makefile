@@ -70,23 +70,28 @@ install: clean ## install the package to the fastai2 env on the terraform gcp vm
 	mamba env update --name fastai2 --file environment.yml --prune
 	/root/miniconda3/envs/fastai2/bin/pip install -e . # install local ceruleanml package after deps installed with conda
 
-setup-icevision-env: ## install the package to the icevision env on the terraform gcp vm
-	# cd ..
-	# git clone https://github.com/SkyTruth/icevision --depth 1
-	# cd work
-	# requires activating env outside of makefile after this step
-	# git clone https://github.com/SkyTruth/icevision --depth 1 /root/icevision if you aren't using gcpvm makefile to manage it when making changes to icevision
-	rm -rf .ice-env
-	python -m venv .ice-env
-	chmod +x ./.ice-env/bin/activate
-	source ./.ice-env/bin/activate # outside of a script, source needs to be used when activating
+setup-icevision-env:
+	@echo "Installing core and development dependencies for IceVision..."
+	@eval "$$(conda shell.bash hook)" && \
+		conda env remove --name .ice-env --yes && \
+		mamba create --name .ice-env python=3.9 --yes && \
+		conda activate .ice-env && \
+		mamba install --yes jupyterlab ipykernel && \
+		mamba install --yes pytorch=1.10 torchvision torchaudio cudatoolkit=11.1 -c pytorch -c nvidia && \
+		pip install -e . && \
+		pip install "git+https://github.com/waspinator/pycococreator.git@0.2.0" && \
+		python -m ipykernel install --user --name=icevision && \
+		cd /root/icevision && \
+		pip install -e ".[dev]" && \
+		cd /root/work && \
+		pip install -e . && \
+		pip install "dask[complete]"
 
-install-icevision-deps:
-	./.ice-env/bin/pip install -e . # install local ceruleanml package after deps installed with conda
-	./.ice-env/bin/pip install "git+https://github.com/waspinator/pycococreator.git@0.2.0"
-	./.ice-env/bin/pip install jupyterlab
-	./.ice-env/bin/python -m ipykernel install --user --name=icevision
-	#pip install -e .[dev] # run this in terminal after cd to icevision with env active
+setup-system-tools: ## Install system tools
+	@echo "Installing global system tools..."
+	sudo apt update && \
+	sudo apt install -y snapd && \
+	sudo snap install aws-cli --classic
 
 setup-icevision-inf-env: ## install the package to the icevision env on the terraform gcp vm
 	# cd ..
