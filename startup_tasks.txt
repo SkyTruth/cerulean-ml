@@ -9,7 +9,7 @@ make syncup-ice
 cdata
 cdata2
 cd /root/work
-setup-icevision-env
+make setup-icevision-env
 make setup-system-tools
 aws configure # vim ~/.aws/credentials
 

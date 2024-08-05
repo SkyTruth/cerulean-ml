@@ -78,6 +78,7 @@ setup-icevision-env:
 		conda activate .ice-env && \
 		mamba install --yes jupyterlab ipykernel && \
 		mamba install --yes pytorch=1.10 torchvision torchaudio cudatoolkit=11.1 -c pytorch -c nvidia && \
+		mamba install --yes -c conda-forge fastai wandb && \
 		pip install -e . && \
 		pip install "git+https://github.com/waspinator/pycococreator.git@0.2.0" && \
 		python -m ipykernel install --user --name=icevision && \
