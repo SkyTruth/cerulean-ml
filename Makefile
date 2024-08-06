@@ -84,7 +84,7 @@ setup-icevision-env:
 		python -m ipykernel install --user --name=icevision && \
 		pip install "dask[complete]" && \
 		cd /root/icevision && \
-		pip install -e ".[dev]" && \
+		pip install -e ".[dev]"
 		
 setup-fastai-env:
 	@echo "Installing core and development dependencies for FastAI..."
