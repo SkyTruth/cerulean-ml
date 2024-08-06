@@ -92,12 +92,13 @@ setup-fastai-env:
 		conda env remove --name .fastai-env --yes && \
 		mamba create --name .fastai-env python --yes && \
 		conda activate .fastai-env && \
-		mamba install --yes -c conda-forge fastai wandb jupyterlab ipykernel loguru albumentations opencv-base && \
+		mamba install --yes -c conda-forge fastai wandb jupyterlab ipykernel && \
 		mamba install --yes -c pytorch pytorch && \
 		pip install torchsummary && \
 		pip install --no-deps icevision && \
 		pip install -e . && \
 		python -m ipykernel install --user --name=fastai && \
+		mamba install --yes -c conda-forge loguru albumentations opencv && \
 		pip install "git+https://github.com/waspinator/pycococreator.git@0.2.0" && \
 		pip install "dask[complete]"
 
