@@ -82,11 +82,24 @@ setup-icevision-env:
 		pip install -e . && \
 		pip install "git+https://github.com/waspinator/pycococreator.git@0.2.0" && \
 		python -m ipykernel install --user --name=icevision && \
+		pip install "dask[complete]" && \
 		cd /root/icevision && \
 		pip install -e ".[dev]" && \
-		cd /root/work && \
+		
+setup-fastai-env:
+	@echo "Installing core and development dependencies for FastAI..."
+	@eval "$$(conda shell.bash hook)" && \
+		conda env remove --name .fastai-env --yes && \
+		mamba create --name .fastai-env python --yes && \
+		conda activate .fastai-env && \
+		mamba install --yes -c conda-forge fastai wandb jupyterlab ipykernel && \
+		mamba install --yes -c pytorch pytorch && \
+		pip install torchsummary && \
 		pip install -e . && \
+		python -m ipykernel install --user --name=fastai && \
+		pip install "git+https://github.com/waspinator/pycococreator.git@0.2.0" && \
 		pip install "dask[complete]"
+
 
 setup-system-tools: ## Install system tools
 	@echo "Installing global system tools..."
