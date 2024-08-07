@@ -93,7 +93,7 @@ setup-fastai-env:
 		mamba create --name .fastai-env python --yes && \
 		conda activate .fastai-env && \
 		mamba install --yes -c conda-forge fastai wandb jupyterlab ipykernel && \
-		mamba install --yes -c pytorch pytorch && \
+		mamba install --yes -c pytorch pytorch torchvision torchaudio cudatoolkit=11.4  -c conda-forge && \
 		pip install torchsummary && \
 		pip install --no-deps icevision && \
 		pip install -e . && \
