@@ -197,6 +197,9 @@ record_collection_val = preprocess.load_set_record_collection(
     classes_to_keep=classes_to_keep,
 )
 for record in record_collection_val:
+    record.set_record_id(
+        record.record_id + len(record_collection_train)
+    )  # Increment the record ID to avoid clashes
     record.record_id += len(
         record_collection_train
     )  # Increment the record ID to avoid clashes
@@ -215,6 +218,9 @@ record_collection_test = preprocess.load_set_record_collection(
     classes_to_keep=classes_to_keep,
 )
 for record in record_collection_test:
+    record.set_record_id(
+        record.record_id + len(record_collection_train) + len(record_collection_val)
+    )  # Increment the record ID to avoid clashes
     record.record_id += len(record_collection_train) + len(
         record_collection_val
     )  # Increment the record ID to avoid clashes
