@@ -1,3 +1,5 @@
+from typing import Dict
+
 from icevision import models, tfms
 from torchvision.ops import MultiScaleRoIAlign
 
@@ -6,12 +8,13 @@ from ceruleanml import coco_load_fastai, data, preprocess
 # Note: Scenes are cut into memory-friendly tiles at memtile_size, so that the training loop doesn't need to load a whole GRD when you are just going to RRC it
 # The RRC is then executed to reduce the actual training data to rrctile_size
 # Finally, the val, test, and serverside datasets are precut to rrctile_size, so that 100% of the data can be evaluated
-memtile_size = 2048  # setting memtile_size=0 means use full scenes instead of tiling
+memtile_size = 1024  # setting memtile_size=0 means use full scenes instead of tiling
 rrctile_size = 1024  #
 run_list = [
     [512, 80],
     # [416, 60],
 ]  # List of tuples, where the tuples are [px size, training time in minutes]
+final_px = run_list[-1][0]
 
 negative_sample_count_train = 100
 negative_sample_count_val = 0
@@ -24,9 +27,9 @@ classes_to_remove = [
     "ambiguous",
     # "natural_seep",
 ]
-classes_to_remap = {
-    "old_vessel": "recent_vessel",
-    "coincident_vessel": "recent_vessel",
+classes_to_remap: Dict[str, str] = {
+    # "old_vessel": "recent_vessel",
+    # "coincident_vessel": "recent_vessel",
 }
 
 classes_to_keep = [
