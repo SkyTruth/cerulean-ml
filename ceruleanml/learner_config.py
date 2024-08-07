@@ -196,6 +196,13 @@ record_collection_val = preprocess.load_set_record_collection(
     classes_to_remove=classes_to_remove,
     classes_to_keep=classes_to_keep,
 )
+for record in record_collection_val:
+    record.record_id += len(
+        record_collection_train
+    )  # Increment the record ID to avoid clashes
+    record.common.record_id += len(
+        record_collection_train
+    )  # Increment the record ID to avoid clashes
 
 record_collection_test = preprocess.load_set_record_collection(
     coco_json_path_test,
@@ -207,6 +214,13 @@ record_collection_test = preprocess.load_set_record_collection(
     classes_to_remove=classes_to_remove,
     classes_to_keep=classes_to_keep,
 )
+for record in record_collection_test:
+    record.record_id += len(record_collection_train) + len(
+        record_collection_val
+    )  # Increment the record ID to avoid clashes
+    record.common.record_id += len(
+        record_collection_train
+    )  # Increment the record ID to avoid clashes
 
 # record_collection_rrctrained = preprocess.load_set_record_collection(
 #     coco_json_path_rrctrained,
