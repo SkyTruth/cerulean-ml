@@ -91,7 +91,7 @@ def no_op(img, **params):
 def get_tfms(
     memtile_size=memtile_size,
     rrctile_size=rrctile_size,
-    reduced_resolution_tile_size=run_list[-1][0],
+    reduced_resolution_tile_size=final_px,
     scale_limit=0.05,
     rotate_limit=10,
     border_mode=0,  # cv2.BORDER_CONSTANT, use pad_fill_value
