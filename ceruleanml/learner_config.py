@@ -1,5 +1,6 @@
 from typing import Dict
 
+from fastai.vision.all import *
 from icevision import models, tfms
 from torchvision.ops import MultiScaleRoIAlign
 
@@ -11,8 +12,9 @@ from ceruleanml import coco_load_fastai, data, preprocess
 memtile_size = 1024  # setting memtile_size=0 means use full scenes instead of tiling
 rrctile_size = 1024  #
 run_list = [
-    [512, 80],
-    # [416, 60],
+    [128,10, 'frozen'],
+    [256,10, 'frozen'],
+    [256, 50, 'unfrozen'],
 ]  # List of tuples, where the tuples are [px size, training time in minutes]
 final_px = run_list[-1][0]
 
@@ -38,6 +40,9 @@ classes_to_keep = [
     if c not in classes_to_remove + list(classes_to_remap.keys())
 ]
 
+#aux_layers = ["VV", "INFRA", "VESSEL"]
+aux_layers = ["VV"]
+
 thresholds = {
     "pixel_nms_thresh": 0.4,  # prediction vs itself, pixels
     "bbox_score_thresh": 0.2,  # prediction vs score, bbox
@@ -46,17 +51,19 @@ thresholds = {
     "groundtruth_dice_thresh": 0.0,  # prediction vs ground truth, theshold
 }
 
-num_workers = 8  # based on processor, but I don't know how to calculate...
-model_type = models.torchvision.mask_rcnn
-backbone = model_type.backbones.resnext101_32x8d_fpn
-model = model_type.model(
-    backbone=backbone(pretrained=True),
-    num_classes=len(classes_to_keep),
-    box_nms_thresh=0.5,
-    mask_roi_pool=MultiScaleRoIAlign(
-        featmap_names=["0", "1", "2", "3"], output_size=14 * 4, sampling_ratio=2
-    ),
-)
+# model_type = models.torchvision.mask_rcnn
+# backbone = model_type.backbones.resnext101_32x8d_fpn
+# model = model_type.model(
+#     backbone=backbone(pretrained=True),
+#     num_classes=len(classes_to_keep),
+#     box_nms_thresh=0.5,
+#     mask_roi_pool=MultiScaleRoIAlign(
+#         featmap_names=["0", "1", "2", "3"], output_size=14 * 4, sampling_ratio=2
+#     ),
+# )
+model_type = "resnet18"
+num_workers = 8   # based on processor, but I don't know how to calculate...
+
 
 # Regularization
 wd = 0.01
@@ -248,5 +255,7 @@ record_ids_test = coco_load_fastai.record_collection_to_record_ids(
     record_collection_test
 )
 
+
+
 # Create name for model based on parameters above
-model_name = f"{len(classes_to_keep)}cls_rnxt101_pr{run_list[-1][0]}_px{rrctile_size}_{sum([r[1] for r in run_list])}min"
+model_name = f"{len(classes_to_keep)}cls_{model_type}_pr{final_px}_px{rrctile_size}_{sum([r[1] for r in run_list])}epochs"
