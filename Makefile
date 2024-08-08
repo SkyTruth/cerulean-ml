@@ -92,16 +92,11 @@ setup-fastai-env:
 		conda env remove --name .fastai-env --yes && \
 		mamba create --name .fastai-env python --yes && \
 		conda activate .fastai-env && \
-		mamba install --yes -c conda-forge fastai wandb jupyterlab ipykernel && \
-		mamba install --yes -c pytorch pytorch torchvision torchaudio cudatoolkit=11.4  -c conda-forge && \
-		pip install torchsummary && \
-		pip install --no-deps icevision && \
+		pip install torch==2.3.1+cu121 -f https://download.pytorch.org/whl/torch_stable.html && \
+		mamba install --yes  jupyterlab ipykernel fastai wandb loguru albumentations opencv sqlite -c pytorch -c conda-forge && \
 		pip install -e . && \
-		python -m ipykernel install --user --name=fastai && \
-		mamba install --yes -c conda-forge loguru albumentations opencv && \
-		pip install "git+https://github.com/waspinator/pycococreator.git@0.2.0" && \
-		pip install "dask[complete]"
-
+		pip install torchsummary "git+https://github.com/waspinator/pycococreator.git@0.2.0" "dask[complete]" && \
+		pip install --no-deps icevision
 
 setup-system-tools: ## Install system tools
 	@echo "Installing global system tools..."

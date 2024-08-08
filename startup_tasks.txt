@@ -9,7 +9,7 @@ make syncup-ice
 cdata
 cdata2
 cd /root/work
-make setup-icevision-env
+make setup-fastai-env
 make setup-system-tools
 aws configure # vim ~/.aws/credentials
 
@@ -24,9 +24,10 @@ nvidia-smi -l 1
 nvidia-smi | grep 'python' | awk '{ print $5 }' | xargs -n1 kill -9
 
 If nvidia can't be found, then the drivers are messed up. Run the following commands:
-sudo apt-get remove --purge '^nvidia-.*'
-sudo apt-get update
-sudo apt-get install --no-install-recommends nvidia-driver-460
+sudo apt-get remove --purge '^nvidia-.*' -y
+sudo add-apt-repository ppa:graphics-drivers/ppa -y
+sudo apt-get update -y
+sudo apt-get install --no-install-recommends nvidia-driver-535 -y
 sudo reboot
 
 
