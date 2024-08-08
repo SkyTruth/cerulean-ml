@@ -93,7 +93,7 @@ setup-fastai-env:
 		mamba create --name .fastai-env python --yes && \
 		conda activate .fastai-env && \
 		pip install torch==2.3.1+cu121 -f https://download.pytorch.org/whl/torch_stable.html && \
-		mamba install --yes  jupyterlab ipykernel fastai wandb loguru albumentations opencv sqlite -c pytorch -c conda-forge && \
+		mamba install --yes jupyterlab ipykernel pytorch fastai wandb loguru albumentations opencv sqlite -c pytorch -c conda-forge && \
 		pip install -e . && \
 		pip install torchsummary "git+https://github.com/waspinator/pycococreator.git@0.2.0" "dask[complete]" && \
 		pip install --no-deps icevision
