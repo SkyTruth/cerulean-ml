@@ -18,12 +18,11 @@ memtile_size = 1024  # setting memtile_size=0 means use full scenes instead of t
 rrctile_size = 1024  #
 run_list = [
     #   [px size, number of expochs, freeze encoder]
-    [128, 60, "frozen"],
-    [128, 60, "unfrozen"],
+    [256, 30, "unfrozen"],
 ]
 final_px = run_list[-1][0]
 
-negative_sample_count_train = 100
+negative_sample_count_train = 0
 negative_sample_count_val = 0
 negative_sample_count_test = 0
 negative_sample_count_rrctrained = 0
@@ -32,12 +31,13 @@ area_thresh = 100  # XXX maybe run a histogram on this to confirm that we have m
 
 classes_to_remove = [
     "ambiguous",
-    "natural_seep",
+    # "natural_seep",
 ]
 classes_to_remap: Dict[str, str] = {
     "old_vessel": "recent_vessel",
     "coincident_vessel": "recent_vessel",
     "infra_slick": "recent_vessel",
+    "natural_seep": "recent_vessel",
 }
 
 classes_to_keep = [
@@ -66,7 +66,7 @@ thresholds = {
 # )
 
 # Regularization
-wd = 0.001
+wd = 0.01
 
 
 # Ablation studies for aux channels
