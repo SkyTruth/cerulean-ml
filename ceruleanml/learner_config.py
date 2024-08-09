@@ -68,6 +68,7 @@ thresholds = {
 # Regularization
 wd = 0.01
 
+num_workers = 8
 
 # Ablation studies for aux channels
 def triplicate(img, **params):
