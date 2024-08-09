@@ -1,10 +1,15 @@
 from typing import Dict
 
-from fastai.vision.all import *
-from icevision import models, tfms
-from torchvision.ops import MultiScaleRoIAlign
+from fastai.vision.all import RandomErasing, Resize, aug_transforms
+from icevision import tfms  # , models
 
 from ceruleanml import coco_load_fastai, data, preprocess
+
+# from torchvision.ops import MultiScaleRoIAlign
+
+
+model_type = "resnet18"
+aux_layers = ["VV"]  # , "INFRA", "VESSEL"]
 
 # Note: Scenes are cut into memory-friendly tiles at memtile_size, so that the training loop doesn't need to load a whole GRD when you are just going to RRC it
 # The RRC is then executed to reduce the actual training data to rrctile_size
@@ -12,10 +17,10 @@ from ceruleanml import coco_load_fastai, data, preprocess
 memtile_size = 1024  # setting memtile_size=0 means use full scenes instead of tiling
 rrctile_size = 1024  #
 run_list = [
-    [128,10, 'frozen'],
-    [256,10, 'frozen'],
-    [256, 50, 'unfrozen'],
-]  # List of tuples, where the tuples are [px size, training time in minutes]
+    #   [px size, number of expochs, freeze encoder]
+    [128, 60, "frozen"],
+    [128, 60, "unfrozen"],
+]
 final_px = run_list[-1][0]
 
 negative_sample_count_train = 100
@@ -27,11 +32,12 @@ area_thresh = 100  # XXX maybe run a histogram on this to confirm that we have m
 
 classes_to_remove = [
     "ambiguous",
-    # "natural_seep",
+    "natural_seep",
 ]
 classes_to_remap: Dict[str, str] = {
-    # "old_vessel": "recent_vessel",
-    # "coincident_vessel": "recent_vessel",
+    "old_vessel": "recent_vessel",
+    "coincident_vessel": "recent_vessel",
+    "infra_slick": "recent_vessel",
 }
 
 classes_to_keep = [
@@ -39,9 +45,6 @@ classes_to_keep = [
     for c in data.class_list
     if c not in classes_to_remove + list(classes_to_remap.keys())
 ]
-
-#aux_layers = ["VV", "INFRA", "VESSEL"]
-aux_layers = ["VV"]
 
 thresholds = {
     "pixel_nms_thresh": 0.4,  # prediction vs itself, pixels
@@ -61,12 +64,9 @@ thresholds = {
 #         featmap_names=["0", "1", "2", "3"], output_size=14 * 4, sampling_ratio=2
 #     ),
 # )
-model_type = "resnet18"
-num_workers = 8   # based on processor, but I don't know how to calculate...
-
 
 # Regularization
-wd = 0.01
+wd = 0.001
 
 
 # Ablation studies for aux channels
@@ -109,51 +109,68 @@ def get_tfms(
     g_shift_limit=0,  # Infrastructure Vicinity
     b_shift_limit=0,  # Vessel Density
 ):
-    train_tfms = tfms.A.Adapter(
-        [
-            tfms.A.Flip(
-                p=0.5,
+    if "mask_rcnn" in model_type:
+        train_tfms = tfms.A.Adapter(
+            [
+                tfms.A.Flip(
+                    p=0.5,
+                ),
+                tfms.A.Affine(
+                    p=1,
+                    scale=(1 - scale_limit, 1 + scale_limit),
+                    rotate=[-rotate_limit, rotate_limit],
+                    interpolation=interpolation,
+                    mode=border_mode,
+                    cval=pad_fill_value,
+                    cval_mask=mask_value,
+                    fit_output=True,
+                ),
+                tfms.A.RandomSizedCrop(
+                    p=1,
+                    min_max_height=[rrctile_size, rrctile_size],
+                    height=reduced_resolution_tile_size,
+                    width=reduced_resolution_tile_size,
+                    w2h_ratio=1,
+                    interpolation=interpolation,
+                ),
+                tfms.A.RGBShift(
+                    p=1,
+                    r_shift_limit=r_shift_limit,
+                    g_shift_limit=g_shift_limit,
+                    b_shift_limit=b_shift_limit,
+                ),
+                tfms.A.Lambda(p=1, image=no_op),
+            ]
+        )
+        valid_tfms = tfms.A.Adapter(
+            [
+                tfms.A.RandomSizedCrop(
+                    p=1,
+                    min_max_height=[rrctile_size, rrctile_size],
+                    height=reduced_resolution_tile_size,
+                    width=reduced_resolution_tile_size,
+                    w2h_ratio=1,
+                    interpolation=interpolation,
+                ),
+                tfms.A.Lambda(p=1, image=no_op),
+            ]
+        )
+    elif "resnet" in model_type or "convnext" in model_type:
+        train_tfms = [
+            *aug_transforms(
+                do_flip=True,
+                flip_vert=True,
+                max_rotate=rotate_limit,
+                min_zoom=1.0 - scale_limit,
+                max_zoom=1.0 + scale_limit,
+                max_lighting=r_shift_limit / 255,
+                max_warp=0.0,
+                pad_mode="reflection",
+                batch=True,
             ),
-            tfms.A.Affine(
-                p=1,
-                scale=(1 - scale_limit, 1 + scale_limit),
-                rotate=[-rotate_limit, rotate_limit],
-                interpolation=interpolation,
-                mode=border_mode,
-                cval=pad_fill_value,
-                cval_mask=mask_value,
-                fit_output=True,
-            ),
-            tfms.A.RandomSizedCrop(
-                p=1,
-                min_max_height=[rrctile_size, rrctile_size],
-                height=reduced_resolution_tile_size,
-                width=reduced_resolution_tile_size,
-                w2h_ratio=1,
-                interpolation=interpolation,
-            ),
-            tfms.A.RGBShift(
-                p=1,
-                r_shift_limit=r_shift_limit,
-                g_shift_limit=g_shift_limit,
-                b_shift_limit=b_shift_limit,
-            ),
-            tfms.A.Lambda(p=1, image=no_op),
+            RandomErasing(max_count=6),
         ]
-    )
-    valid_tfms = tfms.A.Adapter(
-        [
-            tfms.A.RandomSizedCrop(
-                p=1,
-                min_max_height=[rrctile_size, rrctile_size],
-                height=reduced_resolution_tile_size,
-                width=reduced_resolution_tile_size,
-                w2h_ratio=1,
-                interpolation=interpolation,
-            ),
-            tfms.A.Lambda(p=1, image=no_op),
-        ]
-    )
+        valid_tfms = [Resize(reduced_resolution_tile_size)]
 
     return [train_tfms, valid_tfms]
 
@@ -254,7 +271,6 @@ record_ids_val = coco_load_fastai.record_collection_to_record_ids(record_collect
 record_ids_test = coco_load_fastai.record_collection_to_record_ids(
     record_collection_test
 )
-
 
 
 # Create name for model based on parameters above
