@@ -9,27 +9,27 @@ from tqdm import tqdm
 
 
 def save_fastai_model_state_dict_and_tracing(learner, dls, savename, experiment_dir):
-    sd = learner.model.state_dict()
-    torch.save(
-        sd, f"{experiment_dir}/state_dict_{savename}"
-    )  # saves state_dict for loading with fastai
+    # sd = learner.model.state_dict()
+    # torch.save(
+    #     sd, f"{experiment_dir}/state_dict_{savename}"
+    # )  # saves state_dict for loading with fastai
     x, _ = dls.one_batch()
-    learner.model.cuda()
+    # learner.model.cuda()
     learner.model.eval()
-    torch.jit.save(
-        torch.jit.trace(learner.model, x), f"{experiment_dir}/tracing_gpu_{savename}"
-    )
+    # torch.jit.save(
+    #     torch.jit.trace(learner.model, x), f"{experiment_dir}/tracing_gpu_{savename}"
+    # )
     learner.model.to("cpu")
     torch.jit.save(
         torch.jit.trace(learner.model, x.to("cpu")),
         f"{experiment_dir}/tracing_cpu_{savename}",
     )
-    print(f"{experiment_dir}/tracing_gpu_{savename}")
+    # print(f"{experiment_dir}/tracing_gpu_{savename}")
     print(f"{experiment_dir}/tracing_cpu_{savename}")
-    print(f"{experiment_dir}/state_dict_{savename}")
+    # print(f"{experiment_dir}/state_dict_{savename}")
     return (
-        f"{experiment_dir}/state_dict_{savename}",
-        f"{experiment_dir}/tracing_gpu_{savename}",
+        # f"{experiment_dir}/state_dict_{savename}",
+        # f"{experiment_dir}/tracing_gpu_{savename}",
         f"{experiment_dir}/tracing_cpu_{savename}",
     )
 

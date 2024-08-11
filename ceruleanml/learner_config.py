@@ -1,6 +1,6 @@
 from typing import Dict
 
-from fastai.vision.all import RandomErasing, Resize, aug_transforms
+from fastai.vision.all import RandomResizedCropGPU  # , aug_transforms, RandomErasing
 from icevision import tfms  # , models
 
 from ceruleanml import coco_load_fastai, data, preprocess
@@ -10,6 +10,7 @@ from ceruleanml import coco_load_fastai, data, preprocess
 
 model_type = "resnet18"
 aux_layers = ["VV"]  # , "INFRA", "VESSEL"]
+num_workers = 8  # based on processor, but I don't know how to calculate...
 
 # Note: Scenes are cut into memory-friendly tiles at memtile_size, so that the training loop doesn't need to load a whole GRD when you are just going to RRC it
 # The RRC is then executed to reduce the actual training data to rrctile_size
@@ -68,7 +69,6 @@ thresholds = {
 # Regularization
 wd = 0.01
 
-num_workers = 8
 
 # Ablation studies for aux channels
 def triplicate(img, **params):
@@ -157,21 +157,31 @@ def get_tfms(
             ]
         )
     elif "resnet" in model_type or "convnext" in model_type:
+        rrc_crop_area_proportion = (rrctile_size / memtile_size) ** 2
         train_tfms = [
-            *aug_transforms(
-                do_flip=True,
-                flip_vert=True,
-                max_rotate=rotate_limit,
-                min_zoom=1.0 - scale_limit,
-                max_zoom=1.0 + scale_limit,
-                max_lighting=r_shift_limit / 255,
-                max_warp=0.0,
-                pad_mode="reflection",
-                batch=True,
+            # *aug_transforms(
+            #     do_flip=True,
+            #     flip_vert=True,
+            #     max_rotate=rotate_limit,
+            #     min_zoom=1.0 - scale_limit,
+            #     max_zoom=1.0 + scale_limit,
+            #     max_lighting=0,
+            #     max_warp=0.0,
+            #     pad_mode="reflection",
+            #     batch=True,
+            # ),
+            RandomResizedCropGPU(
+                size=reduced_resolution_tile_size,
+                min_scale=rrc_crop_area_proportion,
+                max_scale=rrc_crop_area_proportion,
+                ratio=(1, 1),
             ),
-            RandomErasing(max_count=6),
+            # RandomErasing(max_count=3),
         ]
-        valid_tfms = [Resize(reduced_resolution_tile_size)]
+        assert (
+            rrc_crop_area_proportion == 1
+        ), "WARNING: validation dataset is NOT reduced by RandomResizedCropGPU, so you must use a record_collection pregenerated at the smaller crop size! You may then comment out this assertion."
+        valid_tfms = []
 
     return [train_tfms, valid_tfms]
 
