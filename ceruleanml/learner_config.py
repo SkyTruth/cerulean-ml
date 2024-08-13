@@ -117,7 +117,7 @@ aug_params_stage1= {
     # "max_warp": 0.0,
     # "pad_mode": "reflection",
     # "batch": True,
-    "do_random_erasing": True,
+    # "do_random_erasing": True,
     "reduced_resolution_tile_size": 256
 }
 
@@ -340,4 +340,4 @@ record_ids_test = coco_load_fastai.record_collection_to_record_ids(
 
 # Create name for model based on parameters above
 model_name = f"{len(classes_to_keep)}cls_{model_type}_pr{final_px}_px{rrctile_size}_{sum([r[0] for r in run_list])}epochs"
-experiment_name = "AUG_ERASING3" + model_name
+experiment_name = model_name
