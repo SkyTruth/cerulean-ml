@@ -178,7 +178,7 @@ def get_tfms(augs):
                 ),  # Maximum scale of changing brightness
                 max_warp=augs.get("max_warp", 0),  # Maximum value of changing warp per
                 p_affine=augs.get(
-                    "p_affinet", 0
+                    "p_affine", 0
                 ),  # Probability of applying affine transformation
                 p_lighting=augs.get(
                     "p_lighting", 0
