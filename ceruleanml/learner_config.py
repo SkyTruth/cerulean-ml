@@ -19,24 +19,18 @@ memtile_size = 1024  # setting memtile_size=0 means use full scenes instead of t
 rrctile_size = 1024  #
 
 run_list = [  # [number of expochs, freeze encoder, augs]
-    [30, "unfrozen", {"size": 64}],
-    [30, "unfrozen", {"size": 512}],
-    [
-        30,
-        "unfrozen",
-        {
-            "size": 512,
-            "do_flip": True,
-            "flip_vert": True,
-            "max_rotate": 10,
-            "min_zoom": 0.95,
-            "max_zoom": 1.05,
-            "max_lighting": 10 / 255,
-            "p_affine": 0.75,
-            "p_lighting": 75,
-            "random_erasing": {"max_count": 2, "sh": 0.3},
-        },
-    ],
+    [50, "unfrozen", {"size": 256}],
+    # [50, "unfrozen", {'size':512,
+    #     'do_flip':True,
+    #     'flip_vert':True,
+    #     'max_rotate':10,
+    #     'min_zoom':0.95,
+    #     'max_zoom':1.05,
+    #     'max_lighting':10/255,
+    #     'p_affine':.75,
+    #     'p_lighting':75,
+    #     # 'random_erasing':{'max_count':2, 'sh':0.3}
+    # }],
 ]
 
 wd = 0.01  # Weight Decay
@@ -55,8 +49,8 @@ classes_to_remove = [
 classes_to_remap: Dict[str, str] = {
     "old_vessel": "recent_vessel",
     "coincident_vessel": "recent_vessel",
-    "infra_slick": "recent_vessel",
-    "natural_seep": "recent_vessel",
+    # "infra_slick": "recent_vessel",
+    # "natural_seep": "recent_vessel",
 }
 
 classes_to_keep = [
