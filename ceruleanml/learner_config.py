@@ -226,7 +226,6 @@ def get_tfms(
                 max_scale=rrc_crop_area_proportion,
                 ratio=(1, 1),
             ),
-            RandomErasing(max_count=3),
         ]
         
         if augs.get('do_random_erasing', False):
