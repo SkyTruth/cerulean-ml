@@ -19,7 +19,7 @@ memtile_size = 1024  # setting memtile_size=0 means use full scenes instead of t
 rrctile_size = 1024  #
 
 run_list = [  # [number of expochs, freeze encoder, augs]
-    [30, "unfrozen", {"size": 256}],
+    [30, "unfrozen", {"size": 64}],
     [30, "unfrozen", {"size": 512}],
     [
         30,
@@ -162,7 +162,9 @@ def get_tfms(augs):
             ]
         )
     elif "resnet" in model_type or "convnext" in model_type:
-        rrc_crop_area_proportion = (rrctile_size / memtile_size) ** 2
+        rrc_crop_area_proportion = (
+            rrctile_size / memtile_size
+        ) ** 2 - 0.000001  # This slight deviation from 1 is to make aug_transforms() add in the RRC() pipe
         train_tfms = [
             *aug_transforms(
                 mult=augs.get(
@@ -207,7 +209,7 @@ def get_tfms(augs):
             train_tfms.append(RandomErasing(**augs["random_erasing"]))
 
         assert (
-            rrc_crop_area_proportion == 1
+            rrc_crop_area_proportion == 1 - 0.000001
         ), "WARNING: validation dataset is NOT reduced by RandomResizedCropGPU, so you must use a record_collection pregenerated at the smaller crop size! You may then comment out this assertion."
         valid_tfms = []
 
