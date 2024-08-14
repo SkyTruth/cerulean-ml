@@ -34,6 +34,7 @@ run_list = [  # [number of expochs, freeze encoder, augs]
 ]
 
 wd = 0.01  # Weight Decay
+lr_mult = 10
 
 negative_sample_count_train = 0
 negative_sample_count_val = 0
