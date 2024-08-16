@@ -8,7 +8,7 @@ from ceruleanml import coco_load_fastai, data, preprocess
 # from torchvision.ops import MultiScaleRoIAlign
 
 
-model_type = "resnet18"
+model_type = "resnet34"
 aux_layers = ["VV"]  # , "INFRA", "VESSEL"]
 num_workers = 8  # based on processor, but I don't know how to calculate...
 
@@ -18,9 +18,9 @@ num_workers = 8  # based on processor, but I don't know how to calculate...
 memtile_size = 1024  # setting memtile_size=0 means use full scenes instead of tiling
 rrctile_size = 1024  #
 
-run_list = [  # [number of expochs, freeze encoder, augs]
-    [50, "unfrozen", {"size": 256}],
-    # [50, "unfrozen", {'size':512,
+stages = [  # expects at least: epochs, frozen, augs['size'], wd
+    {"epochs": 50, "frozen": False, "wd": 0.01, "augs": {"size": 256}},
+    # {'epochs':50, 'frozen':False, 'wd':0.001, 'augs':{'size': 512,
     #     'do_flip':True,
     #     'flip_vert':True,
     #     'max_rotate':10,
@@ -30,10 +30,8 @@ run_list = [  # [number of expochs, freeze encoder, augs]
     #     'p_affine':.75,
     #     'p_lighting':75,
     #     # 'random_erasing':{'max_count':2, 'sh':0.3}
-    # }],
+    # }},
 ]
-
-wd = 0.01  # Weight Decay
 
 negative_sample_count_train = 0
 negative_sample_count_val = 0
@@ -299,5 +297,5 @@ record_ids_test = coco_load_fastai.record_collection_to_record_ids(
 
 
 # Create name for model based on parameters above
-final_px = run_list[-1][-1]["size"]  # type: ignore
-model_name = f"{len(classes_to_keep)}cls_{model_type}_pr{final_px}_px{rrctile_size}_{sum([r[0] for r in run_list])}epochs"
+final_px = stages[-1]["augs"]["size"]  # type: ignore
+model_name = f"{len(classes_to_keep)}cls_{model_type}_pr{final_px}_px{rrctile_size}_{sum([r['epochs'] for r in stages])}epochs"
